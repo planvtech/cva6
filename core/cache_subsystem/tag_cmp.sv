@@ -57,7 +57,8 @@ module tag_cmp #(
     end
 
     for (genvar j = 0; j < DCACHE_SET_ASSOC; j++) begin : tag_cmp
-        assign hit_way_o[j] = (sel_tag == rdata_i[j].tag) ? rdata_i[j].valid : 1'b0;
+        assign hit_way_o[j] = (rdata_i[j].valid) ? (sel_tag == rdata_i[j].tag) ? 1'b1 : 1'b0 : 1'b0;
+        //assign hit_way_o[j] = (sel_tag == rdata_i[j].tag) ? rdata_i[j].valid : 1'b0;
     end
 
     always_comb begin
