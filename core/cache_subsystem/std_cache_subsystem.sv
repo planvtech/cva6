@@ -16,7 +16,9 @@
 
 
 module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
-    parameter ariane_cfg_t ArianeCfg = ArianeDefaultConfig  // contains cacheable regions
+    parameter ariane_cfg_t ArianeCfg = ArianeDefaultConfig,  // contains cacheable regions
+    parameter type mst_req_t = logic,
+    parameter type mst_resp_t = logic
 ) (
     input logic                            clk_i,
     input logic                            rst_ni,
@@ -45,21 +47,23 @@ module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
     input  dcache_req_i_t   [2:0]          dcache_req_ports_i,     // to/from LSU
     output dcache_req_o_t   [2:0]          dcache_req_ports_o,     // to/from LSU
     // memory side
-    output ariane_axi::req_t               axi_req_o,
-    input  ariane_axi::resp_t              axi_resp_i
+    output mst_req_t               axi_req_o,
+    input  mst_resp_t              axi_resp_i
 );
 
   assign wbuffer_empty_o = 1'b1;
 
-    ariane_axi::req_t  axi_req_icache;
-    ariane_axi::resp_t axi_resp_icache;
-    ariane_axi::req_t  axi_req_bypass;
-    ariane_axi::resp_t axi_resp_bypass;
-    ariane_axi::req_t  axi_req_data;
-    ariane_axi::resp_t axi_resp_data;
+    mst_req_t  axi_req_icache;
+    mst_resp_t axi_resp_icache;
+    mst_req_t  axi_req_bypass;
+    mst_resp_t axi_resp_bypass;
+    mst_req_t  axi_req_data;
+    mst_resp_t axi_resp_data;
 
     cva6_icache_axi_wrapper #(
-        .ArianeCfg  ( ArianeCfg             )
+        .ArianeCfg  ( ArianeCfg             ),
+        .mst_req_t (mst_req_t),
+        .mst_resp_t (mst_resp_t)
     ) i_cva6_icache_axi_wrapper (
         .clk_i      ( clk_i                 ),
         .rst_ni     ( rst_ni                ),
@@ -80,7 +84,9 @@ module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
    // Port 1: Load Unit
    // Port 2: Store Unit
    std_nbdcache #(
-      .ArianeCfg        ( ArianeCfg          )
+      .ArianeCfg        ( ArianeCfg          ),
+      .mst_req_t (mst_req_t),
+      .mst_resp_t (mst_resp_t)
    ) i_nbdcache (
       .clk_i,
       .rst_ni,
@@ -104,36 +110,84 @@ module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
     logic [1:0] w_select, w_select_fifo, w_select_arbiter;
     logic w_fifo_empty;
 
+//    generate
+//    if ($typename(mst_req_t) == $typename(ariane_axi::req_t)) begin
+//      //typedef ariane_axi::ar_chan_t stream_arbiter_ar_t;
+//      //typedef ariane_axi::aw_chan_t stream_arbiter_aw_t;
+//
+//      //localparam type stream_arbiter_ar_t = ariane_axi::ar_chan_t;
+//      //localparam type stream_arbiter_aw_t = ariane_axi::aw_chan_t;
+//
+//      // AR Channel
+//      stream_arbiter #(
+//          .DATA_T ( ariane_axi::ar_chan_t ),
+//          .N_INP  ( 3                     )
+//      ) i_stream_arbiter_ar (
+//          .clk_i,
+//          .rst_ni,
+//          .inp_data_i  ( {axi_req_icache.ar, axi_req_bypass.ar, axi_req_data.ar} ),
+//          .inp_valid_i ( {axi_req_icache.ar_valid, axi_req_bypass.ar_valid, axi_req_data.ar_valid} ),
+//          .inp_ready_o ( {axi_resp_icache.ar_ready, axi_resp_bypass.ar_ready, axi_resp_data.ar_ready} ),
+//          .oup_data_o  ( axi_req_o.ar        ),
+//          .oup_valid_o ( axi_req_o.ar_valid  ),
+//          .oup_ready_i ( axi_resp_i.ar_ready )
+//      );
+//
+//      // AW Channel
+//      stream_arbiter #(
+//          .DATA_T ( ariane_axi::aw_chan_t ),
+//          .N_INP  ( 3                     )
+//      ) i_stream_arbiter_aw (
+//          .clk_i,
+//          .rst_ni,
+//          .inp_data_i  ( {axi_req_icache.aw, axi_req_bypass.aw, axi_req_data.aw} ),
+//          .inp_valid_i ( {axi_req_icache.aw_valid, axi_req_bypass.aw_valid, axi_req_data.aw_valid} ),
+//          .inp_ready_o ( {axi_resp_icache.aw_ready, axi_resp_bypass.aw_ready, axi_resp_data.aw_ready} ),
+//          .oup_data_o  ( axi_req_o.aw        ),
+//          .oup_valid_o ( axi_req_o.aw_valid  ),
+//          .oup_ready_i ( axi_resp_i.aw_ready )
+//      );
+//
+//    end
+//    else if ($typename(mst_req_t) == $typename(ariane_ace::req_t)) begin
+      //typedef ariane_ace::ar_chan_t stream_arbiter_ar_t;
+      //typedef ariane_ace::aw_chan_t stream_arbiter_aw_t;
 
-    // AR Channel
-    stream_arbiter #(
-        .DATA_T ( ariane_axi::ar_chan_t ),
-        .N_INP  ( 3                     )
-    ) i_stream_arbiter_ar (
-        .clk_i,
-        .rst_ni,
-        .inp_data_i  ( {axi_req_icache.ar, axi_req_bypass.ar, axi_req_data.ar} ),
-        .inp_valid_i ( {axi_req_icache.ar_valid, axi_req_bypass.ar_valid, axi_req_data.ar_valid} ),
-        .inp_ready_o ( {axi_resp_icache.ar_ready, axi_resp_bypass.ar_ready, axi_resp_data.ar_ready} ),
-        .oup_data_o  ( axi_req_o.ar        ),
-        .oup_valid_o ( axi_req_o.ar_valid  ),
-        .oup_ready_i ( axi_resp_i.ar_ready )
-    );
+      //localparam type stream_arbiter_ar_t = ariane_ace::ar_chan_t;
+      //localparam type stream_arbiter_aw_t = ariane_ace::aw_chan_t;
 
-    // AW Channel
-    stream_arbiter #(
-        .DATA_T ( ariane_axi::aw_chan_t ),
-        .N_INP  ( 3                     )
-    ) i_stream_arbiter_aw (
-        .clk_i,
-        .rst_ni,
-        .inp_data_i  ( {axi_req_icache.aw, axi_req_bypass.aw, axi_req_data.aw} ),
-        .inp_valid_i ( {axi_req_icache.aw_valid, axi_req_bypass.aw_valid, axi_req_data.aw_valid} ),
-        .inp_ready_o ( {axi_resp_icache.aw_ready, axi_resp_bypass.aw_ready, axi_resp_data.aw_ready} ),
-        .oup_data_o  ( axi_req_o.aw        ),
-        .oup_valid_o ( axi_req_o.aw_valid  ),
-        .oup_ready_i ( axi_resp_i.aw_ready )
-    );
+      // AR Channel
+      stream_arbiter #(
+          .DATA_T ( ariane_ace::ar_chan_t ),
+          .N_INP  ( 3                     )
+      ) i_stream_arbiter_ar (
+          .clk_i,
+          .rst_ni,
+          .inp_data_i  ( {axi_req_icache.ar, axi_req_bypass.ar, axi_req_data.ar} ),
+          .inp_valid_i ( {axi_req_icache.ar_valid, axi_req_bypass.ar_valid, axi_req_data.ar_valid} ),
+          .inp_ready_o ( {axi_resp_icache.ar_ready, axi_resp_bypass.ar_ready, axi_resp_data.ar_ready} ),
+          .oup_data_o  ( axi_req_o.ar        ),
+          .oup_valid_o ( axi_req_o.ar_valid  ),
+          .oup_ready_i ( axi_resp_i.ar_ready )
+      );
+
+      // AW Channel
+      stream_arbiter #(
+          .DATA_T ( ariane_ace::aw_chan_t ),
+          .N_INP  ( 3                     )
+      ) i_stream_arbiter_aw (
+          .clk_i,
+          .rst_ni,
+          .inp_data_i  ( {axi_req_icache.aw, axi_req_bypass.aw, axi_req_data.aw} ),
+          .inp_valid_i ( {axi_req_icache.aw_valid, axi_req_bypass.aw_valid, axi_req_data.aw_valid} ),
+          .inp_ready_o ( {axi_resp_icache.aw_ready, axi_resp_bypass.aw_ready, axi_resp_data.aw_ready} ),
+          .oup_data_o  ( axi_req_o.aw        ),
+          .oup_valid_o ( axi_req_o.aw_valid  ),
+          .oup_ready_i ( axi_resp_i.aw_ready )
+      );
+
+//    end
+//    endgenerate
 
     // WID has been removed in AXI 4 so we need to keep track which AW request has been accepted
     // to forward the correct write data.

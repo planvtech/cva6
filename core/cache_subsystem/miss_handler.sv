@@ -17,7 +17,9 @@
 // --------------
 
 module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
-    parameter int unsigned NR_PORTS         = 3
+    parameter int unsigned NR_PORTS         = 3,
+    parameter type mst_req_t = logic,
+    parameter type mst_resp_t = logic
 )(
     input  logic                                        clk_i,
     input  logic                                        rst_ni,
@@ -33,8 +35,8 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     output logic [NR_PORTS-1:0][63:0]                   bypass_data_o,
 
     // AXI port
-    output ariane_axi::req_t                            axi_bypass_o,
-    input  ariane_axi::resp_t                           axi_bypass_i,
+    output mst_req_t                            axi_bypass_o,
+    input  mst_resp_t                           axi_bypass_i,
 
     // Miss handling (~> cacheline refill)
     output logic [NR_PORTS-1:0]                         miss_gnt_o,
@@ -42,8 +44,8 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
 
     output logic [63:0]                                 critical_word_o,
     output logic                                        critical_word_valid_o,
-    output ariane_axi::req_t                            axi_data_o,
-    input  ariane_axi::resp_t                           axi_data_i,
+    output mst_req_t                            axi_data_o,
+    input  mst_resp_t                           axi_data_i,
 
     input  logic [NR_PORTS-1:0][55:0]                   mshr_addr_i,
     output logic [NR_PORTS-1:0]                         mshr_addr_matches_o,
@@ -118,6 +120,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     logic [(DCACHE_LINE_WIDTH/8)-1:0]        req_fsm_miss_be;
     ariane_axi::ad_req_t                     req_fsm_miss_req;
     logic [1:0]                              req_fsm_miss_size;
+  ariane_ace::ace_req_t                    req_fsm_miss_type;
 
     logic                                    gnt_miss_fsm;
     logic                                    valid_miss_fsm;
@@ -562,12 +565,15 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     axi_adapter #(
         .DATA_WIDTH           (64),
         .AXI_ID_WIDTH         (4),
-        .CACHELINE_BYTE_OFFSET(DCACHE_BYTE_OFFSET)
+        .CACHELINE_BYTE_OFFSET(DCACHE_BYTE_OFFSET),
+        .mst_req_t (mst_req_t),
+        .mst_resp_t (mst_resp_t)
     ) i_bypass_axi_adapter (
         .clk_i                (clk_i),
         .rst_ni               (rst_ni),
         .req_i                (bypass_adapter_req.req),
         .type_i               (bypass_adapter_req.reqtype),
+        .trans_type_i         (bypass_adapter_req.we ? ariane_ace::WRITE_UNIQUE : ariane_ace::READ_ONCE),
         .amo_i                (bypass_adapter_req.amo),
         .id_i                 (bypass_adapter_req.id),
         .addr_i               (bypass_adapter_req.addr),
@@ -585,18 +591,23 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         .axi_resp_i           (axi_bypass_i)
     );
 
+  assign req_fsm_miss_type = req_fsm_miss_we ? ariane_ace::CLEAN_UNIQUE : ariane_ace::READ_SHARED;
+
     // ----------------------
     // Cache Line AXI Refill
     // ----------------------
     axi_adapter  #(
         .DATA_WIDTH            ( DCACHE_LINE_WIDTH  ),
         .AXI_ID_WIDTH          ( 4                  ),
-        .CACHELINE_BYTE_OFFSET ( DCACHE_BYTE_OFFSET )
+        .CACHELINE_BYTE_OFFSET ( DCACHE_BYTE_OFFSET ),
+        .mst_req_t (mst_req_t),
+        .mst_resp_t (mst_resp_t)
     ) i_miss_axi_adapter (
         .clk_i,
         .rst_ni,
         .req_i               ( req_fsm_miss_valid ),
         .type_i              ( req_fsm_miss_req   ),
+        .trans_type_i        ( req_fsm_miss_type  ),
         .amo_i               ( AMO_NONE           ),
         .gnt_o               ( gnt_miss_fsm       ),
         .addr_i              ( req_fsm_miss_addr  ),

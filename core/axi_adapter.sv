@@ -20,31 +20,34 @@ module axi_adapter #(
   parameter int unsigned DATA_WIDTH            = 256,
   parameter logic        CRITICAL_WORD_FIRST   = 0, // the AXI subsystem needs to support wrapping reads for this feature
   parameter int unsigned AXI_ID_WIDTH          = 10,
-  parameter int unsigned CACHELINE_BYTE_OFFSET = 8
+  parameter int unsigned CACHELINE_BYTE_OFFSET = 8,
+  parameter type mst_req_t = logic,
+  parameter type mst_resp_t = logic
 )(
-  input  logic                             clk_i,  // Clock
-  input  logic                             rst_ni, // Asynchronous reset active low
+  input logic                                                     clk_i, // Clock
+  input logic                                                     rst_ni, // Asynchronous reset active low
 
-  input  logic                             req_i,
-  input  ariane_axi::ad_req_t              type_i,
-  input  ariane_pkg::amo_t                 amo_i,
-  output logic                             gnt_o,
-  input  logic [riscv::XLEN-1:0]           addr_i,
-  input  logic                             we_i,
-  input  logic [(DATA_WIDTH/riscv::XLEN)-1:0][riscv::XLEN-1:0] wdata_i,
-  input  logic [(DATA_WIDTH/riscv::XLEN)-1:0][(riscv::XLEN/8)-1:0]  be_i,
-  input  logic [1:0]                       size_i,
-  input  logic [AXI_ID_WIDTH-1:0]          id_i,
+  input logic                                                     req_i,
+  input                                                           ariane_axi::ad_req_t type_i,
+  input                                                           ariane_ace::ace_req_t trans_type_i,
+  input                                                           ariane_pkg::amo_t amo_i,
+  output logic                                                    gnt_o,
+  input logic [riscv::XLEN-1:0]                                   addr_i,
+  input logic                                                     we_i,
+  input logic [(DATA_WIDTH/riscv::XLEN)-1:0][riscv::XLEN-1:0]     wdata_i,
+  input logic [(DATA_WIDTH/riscv::XLEN)-1:0][(riscv::XLEN/8)-1:0] be_i,
+  input logic [1:0]                                               size_i,
+  input logic [AXI_ID_WIDTH-1:0]                                  id_i,
   // read port
-  output logic                             valid_o,
-  output logic [(DATA_WIDTH/riscv::XLEN)-1:0][riscv::XLEN-1:0] rdata_o,
-  output logic [AXI_ID_WIDTH-1:0]          id_o,
+  output logic                                                    valid_o,
+  output logic [(DATA_WIDTH/riscv::XLEN)-1:0][riscv::XLEN-1:0]    rdata_o,
+  output logic [AXI_ID_WIDTH-1:0]                                 id_o,
   // critical word - read port
-  output logic [riscv::XLEN-1:0]                      critical_word_o,
-  output logic                             critical_word_valid_o,
+  output logic [riscv::XLEN-1:0]                                  critical_word_o,
+  output logic                                                    critical_word_valid_o,
   // AXI port
-  output ariane_axi::req_t                 axi_req_o,
-  input  ariane_axi::resp_t                axi_resp_i
+  output                                                          mst_req_t axi_req_o,
+  input                                                           mst_resp_t axi_resp_i
 );
   localparam BURST_SIZE = DATA_WIDTH/riscv::XLEN-1;
   localparam ADDR_INDEX = ($clog2(DATA_WIDTH/riscv::XLEN) > 0) ? $clog2(DATA_WIDTH/riscv::XLEN) : 1;
@@ -157,7 +160,7 @@ module axi_adapter #(
             // its a request for the whole cache line
             end else begin
               // bursts of AMOs unsupported
-              assert (amo_i == ariane_pkg::AMO_NONE) 
+              assert (amo_i == ariane_pkg::AMO_NONE)
                 else $fatal("Bursts of atomic operations are not supported");
 
               axi_req_o.aw.len = BURST_SIZE; // number of bursts to do
@@ -185,7 +188,7 @@ module axi_adapter #(
 
             gnt_o = axi_resp_i.ar_ready;
             if (type_i != ariane_axi::SINGLE_REQ) begin
-              assert (amo_i == ariane_pkg::AMO_NONE) 
+              assert (amo_i == ariane_pkg::AMO_NONE)
                 else $fatal("Bursts of atomic operations are not supported");
 
               axi_req_o.ar.len = BURST_SIZE;
@@ -388,6 +391,69 @@ module axi_adapter #(
       end
     endcase
   end
+
+  generate
+  if ($typename(mst_req_t) == $typename(ariane_ace::req_t)) begin
+
+    always_comb begin
+      // Default assignments
+      axi_req_o.aw.snoop  = '0;
+      axi_req_o.aw.bar   = '0;
+      axi_req_o.aw.domain   = '0;
+      axi_req_o.aw.awunique = '0;
+      axi_req_o.ar.snoop  = '0;
+      axi_req_o.ar.bar   = '0;
+      axi_req_o.ar.domain   = '0;
+
+      case (trans_type_i)
+
+        ariane_ace::READ_SHARED: begin
+          axi_req_o.ar.domain   = 2'b01;
+          axi_req_o.ar.snoop   = 4'b0001;
+        end
+
+        ariane_ace::READ_ONCE: begin
+          axi_req_o.ar.domain   = 2'b01;
+          axi_req_o.ar.snoop   = 4'b0000;
+        end
+
+        ariane_ace::READ_UNIQUE: begin
+          axi_req_o.ar.domain   = 2'b01;
+          axi_req_o.ar.snoop   = 4'b0111;
+        end
+
+        ariane_ace::READ_NO_SNOOP: begin
+          axi_req_o.ar.domain   = 2'b00;
+          axi_req_o.ar.snoop   = 4'b0000;
+        end
+
+        ariane_ace::CLEAN_UNIQUE: begin
+          axi_req_o.ar.domain   = 2'b01;
+          axi_req_o.ar.snoop   = 4'b1011;
+        end
+
+        ariane_ace::WRITE_UNIQUE: begin
+          axi_req_o.aw.domain   = 2'b01;
+          axi_req_o.aw.snoop   = 3'b000;
+        end
+
+        ariane_ace::WRITE_NO_SNOOP: begin
+          axi_req_o.aw.domain   = 2'b00;
+          axi_req_o.aw.snoop   = 3'b000;
+        end
+
+        ariane_ace::WRITEBACK: begin
+          axi_req_o.aw.domain   = 2'b00;
+          axi_req_o.aw.snoop   = 3'b010;
+        end
+
+      endcase // case (trans_type_i)
+
+    end
+
+  end // if (type(mst_req_t) == type(ariane_ace::req_t))
+  endgenerate
+
 
   // ----------------
   // Registers

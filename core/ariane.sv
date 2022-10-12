@@ -14,7 +14,9 @@
 
 
 module ariane import ariane_pkg::*; #(
-  parameter ariane_pkg::ariane_cfg_t ArianeCfg     = ariane_pkg::ArianeDefaultConfig
+  parameter ariane_pkg::ariane_cfg_t ArianeCfg     = ariane_pkg::ArianeDefaultConfig,
+  parameter type mst_req_t = logic,
+  parameter type mst_resp_t = logic
 ) (
   input  logic                         clk_i,
   input  logic                         rst_ni,
@@ -42,9 +44,9 @@ module ariane import ariane_pkg::*; #(
   output wt_cache_pkg::l15_req_t       l15_req_o,
   input  wt_cache_pkg::l15_rtrn_t      l15_rtrn_i
 `else
-  // memory side, AXI Master
-  output ariane_axi::req_t             axi_req_o,
-  input  ariane_axi::resp_t            axi_resp_i
+  // memory side, ACE Master
+  output mst_req_t             axi_req_o,
+  input  mst_resp_t            axi_resp_i
 `endif
 );
 
@@ -52,7 +54,9 @@ module ariane import ariane_pkg::*; #(
   cvxif_pkg::cvxif_resp_t cvxif_resp;
 
   cva6 #(
-    .ArianeCfg  ( ArianeCfg )
+    .ArianeCfg  ( ArianeCfg ),
+    .mst_req_t (mst_req_t),
+    .mst_resp_t (mst_resp_t)
   ) i_cva6 (
     .clk_i                ( clk_i                     ),
     .rst_ni               ( rst_ni                    ),

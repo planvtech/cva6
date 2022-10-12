@@ -14,7 +14,9 @@
 
 
 module std_nbdcache import std_cache_pkg::*; import ariane_pkg::*; #(
-    parameter ariane_cfg_t ArianeCfg        = ArianeDefaultConfig // contains cacheable regions
+    parameter ariane_cfg_t ArianeCfg        = ArianeDefaultConfig, // contains cacheable regions
+    parameter type mst_req_t = logic,
+    parameter type mst_resp_t = logic
 )(
     input  logic                           clk_i,       // Clock
     input  logic                           rst_ni,      // Asynchronous reset active low
@@ -30,10 +32,10 @@ module std_nbdcache import std_cache_pkg::*; import ariane_pkg::*; #(
     input  dcache_req_i_t [2:0]            req_ports_i,  // request ports
     output dcache_req_o_t [2:0]            req_ports_o,  // request ports
     // Cache AXI refill port
-    output ariane_axi::req_t               axi_data_o,
-    input  ariane_axi::resp_t              axi_data_i,
-    output ariane_axi::req_t               axi_bypass_o,
-    input  ariane_axi::resp_t              axi_bypass_i
+    output mst_req_t               axi_data_o,
+    input  mst_resp_t              axi_data_i,
+    output mst_req_t               axi_bypass_o,
+    input  mst_resp_t              axi_bypass_i
 );
 
 import std_cache_pkg::*;
@@ -127,7 +129,9 @@ import std_cache_pkg::*;
     // Miss Handling Unit
     // ------------------
     miss_handler #(
-        .NR_PORTS               ( 3                    )
+        .NR_PORTS               ( 3                    ),
+        .mst_req_t (mst_req_t),
+        .mst_resp_t (mst_resp_t)
     ) i_miss_handler (
         .flush_i                ( flush_i              ),
         .busy_i                 ( |busy                ),

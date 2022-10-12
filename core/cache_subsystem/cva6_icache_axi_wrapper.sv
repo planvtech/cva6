@@ -14,7 +14,9 @@
 //
 
 module cva6_icache_axi_wrapper import ariane_pkg::*; import wt_cache_pkg::*; #(
-  parameter ariane_cfg_t ArianeCfg = ArianeDefaultConfig  // contains cacheable regions
+  parameter ariane_cfg_t ArianeCfg = ArianeDefaultConfig,  // contains cacheable regions
+  parameter type mst_req_t = logic,
+  parameter type mst_resp_t = logic
 ) (
   input  logic              clk_i,
   input  logic              rst_ni,
@@ -30,8 +32,8 @@ module cva6_icache_axi_wrapper import ariane_pkg::*; import wt_cache_pkg::*; #(
   input  icache_dreq_i_t    dreq_i,
   output icache_dreq_o_t    dreq_o,
   // AXI refill port
-  output ariane_axi::req_t  axi_req_o,
-  input  ariane_axi::resp_t axi_resp_i
+  output mst_req_t  axi_req_o,
+  input  mst_resp_t axi_resp_i
 );
 
   localparam AxiNumWords = (ICACHE_LINE_WIDTH/64) * (ICACHE_LINE_WIDTH  > DCACHE_LINE_WIDTH)  +
@@ -48,13 +50,13 @@ module cva6_icache_axi_wrapper import ariane_pkg::*; import wt_cache_pkg::*; #(
   logic [63:0]                           axi_rd_addr;
   logic [$clog2(AxiNumWords)-1:0]        axi_rd_blen;
   logic [1:0]                            axi_rd_size;
-  logic [$size(axi_resp_i.r.id)-1:0]     axi_rd_id_in;
+  logic [ariane_axi::IdWidth-1:0]     axi_rd_id_in;
   logic                                  axi_rd_rdy;
   logic                                  axi_rd_lock;
   logic                                  axi_rd_last;
   logic                                  axi_rd_valid;
   logic [63:0]                           axi_rd_data;
-  logic [$size(axi_resp_i.r.id)-1:0]     axi_rd_id_out;
+  logic [ariane_axi::IdWidth-1:0]     axi_rd_id_out;
   logic                                  axi_rd_exokay;
 
   logic                                  req_valid_d, req_valid_q;
@@ -117,10 +119,75 @@ module cva6_icache_axi_wrapper import ariane_pkg::*; import wt_cache_pkg::*; #(
   // --------
   // AXI shim
   // --------
+
+  ariane_axi::req_t axi_req;
+  ariane_axi::resp_t axi_resp;
+
+  generate
+  if ($typename(mst_req_t) == $typename(ariane_ace::req_t)) begin
+    assign axi_req_o.aw.id = axi_req.aw.id;
+    assign axi_req_o.aw.addr = axi_req.aw.addr;
+    assign axi_req_o.aw.len = axi_req.aw.len;
+    assign axi_req_o.aw.size = axi_req.aw.size;
+    assign axi_req_o.aw.burst = axi_req.aw.burst;
+    assign axi_req_o.aw.lock = axi_req.aw.lock;
+    assign axi_req_o.aw.cache = axi_req.aw.cache;
+    assign axi_req_o.aw.prot = axi_req.aw.prot;
+    assign axi_req_o.aw.qos = axi_req.aw.qos;
+    assign axi_req_o.aw.region = axi_req.aw.region;
+    assign axi_req_o.aw.atop = axi_req.aw.atop;
+    assign axi_req_o.aw.user = axi_req.aw.user;
+    assign axi_req_o.aw.snoop = '0;
+    assign axi_req_o.aw.bar = '0;
+    assign axi_req_o.aw.domain = '0;
+    assign axi_req_o.aw.awunique = '0;
+    assign axi_req_o.aw_valid = axi_req.aw_valid;
+    assign axi_req_o.w = axi_req.w;
+    assign axi_req_o.w_valid = axi_req.w_valid;
+    assign axi_req_o.b_ready = axi_req.b_ready;
+    assign axi_req_o.ar.id = axi_req.ar.id;
+    assign axi_req_o.ar.addr = axi_req.ar.addr;
+    assign axi_req_o.ar.len = axi_req.ar.len;
+    assign axi_req_o.ar.size = axi_req.ar.size;
+    assign axi_req_o.ar.burst = axi_req.ar.burst;
+    assign axi_req_o.ar.lock = axi_req.ar.lock;
+    assign axi_req_o.ar.cache = axi_req.ar.cache;
+    assign axi_req_o.ar.prot = axi_req.ar.prot;
+    assign axi_req_o.ar.qos = axi_req.ar.qos;
+    assign axi_req_o.ar.region = axi_req.ar.region;
+    assign axi_req_o.ar.user = axi_req.ar.user;
+    assign axi_req_o.ar.snoop = '0;
+    assign axi_req_o.ar.bar = '0;
+    assign axi_req_o.ar.domain = '0;
+    assign axi_req_o.ar_valid = axi_req.ar_valid;
+    assign axi_req_o.r_ready = axi_req.r_ready;
+    assign axi_req_o.ac_ready = 1'b0;
+    assign axi_req_o.cr_valid = 1'b0;
+    assign axi_req_o.cr_resp = '0;
+    assign axi_req_o.cd_valid = 1'b0;
+    assign axi_req_o.cd = '0;
+    assign axi_resp.aw_ready = axi_resp_i.aw_ready;
+    assign axi_resp.ar_ready = axi_resp_i.ar_ready;
+    assign axi_resp.w_ready = axi_resp_i.w_ready;
+    assign axi_resp.b_valid = axi_resp_i.b_valid;
+    assign axi_resp.b = axi_resp_i.b;
+    assign axi_resp.r_valid = axi_resp_i.r_valid;
+    assign axi_resp.r.id   = axi_resp_i.r.id;
+    assign axi_resp.r.data = axi_resp_i.r.data;
+    assign axi_resp.r.resp = axi_resp_i.r.resp[1:0];
+    assign axi_resp.r.last = axi_resp_i.r.last;
+    assign axi_resp.r.user = axi_resp_i.r.user;
+  end
+  else begin
+    assign axi_req_o = axi_req;
+    assign axi_resp = axi_resp_i;
+  end
+  endgenerate
+
     axi_shim #(
     .AxiUserWidth    ( AXI_USER_WIDTH         ),
     .AxiNumWords     ( AxiNumWords            ),
-    .AxiIdWidth      ( $size(axi_resp_i.r.id) )
+    .AxiIdWidth      ( ariane_axi::IdWidth )
   ) i_axi_shim (
     .clk_i           ( clk_i             ),
     .rst_ni          ( rst_ni            ),
@@ -153,8 +220,8 @@ module cva6_icache_axi_wrapper import ariane_pkg::*; import wt_cache_pkg::*; #(
     .wr_valid_o      (                   ),
     .wr_id_o         (                   ),
     .wr_exokay_o     (                   ),
-    .axi_req_o       ( axi_req_o         ),
-    .axi_resp_i      ( axi_resp_i        )
+    .axi_req_o       ( axi_req         ),
+    .axi_resp_i      ( axi_resp        )
   );
 
   // Buffer burst data in shift register
