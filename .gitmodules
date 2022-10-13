@@ -7,9 +7,6 @@
 [submodule "common/submodules/common_cells"]
 	path = common/submodules/common_cells
 	url = https://github.com/planvtech/common_cells.git
-[submodule "corev_apu/axi"]
-	path = corev_apu/axi
-	url = https://github.com/pulp-platform/axi.git
 [submodule "corev_apu/register_interface"]
 	path = corev_apu/register_interface
 	url = https://github.com/pulp-platform/register_interface.git
@@ -52,3 +49,6 @@
 [submodule "corev_apu/tb/common_verification"]
 	path = corev_apu/tb/common_verification
 	url = https://github.com/pulp-platform/common_verification.git
+[submodule "corev_apu/axi"]
+	path = corev_apu/axi
+	url = https://github.com/planvtech/axi.git
