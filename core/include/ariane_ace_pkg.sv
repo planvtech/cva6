@@ -94,7 +94,25 @@ package ariane_ace;
       ace_pkg::crresp_t cr_resp;
       logic     cd_valid;
       cd_chan_t cd;
-    } req_t;
+    } m2s_t;
+
+  typedef struct packed {
+    ariane_ace::aw_chan_t aw;
+    logic        aw_valid;
+    ariane_axi::w_chan_t  w;
+    logic        w_valid;
+    logic        b_ready;
+    ariane_ace::ar_chan_t ar;
+    logic        ar_valid;
+    logic        r_ready;
+  } m2s_nosnoop_t;
+
+    typedef struct packed {
+      ac_chan_t ac;
+      logic        ac_valid;
+      logic        cr_ready;
+      logic        cd_ready;
+    } snoop_req_t;
 
     typedef struct packed {
         logic     aw_ready;
@@ -108,6 +126,24 @@ package ariane_ace;
       logic       ac_valid;
       logic       cr_ready;
       logic       cd_ready;
-    } resp_t;
+    } s2m_t;
+
+  typedef struct  packed {
+    logic         aw_ready;
+    logic         ar_ready;
+    logic         w_ready;
+    logic         b_valid;
+    ariane_axi::b_chan_t  b;
+    logic         r_valid;
+    ariane_ace::r_chan_t  r;
+  } s2m_nosnoop_t;
+
+    typedef struct  packed {
+      logic         ac_ready;
+      logic         cr_valid;
+      ace_pkg::crresp_t cr_resp;
+      logic         cd_valid;
+      cd_chan_t cd;
+    } snoop_resp_t;
 
 endpackage

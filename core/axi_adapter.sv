@@ -393,7 +393,7 @@ module axi_adapter #(
   end
 
   generate
-  if ($typename(mst_req_t) == $typename(ariane_ace::req_t)) begin
+  if ($typename(mst_req_t) == $typename(ariane_ace::m2s_nosnoop_t)) begin
 
     always_comb begin
       // Default assignments
@@ -451,7 +451,7 @@ module axi_adapter #(
 
     end
 
-  end // if (type(mst_req_t) == type(ariane_ace::req_t))
+  end // if (type(mst_req_t) == type(ariane_ace::m2s_t))
   endgenerate
 
 

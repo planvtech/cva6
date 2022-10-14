@@ -21,52 +21,53 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     parameter type mst_req_t = logic,
     parameter type mst_resp_t = logic
 )(
-    input  logic                                        clk_i,
-    input  logic                                        rst_ni,
-    input  logic                                        flush_i,      // flush request
-    output logic                                        flush_ack_o,  // acknowledge successful flush
-    output logic                                        miss_o,
-    input  logic                                        busy_i,       // dcache is busy with something
+    input logic                                       clk_i,
+    input logic                                       rst_ni,
+    input logic                                       flush_i, // flush request
+    output logic                                      flush_ack_o, // acknowledge successful flush
+    output logic                                      miss_o,
+    input logic                                       busy_i, // dcache is busy with something
     // Bypass or miss
-    input  logic [NR_PORTS-1:0][$bits(miss_req_t)-1:0]  miss_req_i,
+    input logic [NR_PORTS-1:0][$bits(miss_req_t)-1:0] miss_req_i,
+    input logic                                       invalidate_i,
     // Bypass handling
-    output logic [NR_PORTS-1:0]                         bypass_gnt_o,
-    output logic [NR_PORTS-1:0]                         bypass_valid_o,
-    output logic [NR_PORTS-1:0][63:0]                   bypass_data_o,
+    output logic [NR_PORTS-1:0]                       bypass_gnt_o,
+    output logic [NR_PORTS-1:0]                       bypass_valid_o,
+    output logic [NR_PORTS-1:0][63:0]                 bypass_data_o,
 
     // AXI port
-    output mst_req_t                            axi_bypass_o,
-    input  mst_resp_t                           axi_bypass_i,
+    output                                            mst_req_t axi_bypass_o,
+    input                                             mst_resp_t axi_bypass_i,
 
     // Miss handling (~> cacheline refill)
-    output logic [NR_PORTS-1:0]                         miss_gnt_o,
-    output logic [NR_PORTS-1:0]                         active_serving_o,
+    output logic [NR_PORTS-1:0]                       miss_gnt_o,
+    output logic [NR_PORTS-1:0]                       active_serving_o,
 
-    output logic [63:0]                                 critical_word_o,
-    output logic                                        critical_word_valid_o,
-    output mst_req_t                            axi_data_o,
-    input  mst_resp_t                           axi_data_i,
+    output logic [63:0]                               critical_word_o,
+    output logic                                      critical_word_valid_o,
+    output                                            mst_req_t axi_data_o,
+    input                                             mst_resp_t axi_data_i,
 
-    input  logic [NR_PORTS-1:0][55:0]                   mshr_addr_i,
-    output logic [NR_PORTS-1:0]                         mshr_addr_matches_o,
-    output logic [NR_PORTS-1:0]                         mshr_index_matches_o,
+    input logic [NR_PORTS-1:0][55:0]                  mshr_addr_i,
+    output logic [NR_PORTS-1:0]                       mshr_addr_matches_o,
+    output logic [NR_PORTS-1:0]                       mshr_index_matches_o,
     // AMO
-    input  amo_req_t                                    amo_req_i,
-    output amo_resp_t                                   amo_resp_o,
+    input                                             amo_req_t amo_req_i,
+    output                                            amo_resp_t amo_resp_o,
     // Port to SRAMs, for refill and eviction
-    output logic  [DCACHE_SET_ASSOC-1:0]                req_o,
-    output logic  [DCACHE_INDEX_WIDTH-1:0]              addr_o, // address into cache array
-    output cache_line_t                                 data_o,
-    output cl_be_t                                      be_o,
-    input  cache_line_t [DCACHE_SET_ASSOC-1:0]          data_i,
-    output logic                                        we_o
+    output logic [DCACHE_SET_ASSOC-1:0]               req_o,
+    output logic [DCACHE_INDEX_WIDTH-1:0]             addr_o, // address into cache array
+    output                                            cache_line_t data_o,
+    output                                            cl_be_t be_o,
+    input                                             cache_line_t [DCACHE_SET_ASSOC-1:0] data_i,
+    output logic                                      we_o
 );
 
     // Three MSHR ports + AMO port
-    parameter NR_BYPASS_PORTS = NR_PORTS + 1;
+    parameter NR_BYPASS_PORTS = NR_PORTS; // the snoop port has no bypass, but we have to consider the AMO requests
 
     // FSM states
-    enum logic [3:0] {
+    enum logic [4:0] {
         IDLE,               // 0
         FLUSHING,           // 1
         FLUSH,              // 2
@@ -80,7 +81,10 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         SAVE_CACHELINE,     // A
         INIT,               // B
         AMO_REQ,            // C
-        AMO_WAIT_RESP       // D
+        AMO_WAIT_RESP,      // D
+        INVALID_REQ_STATUS, // E
+        INVALIDATE,         // F
+        WB_CACHELINE_INVALID // 10
     } state_d, state_q;
 
     // Registers
@@ -120,7 +124,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     logic [(DCACHE_LINE_WIDTH/8)-1:0]        req_fsm_miss_be;
     ariane_axi::ad_req_t                     req_fsm_miss_req;
     logic [1:0]                              req_fsm_miss_size;
-  ariane_ace::ace_req_t                    req_fsm_miss_type;
+    ariane_ace::ace_req_t                    req_fsm_miss_type;
 
     logic                                    gnt_miss_fsm;
     logic                                    valid_miss_fsm;
@@ -134,6 +138,8 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     ariane_pkg::amo_t amo_op;
     logic [63:0]      amo_operand_b;
 
+    logic [DCACHE_SET_ASSOC-1:0] matching_way;
+
     // ------------------------------
     // Cache Management
     // ------------------------------
@@ -143,6 +149,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         for (int unsigned i = 0; i < DCACHE_SET_ASSOC; i++) begin
             evict_way[i] = data_i[i].valid & data_i[i].dirty;
             valid_way[i] = data_i[i].valid;
+            matching_way[i] = data_i[i].valid & data_i[i].dirty & (data_i[i].tag == mshr_q.addr[DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:DCACHE_INDEX_WIDTH]);
         end
         // ----------------------
         // Default Assignments
@@ -219,7 +226,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                 end
 
                 // check if one of the state machines missed
-                for (int unsigned i = 0; i < NR_PORTS; i++) begin
+                for (int unsigned i = 1; i < NR_PORTS; i++) begin
                     // here comes the refill portion of code
                     if (miss_req_valid[i] && !miss_req_bypass[i]) begin
                         state_d      = MISS;
@@ -234,6 +241,21 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                         mshr_d.be    = miss_req_be[i];
                         break;
                     end
+                end
+
+                // check if we have to serve a snoop request
+                if (invalidate_i) begin
+                  state_d = INVALIDATE;
+                  // we are taking another request so don't take the AMO
+                  serve_amo_d  = 1'b0;
+                  // save to MSHR
+                  mshr_d.valid = 1'b1;
+                  // invalidate requests can ony come from port 0 (snoop cache controller)
+                  mshr_d.we    = miss_req_we[0];
+                  mshr_d.id    = 0;
+                  mshr_d.addr  = miss_req_addr[0][DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:0];
+                  mshr_d.wdata = miss_req_wdata[0];
+                  mshr_d.be    = miss_req_be[0];
                 end
             end
 
@@ -321,7 +343,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
             // Write Back Operation
             // ------------------------------
             // ~> evict a cache line from way saved in evict_way_q
-            WB_CACHELINE_FLUSH, WB_CACHELINE_MISS: begin
+            WB_CACHELINE_FLUSH, WB_CACHELINE_MISS, WB_CACHELINE_INVALID: begin
 
                 req_fsm_miss_valid  = 1'b1;
                 req_fsm_miss_addr   = {evict_cl_q.tag, cnt_q[DCACHE_INDEX_WIDTH-1:DCACHE_BYTE_OFFSET], {{DCACHE_BYTE_OFFSET}{1'b0}}};
@@ -338,8 +360,10 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                     data_o.valid = INVALIDATE_ON_FLUSH ? 1'b0 : 1'b1;
                     // invalidate
                     be_o.vldrty = evict_way_q;
-                    // go back to handling the miss or flushing, depending on where we came from
-                    state_d = (state_q == WB_CACHELINE_MISS) ? MISS : FLUSH_REQ_STATUS;
+                    // go back to handling the miss or flushing or go to idle, depending on where we came from
+                    state_d = (state_q == WB_CACHELINE_MISS) ? MISS :
+                              (state_q == WB_CACHELINE_FLUSH) ? FLUSH_REQ_STATUS :
+                              IDLE;
                 end
             end
 
@@ -392,6 +416,31 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                 if (cnt_q[DCACHE_INDEX_WIDTH-1:DCACHE_BYTE_OFFSET] == DCACHE_NUM_WORDS-1)
                     state_d = IDLE;
             end
+
+            // ----------------------
+            // Invalidate
+            // ----------------------
+            INVALID_REQ_STATUS: begin
+              req_o   = '1;
+              addr_o = mshr_q.addr[DCACHE_INDEX_WIDTH-1:0];
+              state_d = INVALIDATE;
+            end
+
+            INVALIDATE: begin
+              cnt_d = mshr_q.addr[DCACHE_INDEX_WIDTH-1:0];
+              // check if the target cacheline is dirty
+              if (|(matching_way)) begin
+                evict_way_d = get_victim_cl(matching_way);
+                evict_cl_d  = data_i[one_hot_to_bin(matching_way)];
+                state_d     = WB_CACHELINE_INVALID;
+              end
+              else begin
+                state_d = IDLE;
+                miss_gnt_o[mshr_q.id] = 1'b1;
+                mshr_d.valid = 1'b0;
+              end
+            end
+
             // ----------------------
             // AMOs
             // ----------------------
@@ -520,20 +569,21 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         logic [$clog2(NR_BYPASS_PORTS)-1:0] id;
 
         // Pack MHSR ports first
-        for (id = 0; id < NR_PORTS; id++) begin
-            bypass_ports_req[id].req     = miss_req_valid[id] & miss_req_bypass[id];
+        // skip port 0 (snooping)
+        for (id = 0; id < NR_PORTS-1; id++) begin
+            bypass_ports_req[id].req     = miss_req_valid[id+1] & miss_req_bypass[id+1];
             bypass_ports_req[id].reqtype = ariane_axi::SINGLE_REQ;
             bypass_ports_req[id].amo     = AMO_NONE;
             bypass_ports_req[id].id      = {2'b10, id};
-            bypass_ports_req[id].addr    = miss_req_addr[id];
-            bypass_ports_req[id].wdata   = miss_req_wdata[id];
-            bypass_ports_req[id].we      = miss_req_we[id];
-            bypass_ports_req[id].be      = miss_req_be[id];
-            bypass_ports_req[id].size    = miss_req_size[id];
+            bypass_ports_req[id].addr    = miss_req_addr[id+1];
+            bypass_ports_req[id].wdata   = miss_req_wdata[id+1];
+            bypass_ports_req[id].we      = miss_req_we[id+1];
+            bypass_ports_req[id].be      = miss_req_be[id+1];
+            bypass_ports_req[id].size    = miss_req_size[id+1];
 
-            bypass_gnt_o[id]   = bypass_ports_rsp[id].gnt;
-            bypass_valid_o[id] = bypass_ports_rsp[id].valid;
-            bypass_data_o[id]  = bypass_ports_rsp[id].rdata;
+            bypass_gnt_o[id+1]   = bypass_ports_rsp[id].gnt;
+            bypass_valid_o[id+1] = bypass_ports_rsp[id].valid;
+            bypass_data_o[id+1]  = bypass_ports_rsp[id].rdata;
         end
 
         // AMO port has lowest priority

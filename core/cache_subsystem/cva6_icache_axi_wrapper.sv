@@ -124,7 +124,7 @@ module cva6_icache_axi_wrapper import ariane_pkg::*; import wt_cache_pkg::*; #(
   ariane_axi::resp_t axi_resp;
 
   generate
-  if ($typename(mst_req_t) == $typename(ariane_ace::req_t)) begin
+  if ($typename(mst_req_t) == $typename(ariane_ace::m2s_t)) begin
     assign axi_req_o.aw.id = axi_req.aw.id;
     assign axi_req_o.aw.addr = axi_req.aw.addr;
     assign axi_req_o.aw.len = axi_req.aw.len;

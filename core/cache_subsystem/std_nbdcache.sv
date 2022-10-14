@@ -44,36 +44,42 @@ import std_cache_pkg::*;
     // Controller <-> Arbiter
     // -------------------------------
     // 1. Miss handler
-    // 2. PTW
-    // 3. Load Unit
-    // 4. Store unit
-    logic        [3:0][DCACHE_SET_ASSOC-1:0]  req;
-    logic        [3:0][DCACHE_INDEX_WIDTH-1:0]addr;
-    logic        [3:0]                        gnt;
+    // 2. snoop
+    // 3. PTW
+    // 4. Load Unit
+    // 5. Store unit
+    logic        [4:0][DCACHE_SET_ASSOC-1:0]  req;
+    logic        [4:0][DCACHE_INDEX_WIDTH-1:0]addr;
+    logic        [4:0]                        gnt;
     cache_line_t [DCACHE_SET_ASSOC-1:0]       rdata;
-    logic        [3:0][DCACHE_TAG_WIDTH-1:0]  tag;
+    logic        [4:0][DCACHE_TAG_WIDTH-1:0]  tag;
 
-    cache_line_t [3:0]                        wdata;
-    logic        [3:0]                        we;
-    cl_be_t      [3:0]                        be;
+    cache_line_t [4:0]                        wdata;
+    logic        [4:0]                        we;
+    cl_be_t      [4:0]                        be;
     logic        [DCACHE_SET_ASSOC-1:0]       hit_way;
+    logic [DCACHE_SET_ASSOC-1:0]              dirty_way;
+    logic [DCACHE_SET_ASSOC-1:0]              shared_way;
     // -------------------------------
     // Controller <-> Miss unit
     // -------------------------------
-    logic [2:0]                        busy;
-    logic [2:0][55:0]                  mshr_addr;
-    logic [2:0]                        mshr_addr_matches;
-    logic [2:0]                        mshr_index_matches;
+    logic [3:0]                        busy;
+    logic [3:0][55:0]                  mshr_addr;
+    logic [3:0]                        mshr_addr_matches;
+    logic [3:0]                        mshr_index_matches;
     logic [63:0]                       critical_word;
     logic                              critical_word_valid;
 
-    logic [2:0][$bits(miss_req_t)-1:0] miss_req;
-    logic [2:0]                        miss_gnt;
-    logic [2:0]                        active_serving;
+    logic [3:0][$bits(miss_req_t)-1:0] miss_req;
+    logic [3:0]                        miss_gnt;
+    logic [3:0]                        active_serving;
 
-    logic [2:0]                        bypass_gnt;
-    logic [2:0]                        bypass_valid;
-    logic [2:0][63:0]                  bypass_data;
+    logic [3:0]                        bypass_gnt;
+    logic [3:0]                        bypass_valid;
+    logic [3:0][63:0]                  bypass_data;
+
+  logic                                invalidate;
+
     // -------------------------------
     // Arbiter <-> Datram,
     // -------------------------------
@@ -87,8 +93,54 @@ import std_cache_pkg::*;
     // ------------------
     // Cache Controller
     // ------------------
+
+    ariane_ace::snoop_req_t snoop_port_i;
+    ariane_ace::snoop_resp_t snoop_port_o;
+
+    assign snoop_port_i.ac = axi_data_i.ac;
+    assign snoop_port_i.ac_valid = axi_data_i.ac_valid;
+    assign snoop_port_i.cr_ready = axi_data_i.cr_ready;
+    assign snoop_port_i.cd_ready = axi_data_i.cd_ready;
+    assign axi_data_o.ac_ready = snoop_port_o.ac_ready;
+    assign axi_data_o.cr_valid = snoop_port_o.cr_valid;
+    assign axi_data_o.cr_resp = snoop_port_o.cr_resp;
+    assign axi_data_o.cd_valid = snoop_port_o.cd_valid;
+    assign axi_data_o.cd = snoop_port_o.cd;
+
+    snoop_cache_ctrl  #(
+        .ArianeCfg             ( ArianeCfg            )
+    ) i_snoop_cache_ctrl (
+        .bypass_i              ( ~enable_i            ),
+        .busy_o                ( busy            [0]  ),
+        // from ACE
+        .snoop_port_i            ( snoop_port_i       ),
+        .snoop_port_o            ( snoop_port_o       ),
+        // to SRAM array
+        .req_o                 ( req            [1] ),
+        .addr_o                ( addr           [1] ),
+        .gnt_i                 ( gnt            [1] ),
+        .data_i                ( rdata              ),
+        .tag_o                 ( tag            [1] ),
+        .data_o                ( wdata          [1] ),
+        .we_o                  ( we             [1] ),
+        .be_o                  ( be             [1] ),
+        .hit_way_i             ( hit_way              ),
+        .dirty_way_i           ( dirty_way            ),
+        .shared_way_i          ( shared_way           ),
+
+        .miss_req_o            ( miss_req        [0]  ),
+        .miss_gnt_i            ( miss_gnt        [0]  ),
+        .invalidate_o          ( invalidate ),
+        .active_serving_i      ( active_serving  [0]  ),
+
+        .mshr_addr_o           ( mshr_addr         [0] ),
+        .mshr_addr_matches_i   ( mshr_addr_matches [0] ),
+        .mshr_index_matches_i  ( mshr_index_matches[0] ),
+        .*
+    );
+
     generate
-        for (genvar i = 0; i < 3; i++) begin : master_ports
+        for (genvar i = 1; i < 4; i++) begin : master_ports
             cache_ctrl  #(
                 .ArianeCfg             ( ArianeCfg            )
             ) i_cache_ctrl (
@@ -125,13 +177,47 @@ import std_cache_pkg::*;
         end
     endgenerate
 
+  ariane_ace::m2s_nosnoop_t axi_nosnoop_data_o, axi_nosnoop_bypass_o;
+  ariane_ace::s2m_nosnoop_t axi_nosnoop_data_i, axi_nosnoop_bypass_i;
+
+  assign axi_data_o.aw = axi_nosnoop_data_o.aw;
+  assign axi_data_o.aw_valid = axi_nosnoop_data_o.aw_valid;
+  assign axi_data_o.w = axi_nosnoop_data_o.w;
+  assign axi_data_o.w_valid = axi_nosnoop_data_o.w_valid;
+  assign axi_data_o.b_ready = axi_nosnoop_data_o.b_ready;
+  assign axi_data_o.ar = axi_nosnoop_data_o.ar;
+  assign axi_data_o.ar_valid = axi_nosnoop_data_o.ar_valid;
+  assign axi_data_o.r_ready = axi_nosnoop_data_o.r_ready;
+  assign axi_nosnoop_data_i.aw_ready = axi_data_i.aw_ready;
+  assign axi_nosnoop_data_i.ar_ready = axi_data_i.ar_ready;
+  assign axi_nosnoop_data_i.w_ready = axi_data_i.w_ready;
+  assign axi_nosnoop_data_i.b_valid = axi_data_i.b_valid;
+  assign axi_nosnoop_data_i.b = axi_data_i.b;
+  assign axi_nosnoop_data_i.r_valid = axi_data_i.r_valid;
+  assign axi_nosnoop_data_i.r = axi_data_i.r;
+  assign axi_bypass_o.aw = axi_nosnoop_bypass_o.aw;
+  assign axi_bypass_o.aw_valid = axi_nosnoop_bypass_o.aw_valid;
+  assign axi_bypass_o.w = axi_nosnoop_bypass_o.w;
+  assign axi_bypass_o.w_valid = axi_nosnoop_bypass_o.w_valid;
+  assign axi_bypass_o.b_ready = axi_nosnoop_bypass_o.b_ready;
+  assign axi_bypass_o.ar = axi_nosnoop_bypass_o.ar;
+  assign axi_bypass_o.ar_valid = axi_nosnoop_bypass_o.ar_valid;
+  assign axi_bypass_o.r_ready = axi_nosnoop_bypass_o.r_ready;
+  assign axi_nosnoop_bypass_i.aw_ready = axi_bypass_i.aw_ready;
+  assign axi_nosnoop_bypass_i.ar_ready = axi_bypass_i.ar_ready;
+  assign axi_nosnoop_bypass_i.w_ready = axi_bypass_i.w_ready;
+  assign axi_nosnoop_bypass_i.b_valid = axi_bypass_i.b_valid;
+  assign axi_nosnoop_bypass_i.b = axi_bypass_i.b;
+  assign axi_nosnoop_bypass_i.r_valid = axi_bypass_i.r_valid;
+  assign axi_nosnoop_bypass_i.r = axi_bypass_i.r;
+
     // ------------------
     // Miss Handling Unit
     // ------------------
     miss_handler #(
-        .NR_PORTS               ( 3                    ),
-        .mst_req_t (mst_req_t),
-        .mst_resp_t (mst_resp_t)
+        .NR_PORTS               ( 4                    ),
+        .mst_req_t (ariane_ace::m2s_nosnoop_t),
+        .mst_resp_t (ariane_ace::s2m_nosnoop_t)
     ) i_miss_handler (
         .flush_i                ( flush_i              ),
         .busy_i                 ( |busy                ),
@@ -139,6 +225,7 @@ import std_cache_pkg::*;
         .amo_req_i              ( amo_req_i            ),
         .amo_resp_o             ( amo_resp_o           ),
         .miss_req_i             ( miss_req             ),
+        .invalidate_i           ( invalidate ),
         .miss_gnt_o             ( miss_gnt             ),
         .bypass_gnt_o           ( bypass_gnt           ),
         .bypass_valid_o         ( bypass_valid         ),
@@ -155,10 +242,10 @@ import std_cache_pkg::*;
         .be_o                   ( be              [0]  ),
         .data_o                 ( wdata           [0]  ),
         .we_o                   ( we              [0]  ),
-        .axi_bypass_o,
-        .axi_bypass_i,
-        .axi_data_o,
-        .axi_data_i,
+        .axi_bypass_o (axi_nosnoop_bypass_o),
+        .axi_bypass_i (axi_nosnoop_bypass_i),
+        .axi_data_o (axi_nosnoop_data_o),
+        .axi_data_i (axi_nosnoop_data_i),
         .*
     );
 
@@ -203,19 +290,21 @@ import std_cache_pkg::*;
     end
 
     // ----------------
-    // Valid/Dirty Regs
+    // Valid/Dirty/Shared Regs
     // ----------------
 
-    // align each valid/dirty bit pair to a byte boundary in order to leverage byte enable signals.
+    // align each valid/dirty/shared triplet is aligned to a byte boundary in order to leverage byte enable signals.
     // note: if you have an SRAM that supports flat bit enables for your target technology,
-    // you can use it here to save the extra 4x overhead introduced by this workaround.
+    // you can use it here to save the extra overhead introduced by this workaround.
     logic [4*DCACHE_DIRTY_WIDTH-1:0] dirty_wdata, dirty_rdata;
 
     for (genvar i = 0; i < DCACHE_SET_ASSOC; i++) begin
         assign dirty_wdata[8*i]   = wdata_ram.dirty;
         assign dirty_wdata[8*i+1] = wdata_ram.valid;
+        assign dirty_wdata[8*i+2] = wdata_ram.shared;
         assign rdata_ram[i].dirty = dirty_rdata[8*i];
         assign rdata_ram[i].valid = dirty_rdata[8*i+1];
+        assign rdata_ram[i].shared = dirty_rdata[8*i+2];
     end
 
     sram #(
@@ -239,7 +328,7 @@ import std_cache_pkg::*;
     // Tag Comparison and memory arbitration
     // ------------------------------------------------
     tag_cmp #(
-        .NR_PORTS           ( 4                  ),
+        .NR_PORTS           ( 5                  ),
         .ADDR_WIDTH         ( DCACHE_INDEX_WIDTH ),
         .DCACHE_SET_ASSOC   ( DCACHE_SET_ASSOC   )
     ) i_tag_cmp (
@@ -262,6 +351,10 @@ import std_cache_pkg::*;
         .*
     );
 
+  for (genvar j = 0; j < DCACHE_SET_ASSOC; j++) begin
+    assign dirty_way[j] = rdata_ram[j].dirty;
+    assign shared_way[j] = rdata_ram[j].shared;
+  end
 
 //pragma translate_off
     initial begin

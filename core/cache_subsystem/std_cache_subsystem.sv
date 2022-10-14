@@ -149,7 +149,7 @@ module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
 //      );
 //
 //    end
-//    else if ($typename(mst_req_t) == $typename(ariane_ace::req_t)) begin
+//    else if ($typename(mst_req_t) == $typename(ariane_ace::m2s_t)) begin
       //typedef ariane_ace::ar_chan_t stream_arbiter_ar_t;
       //typedef ariane_ace::aw_chan_t stream_arbiter_aw_t;
 

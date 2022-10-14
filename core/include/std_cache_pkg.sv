@@ -65,6 +65,7 @@ package std_cache_pkg;
         logic [ariane_pkg::DCACHE_LINE_WIDTH-1:0] data;   // data array
         logic                                     valid;  // state array
         logic                                     dirty;  // state array
+        logic                                     shared; // state array
     } cache_line_t;
 
     // cache line byte enable
@@ -97,4 +98,3 @@ package std_cache_pkg;
         end
     endfunction
 endpackage : std_cache_pkg
-
