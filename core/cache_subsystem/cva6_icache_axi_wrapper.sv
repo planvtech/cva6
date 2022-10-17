@@ -124,7 +124,7 @@ module cva6_icache_axi_wrapper import ariane_pkg::*; import wt_cache_pkg::*; #(
   ariane_axi::resp_t axi_resp;
 
   generate
-  if ($typename(mst_req_t) == $typename(ariane_ace::m2s_t)) begin
+  if ($bits(mst_req_t) == $bits(ariane_ace::m2s_nosnoop_t)) begin
     assign axi_req_o.aw.id = axi_req.aw.id;
     assign axi_req_o.aw.addr = axi_req.aw.addr;
     assign axi_req_o.aw.len = axi_req.aw.len;
@@ -161,11 +161,6 @@ module cva6_icache_axi_wrapper import ariane_pkg::*; import wt_cache_pkg::*; #(
     assign axi_req_o.ar.domain = '0;
     assign axi_req_o.ar_valid = axi_req.ar_valid;
     assign axi_req_o.r_ready = axi_req.r_ready;
-    assign axi_req_o.ac_ready = 1'b0;
-    assign axi_req_o.cr_valid = 1'b0;
-    assign axi_req_o.cr_resp = '0;
-    assign axi_req_o.cd_valid = 1'b0;
-    assign axi_req_o.cd = '0;
     assign axi_resp.aw_ready = axi_resp_i.aw_ready;
     assign axi_resp.ar_ready = axi_resp_i.ar_ready;
     assign axi_resp.w_ready = axi_resp_i.w_ready;

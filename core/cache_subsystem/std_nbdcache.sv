@@ -18,24 +18,27 @@ module std_nbdcache import std_cache_pkg::*; import ariane_pkg::*; #(
     parameter type mst_req_t = logic,
     parameter type mst_resp_t = logic
 )(
-    input  logic                           clk_i,       // Clock
-    input  logic                           rst_ni,      // Asynchronous reset active low
+    input logic  clk_i, // Clock
+    input logic  rst_ni, // Asynchronous reset active low
     // Cache management
-    input  logic                           enable_i,    // from CSR
-    input  logic                           flush_i,     // high until acknowledged
-    output logic                           flush_ack_o, // send a single cycle acknowledge signal when the cache is flushed
-    output logic                           miss_o,      // we missed on a LD/ST
+    input logic  enable_i, // from CSR
+    input logic  flush_i, // high until acknowledged
+    output logic flush_ack_o, // send a single cycle acknowledge signal when the cache is flushed
+    output logic miss_o, // we missed on a LD/ST
     // AMOs
-    input  amo_req_t                       amo_req_i,
-    output amo_resp_t                      amo_resp_o,
+    input        amo_req_t amo_req_i,
+    output       amo_resp_t amo_resp_o,
     // Request ports
-    input  dcache_req_i_t [2:0]            req_ports_i,  // request ports
-    output dcache_req_o_t [2:0]            req_ports_o,  // request ports
+    input        dcache_req_i_t [2:0] req_ports_i, // request ports
+    output       dcache_req_o_t [2:0] req_ports_o, // request ports
     // Cache AXI refill port
-    output mst_req_t               axi_data_o,
-    input  mst_resp_t              axi_data_i,
-    output mst_req_t               axi_bypass_o,
-    input  mst_resp_t              axi_bypass_i
+    output       mst_req_t axi_data_o,
+    input        mst_resp_t axi_data_i,
+    output       mst_req_t axi_bypass_o,
+    input        mst_resp_t axi_bypass_i,
+    output       ariane_ace::snoop_resp_t snoop_port_o,
+    input        ariane_ace::snoop_req_t snoop_port_i
+
 );
 
 import std_cache_pkg::*;
@@ -93,19 +96,6 @@ import std_cache_pkg::*;
     // ------------------
     // Cache Controller
     // ------------------
-
-    ariane_ace::snoop_req_t snoop_port_i;
-    ariane_ace::snoop_resp_t snoop_port_o;
-
-    assign snoop_port_i.ac = axi_data_i.ac;
-    assign snoop_port_i.ac_valid = axi_data_i.ac_valid;
-    assign snoop_port_i.cr_ready = axi_data_i.cr_ready;
-    assign snoop_port_i.cd_ready = axi_data_i.cd_ready;
-    assign axi_data_o.ac_ready = snoop_port_o.ac_ready;
-    assign axi_data_o.cr_valid = snoop_port_o.cr_valid;
-    assign axi_data_o.cr_resp = snoop_port_o.cr_resp;
-    assign axi_data_o.cd_valid = snoop_port_o.cd_valid;
-    assign axi_data_o.cd = snoop_port_o.cd;
 
     snoop_cache_ctrl  #(
         .ArianeCfg             ( ArianeCfg            )

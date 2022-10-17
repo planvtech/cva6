@@ -53,17 +53,30 @@ module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
 
   assign wbuffer_empty_o = 1'b1;
 
-    mst_req_t  axi_req_icache;
-    mst_resp_t axi_resp_icache;
-    mst_req_t  axi_req_bypass;
-    mst_resp_t axi_resp_bypass;
-    mst_req_t  axi_req_data;
-    mst_resp_t axi_resp_data;
+    ariane_ace::m2s_nosnoop_t axi_req_icache;
+    ariane_ace::s2m_nosnoop_t axi_resp_icache;
+    ariane_ace::m2s_nosnoop_t axi_req_bypass;
+    ariane_ace::s2m_nosnoop_t axi_resp_bypass;
+    ariane_ace::m2s_nosnoop_t axi_req_data;
+    ariane_ace::s2m_nosnoop_t axi_resp_data;
+
+    ariane_ace::snoop_req_t snoop_port_i;
+    ariane_ace::snoop_resp_t snoop_port_o;
+
+    assign snoop_port_i.ac = axi_resp_i.ac;
+    assign snoop_port_i.ac_valid = axi_resp_i.ac_valid;
+    assign snoop_port_i.cr_ready = axi_resp_i.cr_ready;
+    assign snoop_port_i.cd_ready = axi_resp_i.cd_ready;
+    assign axi_req_o.ac_ready = snoop_port_o.ac_ready;
+    assign axi_req_o.cr_valid = snoop_port_o.cr_valid;
+    assign axi_req_o.cr_resp = snoop_port_o.cr_resp;
+    assign axi_req_o.cd_valid = snoop_port_o.cd_valid;
+    assign axi_req_o.cd = snoop_port_o.cd;
 
     cva6_icache_axi_wrapper #(
         .ArianeCfg  ( ArianeCfg             ),
-        .mst_req_t (mst_req_t),
-        .mst_resp_t (mst_resp_t)
+        .mst_req_t (ariane_ace::m2s_nosnoop_t),
+        .mst_resp_t (ariane_ace::s2m_nosnoop_t)
     ) i_cva6_icache_axi_wrapper (
         .clk_i      ( clk_i                 ),
         .rst_ni     ( rst_ni                ),
@@ -85,8 +98,8 @@ module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
    // Port 2: Store Unit
    std_nbdcache #(
       .ArianeCfg        ( ArianeCfg          ),
-      .mst_req_t (mst_req_t),
-      .mst_resp_t (mst_resp_t)
+      .mst_req_t (ariane_ace::m2s_nosnoop_t),
+      .mst_resp_t (ariane_ace::s2m_nosnoop_t)
    ) i_nbdcache (
       .clk_i,
       .rst_ni,
@@ -101,7 +114,9 @@ module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
       .req_ports_i  ( dcache_req_ports_i     ),
       .req_ports_o  ( dcache_req_ports_o     ),
       .amo_req_i,
-      .amo_resp_o
+      .amo_resp_o,
+      .snoop_port_i,
+      .snoop_port_o
    );
 
     // -----------------------
@@ -110,52 +125,40 @@ module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
     logic [1:0] w_select, w_select_fifo, w_select_arbiter;
     logic w_fifo_empty;
 
-//    generate
-//    if ($typename(mst_req_t) == $typename(ariane_axi::req_t)) begin
-//      //typedef ariane_axi::ar_chan_t stream_arbiter_ar_t;
-//      //typedef ariane_axi::aw_chan_t stream_arbiter_aw_t;
-//
-//      //localparam type stream_arbiter_ar_t = ariane_axi::ar_chan_t;
-//      //localparam type stream_arbiter_aw_t = ariane_axi::aw_chan_t;
-//
-//      // AR Channel
-//      stream_arbiter #(
-//          .DATA_T ( ariane_axi::ar_chan_t ),
-//          .N_INP  ( 3                     )
-//      ) i_stream_arbiter_ar (
-//          .clk_i,
-//          .rst_ni,
-//          .inp_data_i  ( {axi_req_icache.ar, axi_req_bypass.ar, axi_req_data.ar} ),
-//          .inp_valid_i ( {axi_req_icache.ar_valid, axi_req_bypass.ar_valid, axi_req_data.ar_valid} ),
-//          .inp_ready_o ( {axi_resp_icache.ar_ready, axi_resp_bypass.ar_ready, axi_resp_data.ar_ready} ),
-//          .oup_data_o  ( axi_req_o.ar        ),
-//          .oup_valid_o ( axi_req_o.ar_valid  ),
-//          .oup_ready_i ( axi_resp_i.ar_ready )
-//      );
-//
-//      // AW Channel
-//      stream_arbiter #(
-//          .DATA_T ( ariane_axi::aw_chan_t ),
-//          .N_INP  ( 3                     )
-//      ) i_stream_arbiter_aw (
-//          .clk_i,
-//          .rst_ni,
-//          .inp_data_i  ( {axi_req_icache.aw, axi_req_bypass.aw, axi_req_data.aw} ),
-//          .inp_valid_i ( {axi_req_icache.aw_valid, axi_req_bypass.aw_valid, axi_req_data.aw_valid} ),
-//          .inp_ready_o ( {axi_resp_icache.aw_ready, axi_resp_bypass.aw_ready, axi_resp_data.aw_ready} ),
-//          .oup_data_o  ( axi_req_o.aw        ),
-//          .oup_valid_o ( axi_req_o.aw_valid  ),
-//          .oup_ready_i ( axi_resp_i.aw_ready )
-//      );
-//
-//    end
-//    else if ($typename(mst_req_t) == $typename(ariane_ace::m2s_t)) begin
-      //typedef ariane_ace::ar_chan_t stream_arbiter_ar_t;
-      //typedef ariane_ace::aw_chan_t stream_arbiter_aw_t;
+    generate
+    if ($bits(mst_req_t) == $bits(ariane_axi::req_t)) begin
+      // AR Channel
+      stream_arbiter #(
+          .DATA_T ( ariane_axi::ar_chan_t ),
+          .N_INP  ( 3                     )
+      ) i_stream_arbiter_ar (
+          .clk_i,
+          .rst_ni,
+          .inp_data_i  ( {axi_req_icache.ar, axi_req_bypass.ar, axi_req_data.ar} ),
+          .inp_valid_i ( {axi_req_icache.ar_valid, axi_req_bypass.ar_valid, axi_req_data.ar_valid} ),
+          .inp_ready_o ( {axi_resp_icache.ar_ready, axi_resp_bypass.ar_ready, axi_resp_data.ar_ready} ),
+          .oup_data_o  ( axi_req_o.ar        ),
+          .oup_valid_o ( axi_req_o.ar_valid  ),
+          .oup_ready_i ( axi_resp_i.ar_ready )
+      );
 
-      //localparam type stream_arbiter_ar_t = ariane_ace::ar_chan_t;
-      //localparam type stream_arbiter_aw_t = ariane_ace::aw_chan_t;
+      // AW Channel
+      stream_arbiter #(
+          .DATA_T ( ariane_axi::aw_chan_t ),
+          .N_INP  ( 3                     )
+      ) i_stream_arbiter_aw (
+          .clk_i,
+          .rst_ni,
+          .inp_data_i  ( {axi_req_icache.aw, axi_req_bypass.aw, axi_req_data.aw} ),
+          .inp_valid_i ( {axi_req_icache.aw_valid, axi_req_bypass.aw_valid, axi_req_data.aw_valid} ),
+          .inp_ready_o ( {axi_resp_icache.aw_ready, axi_resp_bypass.aw_ready, axi_resp_data.aw_ready} ),
+          .oup_data_o  ( axi_req_o.aw        ),
+          .oup_valid_o ( axi_req_o.aw_valid  ),
+          .oup_ready_i ( axi_resp_i.aw_ready )
+      );
 
+    end
+    else if ($bits(mst_req_t) == $bits(ariane_ace::m2s_t)) begin
       // AR Channel
       stream_arbiter #(
           .DATA_T ( ariane_ace::ar_chan_t ),
@@ -186,8 +189,8 @@ module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
           .oup_ready_i ( axi_resp_i.aw_ready )
       );
 
-//    end
-//    endgenerate
+    end
+    endgenerate
 
     // WID has been removed in AXI 4 so we need to keep track which AW request has been accepted
     // to forward the correct write data.
