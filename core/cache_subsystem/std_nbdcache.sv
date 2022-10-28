@@ -137,8 +137,8 @@ import std_cache_pkg::*;
                 .bypass_i              ( ~enable_i            ),
                 .busy_o                ( busy            [i]  ),
                 // from core
-                .req_port_i            ( req_ports_i     [i]  ),
-                .req_port_o            ( req_ports_o     [i]  ),
+                .req_port_i            ( req_ports_i     [i-1]  ),
+                .req_port_o            ( req_ports_o     [i-1]  ),
                 // to SRAM array
                 .req_o                 ( req            [i+1] ),
                 .addr_o                ( addr           [i+1] ),

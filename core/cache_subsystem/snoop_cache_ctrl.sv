@@ -53,7 +53,8 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
         SEND_CR_RESP, // 3
         SEND_CD_RESP, // 4
         WAIT_MH, // 5
-        SEND_ACK // 6
+        SEND_ACK, // 6
+        SEND_NACK // 7
         } state_d, state_q;
 
   typedef struct                         packed {
@@ -112,6 +113,8 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
 
     req_o  = '0;
 
+    invalidate_o = '0;
+
     case (state_q)
 
       IDLE: begin
@@ -127,14 +130,18 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
           end
           else begin
             // invalidate request
-            if (snoop_port_i.ac.snoop == ace_pkg::CLEAN_INVALID) begin
+            if (snoop_port_i.ac.snoop == snoop_pkg::CLEAN_INVALID) begin
               state_d = WAIT_MH;
             end
             // read request
-            else if (snoop_port_i.ac.snoop == ace_pkg::READ_SHARED) begin
-              state_d = SEND_REQ;
+            else if (snoop_port_i.ac.snoop == snoop_pkg::READ_SHARED || snoop_port_i.ac.snoop == snoop_pkg::READ_ONCE) begin
+              state_d = WAIT_GNT;
               // request the cache line
               req_o = '1;
+            end
+            // wrong request
+            else begin
+              state_d = SEND_NACK;
             end
           end
         end
@@ -187,6 +194,13 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
 
       SEND_ACK: begin
         snoop_port_o.cr_valid = 1'b1;
+        if (snoop_port_i.cr_ready)
+          state_d = IDLE;
+      end
+
+      SEND_NACK: begin
+        snoop_port_o.cr_valid = 1'b1;
+        snoop_port_o.cr_resp.error = 1'b1;
         if (snoop_port_i.cr_ready)
           state_d = IDLE;
       end

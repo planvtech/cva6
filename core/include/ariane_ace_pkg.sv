@@ -66,8 +66,8 @@ package ariane_ace;
   // AC Channel
   typedef struct packed {
     ariane_axi::addr_t addr;
-    ace_pkg::acsnoop_t snoop;
-    ace_pkg::acprot_t prot;
+    snoop_pkg::acsnoop_t snoop;
+    snoop_pkg::acprot_t prot;
   } ac_chan_t;
 
  // CD Cannel
@@ -89,9 +89,11 @@ package ariane_ace;
         ariane_ace::ar_chan_t ar;
         logic     ar_valid;
         logic     r_ready;
+      logic       rack;
+      logic       wack;
         logic ac_ready;
         logic   cr_valid;
-      ace_pkg::crresp_t cr_resp;
+      snoop_pkg::crresp_t cr_resp;
       logic     cd_valid;
       cd_chan_t cd;
     } m2s_t;
@@ -105,6 +107,8 @@ package ariane_ace;
     ariane_ace::ar_chan_t ar;
     logic        ar_valid;
     logic        r_ready;
+    logic        rack;
+    logic        wack;
   } m2s_nosnoop_t;
 
     typedef struct packed {
@@ -141,7 +145,7 @@ package ariane_ace;
     typedef struct  packed {
       logic         ac_ready;
       logic         cr_valid;
-      ace_pkg::crresp_t cr_resp;
+      snoop_pkg::crresp_t cr_resp;
       logic         cd_valid;
       cd_chan_t cd;
     } snoop_resp_t;
