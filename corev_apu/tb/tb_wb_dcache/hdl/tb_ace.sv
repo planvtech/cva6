@@ -187,6 +187,7 @@ module tb_ace import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #
   request_scheduler
     #(
       .NR_CPU_PORTS (3),
+      .MAX_ROUNDS (MaxRounds),
       .AxiAddrWidth (AxiAddrWidth),
       .AxiDataWidth (AxiDataWidth),
       .ApplTime (ApplTime),
@@ -207,8 +208,7 @@ module tb_ace import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #
 
   dcache_checker
     #(
-      .NR_CPU_PORTS (3),
-      .MAX_ROUNDS (MaxRounds)
+      .NR_CPU_PORTS (3)
       )
   i_checker
     (

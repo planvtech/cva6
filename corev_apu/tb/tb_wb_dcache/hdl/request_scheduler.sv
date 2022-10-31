@@ -15,11 +15,12 @@
 
 module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*;
   #(
-    parameter int unsigned  NR_CPU_PORTS = 3,
-    parameter int unsigned  AxiAddrWidth = 32'd64,
-    parameter int unsigned  AxiDataWidth = 32'd64,
-    parameter time          ApplTime = 2ns,
-    parameter time          TestTime = 8ns
+    parameter int unsigned NR_CPU_PORTS = 3,
+    parameter int unsigned MAX_ROUNDS = 1000,
+    parameter int unsigned AxiAddrWidth = 32'd64,
+    parameter int unsigned AxiDataWidth = 32'd64,
+    parameter time         ApplTime = 2ns,
+    parameter time         TestTime = 8ns
     )
   (
    input logic clk_i,
@@ -114,6 +115,7 @@ module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import t
   state_req_t state_req;
 
   initial begin
+    automatic int unsigned round = 0;
 
     req_ports_i = '0;
     snoop_rand_master = new( snoop_dv );
@@ -143,6 +145,13 @@ module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import t
       endcase
 
       `WAIT_SIG(clk_i, check_done_i)
+      if (round == MAX_ROUNDS-1) begin
+        $display("Simulation end");
+        $finish();
+      end
+      else begin
+        round = round + 1;
+      end
     end
   end
 

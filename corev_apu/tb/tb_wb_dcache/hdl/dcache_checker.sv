@@ -14,8 +14,7 @@
 
 module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*;
   #(
-    parameter int unsigned NR_CPU_PORTS = 3,
-    parameter int unsigned MAX_ROUNDS = 1000
+    parameter int unsigned NR_CPU_PORTS = 3
     )
   (
    input logic  clk_i,
@@ -253,8 +252,6 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
   end
 
   initial begin
-    automatic int unsigned round = 0;
-    automatic int unsigned errors = 0;
     bit checkOK;
 
     cache_status = '0;
@@ -298,22 +295,7 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
 
       checkCache(checkOK);
 
-      if (!checkOK)
-        errors += 1;
-
       check_done_o = 1'b1;
-      if (round == MAX_ROUNDS-1) begin
-        if (errors) begin
-          $display("Simulation end with errors");
-        end
-        else begin
-          $display("Simulation end");
-        end
-        $finish();
-      end
-      else begin
-        round = round + 1;
-      end
       `WAIT_CYC(clk_i, 1)
     end
   end
