@@ -135,7 +135,7 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
     else begin
       // all ways occupied
       if (&valid_v) begin
-        target_way = one_hot_to_bin(lfsr);
+        target_way = lfsr[$clog2(DCACHE_SET_ASSOC)-1:0];
         cache_status[current_req.mem_idx][target_way].tag = current_req.tag;
         if (current_req.req_type == WR_REQ)
           cache_status[current_req.mem_idx][target_way].dirty = 1'b1;
@@ -258,6 +258,7 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
     bit checkOK;
 
     cache_status = '0;
+    lfsr = '0;
 
     forever begin
       check_done_o = 1'b0;
