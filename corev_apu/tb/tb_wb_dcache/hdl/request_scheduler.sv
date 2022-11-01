@@ -17,6 +17,7 @@ module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import t
   #(
     parameter int unsigned NR_CPU_PORTS = 3,
     parameter int unsigned MAX_ROUNDS = 1000,
+    parameter CACHE_BASE_ADDR = 64'h8000_0000,
     parameter int unsigned AxiAddrWidth = 32'd64,
     parameter int unsigned AxiDataWidth = 32'd64,
     parameter time         ApplTime = 2ns,
@@ -26,6 +27,7 @@ module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import t
    input logic clk_i,
    input logic rst_ni,
    input logic check_done_i,
+   output logic start_transaction_o,
    output      ariane_pkg::dcache_req_i_t[NR_CPU_PORTS-1:0] req_ports_i,
    input       ariane_pkg::dcache_req_o_t[NR_CPU_PORTS-1:0] req_ports_o,
    output      ariane_ace::snoop_req_t snoop_req_o,
@@ -76,7 +78,10 @@ module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import t
   task automatic genRdReq();
     logic [31:0] addr;
 
-    addr = $urandom_range(32'h8fff_ffff);
+//    addr = $urandom_range(32'h8fff_ffff);
+    addr = $urandom_range(32'h800);
+    if ($urandom_range(1))
+      addr = addr + CACHE_BASE_ADDR;
     active_port = $urandom_range(2);
     `WAIT_CYC(clk_i, 1)
     req_ports_i[active_port].data_req  = 1'b1;
@@ -84,7 +89,7 @@ module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import t
     req_ports_i[active_port].address_tag   = addr2tag(addr);
     req_ports_i[active_port].address_index = addr2index(addr);
     `WAIT_SIG(clk_i, req_ports_o[active_port].data_gnt)
-    req_ports_i[active_port].data_req  = 1'b1;
+    req_ports_i[active_port].data_req  = 1'b0;
     req_ports_i[active_port].tag_valid     = 1'b1;
     `WAIT_CYC(clk_i,1)
     req_ports_i = '0;
@@ -94,7 +99,10 @@ module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import t
   task automatic genWrReq();
     logic [31:0] addr;
 
-    addr = $urandom_range(32'h8fff_ffff);
+//    addr = $urandom_range(32'h8fff_ffff);
+    addr = $urandom_range(32'h800);
+    if ($urandom_range(1))
+      addr = addr + CACHE_BASE_ADDR;
     active_port = $urandom_range(2);
     `WAIT_CYC(clk_i, 1)
     req_ports_i[active_port].data_req  = 1'b1;
@@ -118,6 +126,8 @@ module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import t
     automatic int unsigned round = 0;
 
     req_ports_i = '0;
+    start_transaction_o = 1'b0;
+
     snoop_rand_master = new( snoop_dv );
     snoop_rand_master.reset();
 
@@ -125,25 +135,33 @@ module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import t
     `WAIT_SIG(clk_i,rst_ni)
 
     forever begin
-      // randomly select the next transaction
-      $cast(state_req, $urandom_range(SNOOP, READ));
+      fork
+        begin
+          // randomly select the next transaction
+          $cast(state_req, $urandom_range(SNOOP, READ));
 
-      case (state_req)
+          case (state_req)
 
-        READ: begin
-          genRdReq();
+            READ: begin
+              genRdReq();
+            end
+
+            WRITE: begin
+              genWrReq();
+            end
+
+            SNOOP: begin
+              snoop_rand_master.run(1);
+            end
+
+          endcase
         end
-
-        WRITE: begin
-          genWrReq();
+        begin
+          start_transaction_o = 1'b1;
+          `WAIT_CYC(clk_i,1)
+          start_transaction_o = 1'b0;
         end
-
-        SNOOP: begin
-          snoop_rand_master.run(1);
-        end
-
-      endcase
-
+      join
       `WAIT_SIG(clk_i, check_done_i)
       if (round == MAX_ROUNDS-1) begin
         $display("Simulation end");

@@ -14,11 +14,13 @@
 
 module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*;
   #(
-    parameter int unsigned NR_CPU_PORTS = 3
+    parameter int unsigned NR_CPU_PORTS = 3,
+    parameter CACHE_BASE_ADDR = 64'h8000_0000
     )
   (
    input logic  clk_i,
    input logic  rst_ni,
+   input logic start_transaction_i,
    output logic check_done_o,
    input        ariane_pkg::dcache_req_i_t[NR_CPU_PORTS-1:0] req_ports_i,
    input        ariane_pkg::dcache_req_o_t[NR_CPU_PORTS-1:0] req_ports_o,
@@ -60,7 +62,7 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
   endfunction
 
   function bit isHit(
-                     cache_line_t [DCACHE_SET_ASSOC-1:0][DCACHE_NUM_WORDS-1:0] cache_status,
+                     cache_line_t [DCACHE_NUM_WORDS-1:0][DCACHE_SET_ASSOC-1:0] cache_status,
                      current_req_t req
                      );
     for (int i = 0; i < DCACHE_SET_ASSOC; i++) begin
@@ -71,7 +73,7 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
   endfunction
 
   function bit isDirty(
-                       cache_line_t [DCACHE_SET_ASSOC-1:0][DCACHE_NUM_WORDS-1:0] cache_status,
+                       cache_line_t [DCACHE_NUM_WORDS-1:0][DCACHE_SET_ASSOC-1:0] cache_status,
                        current_req_t req
                      );
     for (int i = 0; i < DCACHE_SET_ASSOC; i++) begin
@@ -82,7 +84,7 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
   endfunction
 
   function bit isShared(
-                        cache_line_t [DCACHE_SET_ASSOC-1:0][DCACHE_NUM_WORDS-1:0] cache_status,
+                        cache_line_t [DCACHE_NUM_WORDS-1:0][DCACHE_SET_ASSOC-1:0] cache_status,
                         current_req_t req
                        );
     for (int i = 0; i < DCACHE_SET_ASSOC; i++) begin
@@ -107,11 +109,11 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
   // Helper tasks
 
   task automatic updateCache();
-
     if (current_req.req_type == SNOOP_REQ) begin
       // look for the right tag
       for (int i = 0; i < DCACHE_SET_ASSOC; i++) begin
-        if (valid_v[i] && cache_status[current_req.mem_idx][i].tag == current_req.tag) begin
+//        if (valid_v[i] && cache_status[current_req.mem_idx][i].tag == current_req.tag) begin
+          if (isHit(cache_status, current_req)) begin
           case (current_req.snoop_type)
             snoop_pkg::READ_SHARED: begin
               cache_status[current_req.mem_idx][i].shared = 1'b1;
@@ -131,22 +133,31 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
         end
       end
     end
+    // read or write request
     else begin
-      // all ways occupied
-      if (&valid_v) begin
-        target_way = lfsr[$clog2(DCACHE_SET_ASSOC)-1:0];
-        cache_status[current_req.mem_idx][target_way].tag = current_req.tag;
-        if (current_req.req_type == WR_REQ)
-          cache_status[current_req.mem_idx][target_way].dirty = 1'b1;
-        else
-          cache_status[current_req.mem_idx][target_way].dirty = 1'b0;
-        lfsr = nextLfsr(lfsr);
+      // cache miss
+      if (!isHit(cache_status, current_req)) begin
+        // all ways occupied
+        if (&valid_v) begin
+          target_way = lfsr[$clog2(DCACHE_SET_ASSOC)-1:0];
+          cache_status[current_req.mem_idx][target_way].tag = current_req.tag;
+          if (current_req.req_type == WR_REQ)
+            cache_status[current_req.mem_idx][target_way].dirty = 1'b1;
+          else
+            cache_status[current_req.mem_idx][target_way].dirty = 1'b0;
+          lfsr = nextLfsr(lfsr);
+        end
+        // there is an empty way
+        else begin
+          target_way = one_hot_to_bin(get_victim_cl(~valid_v));
+          cache_status[current_req.mem_idx][target_way].tag = current_req.tag;
+          cache_status[current_req.mem_idx][target_way].valid = 1'b1;
+          if (current_req.req_type == WR_REQ)
+            cache_status[current_req.mem_idx][target_way].dirty = 1'b1;
+        end
       end
-      // there is an empty way
+      // cache hit
       else begin
-        target_way = one_hot_to_bin(get_victim_cl(~valid_v));
-        cache_status[current_req.mem_idx][target_way].tag = current_req.tag;
-        cache_status[current_req.mem_idx][target_way].valid = 1'b1;
         if (current_req.req_type == WR_REQ)
           cache_status[current_req.mem_idx][target_way].dirty = 1'b1;
       end
@@ -215,37 +226,36 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
 
   logic ongoing_transaction;
 
-  always @(posedge clk_i, negedge rst_ni) begin
-    if (~rst_ni) begin
-      ongoing_transaction <= 1'b0;
-    end
-    else begin
-      if (~ongoing_transaction) begin
-        if (snoop_req_i.ac_valid & snoop_resp_o.ac_ready) begin
-          ongoing_transaction <= 1'b1;
-          current_req.active_port = 0;
-          current_req.req_type = SNOOP_REQ;
-          current_req.addr = snoop_req_i.ac.addr;
-          current_req.snoop_type = snoop_req_i.ac.snoop;
-        end
-        else begin
-          for (int i = 0; i < NR_CPU_PORTS; i++) begin
-            if (req_ports_i[i].data_req) begin
-              ongoing_transaction <= 1'b1;
-              current_req.active_port = i;
-              if (req_ports_i[i].data_we)
-                current_req.req_type = WR_REQ;
-              else
-                current_req.req_type = RD_REQ;
-              current_req.addr = {req_ports_i[i].address_tag, req_ports_i[i].address_index};
-              current_req.snoop_type = 0;
-            end
-          end
-        end
+  logic start_transaction;
+
+  always_comb begin
+    start_transaction = 1'b0;
+    if (snoop_req_i.ac_valid & snoop_resp_o.ac_ready)
+      start_transaction = 1'b1;
+    for (int i = 0; i < NR_CPU_PORTS; i++)
+      if (req_ports_i[i].data_req)
+        start_transaction = 1'b1;
+  end
+
+  always_latch begin
+    if (start_transaction) begin
+      if (snoop_req_i.ac_valid & snoop_resp_o.ac_ready) begin
+        current_req.active_port = 0;
+        current_req.req_type = SNOOP_REQ;
+        current_req.addr = snoop_req_i.ac.addr;
+        current_req.snoop_type = snoop_req_i.ac.snoop;
       end
       else begin
-        if (check_done_o) begin
-          ongoing_transaction <= 1'b0;
+        for (int i = 0; i < NR_CPU_PORTS; i++) begin
+          if (req_ports_i[i].data_req) begin
+            current_req.active_port = i;
+            if (req_ports_i[i].data_we)
+              current_req.req_type = WR_REQ;
+            else
+              current_req.req_type = RD_REQ;
+            current_req.addr = {req_ports_i[i].address_tag, req_ports_i[i].address_index};
+            current_req.snoop_type = 0;
+          end
         end
       end
     end
@@ -260,11 +270,11 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
     forever begin
       check_done_o = 1'b0;
 
-      `WAIT_SIG(clk_i, ongoing_transaction)
+      `WAIT_SIG(clk_i, start_transaction)
 
       if (current_req.req_type == SNOOP_REQ) begin
         // expect a writeback before the response
-        if (isHit(cache_status, current_req.addr) && current_req.snoop_type == snoop_pkg::CLEAN_INVALID) begin
+        if (isHit(cache_status, current_req) && current_req.snoop_type == snoop_pkg::CLEAN_INVALID) begin
           `WAIT_SIG(clk_i, axi_data_o.w.last)
         end
         // wait for the response
@@ -272,23 +282,50 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
           `WAIT_SIG(clk_i, snoop_resp_o.cr_valid)
         end
         // expect the data
-        if (isHit(cache_status, current_req.addr) &&
+        if (isHit(cache_status, current_req) &&
             (current_req.snoop_type == snoop_pkg::READ_UNIQUE || current_req.snoop_type == snoop_pkg::READ_ONCE || current_req.snoop_type == snoop_pkg::READ_SHARED)) begin
           `WAIT_SIG(clk_i, snoop_resp_o.cd.last)
         end
       end
       else begin
-        // wait for an axi transaction in case of a cache miss
-        if (!isHit(cache_status, current_req.addr)) begin
-          `WAIT_SIG(clk_i, axi_data_i.r.last)
+        // bypass
+        if (current_req.addr < CACHE_BASE_ADDR) begin
+          if (current_req.req_type == WR_REQ)
+            `WAIT_SIG(clk_i, axi_bypass_i.b_valid)
+          else
+            `WAIT_SIG(clk_i, axi_bypass_i.r.last)
         end
-        // otherwise wait only for the response from the port
+        // cacheable
         else begin
-          `WAIT_SIG(clk_i, {req_ports_o[current_req.active_port].data_gnt & ~axi_data_i.r.last})
+          // wait for an axi transaction in case of a cache miss
+          if (!isHit(cache_status, current_req)) begin
+            if (current_req.req_type == WR_REQ) begin
+              fork
+                `WAIT_SIG(clk_i, axi_data_i.r.last)
+                `WAIT_SIG(clk_i, req_ports_o[current_req.active_port].data_gnt)
+              join
+            end
+            else begin
+              fork
+                `WAIT_SIG(clk_i, axi_data_i.r.last)
+                `WAIT_SIG(clk_i, req_ports_o[current_req.active_port].data_rvalid)
+              join
+            end
+          end
+          else begin
+            // otherwise wait only for the response from the port
+            if (current_req.req_type == WR_REQ) begin
+              `WAIT_SIG(clk_i, req_ports_o[current_req.active_port].data_gnt)
+            end
+            else begin
+              `WAIT_SIG(clk_i, req_ports_o[current_req.active_port].data_rvalid)
+            end
+          end
         end
-      end
+      end // else: !if(current_req.req_type == SNOOP_REQ)
 
-      updateCache();
+      if (current_req.addr >= CACHE_BASE_ADDR)
+        updateCache();
 
       // the actual cache needs 2 more cycles to be updated
       `WAIT_CYC(clk_i, 2)
