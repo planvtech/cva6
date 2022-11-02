@@ -24,7 +24,9 @@ import "DPI-C" function void init_dromajo(string cfg_f_name);
 
 
 module cva6 import ariane_pkg::*; #(
-  parameter ariane_pkg::ariane_cfg_t ArianeCfg     = ariane_pkg::ArianeDefaultConfig
+  parameter ariane_pkg::ariane_cfg_t ArianeCfg     = ariane_pkg::ArianeDefaultConfig,
+  parameter type mst_req_t = logic,
+  parameter type mst_resp_t = logic
 ) (
   input  logic                         clk_i,
   input  logic                         rst_ni,
@@ -55,8 +57,8 @@ module cva6 import ariane_pkg::*; #(
   input  wt_cache_pkg::l15_rtrn_t      l15_rtrn_i
 `else
   // memory side, AXI Master
-  output ariane_axi::req_t             axi_req_o,
-  input  ariane_axi::resp_t            axi_resp_i
+  output mst_req_t             axi_req_o,
+  input  mst_resp_t            axi_resp_i
 `endif
 );
 
@@ -685,7 +687,9 @@ module cva6 import ariane_pkg::*; #(
     // note: this only works with one cacheable region
     // not as important since this cache subsystem is about to be
     // deprecated
-    .ArianeCfg             ( ArianeCfg                   )
+    .ArianeCfg             ( ArianeCfg                   ),
+    .mst_req_t (mst_req_t),
+    .mst_resp_t (mst_resp_t)
   ) i_cache_subsystem (
     // to D$
     .clk_i                 ( clk_i                       ),
