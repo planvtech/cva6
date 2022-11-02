@@ -45,16 +45,17 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
    input logic                           mshr_index_matches_i
 );
 
-  enum                                   logic [2:0]
+  enum                                   logic [3:0]
        {
         IDLE, // 0
         SEND_REQ, // 1
         WAIT_GNT, // 2
         SEND_CR_RESP, // 3
-        SEND_CD_RESP, // 4
-        WAIT_MH, // 5
-        SEND_ACK, // 6
-        SEND_NACK // 7
+        SEND_CR_RESP_2, // 4
+        SEND_CD_RESP, // 5
+        WAIT_MH, // 6
+        SEND_ACK, // 7
+        SEND_NACK // 8
         } state_d, state_q;
 
   typedef struct                         packed {
@@ -93,6 +94,8 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
 
   assign shared = |(shared_way_i & hit_way_i);
 
+  snoop_pkg::crresp_t cr_resp_d, cr_resp_q;
+
   // FSM
 
   always_comb begin : cache_ctrl_fsm
@@ -101,6 +104,7 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
     mem_req_d = mem_req_q;
     cache_data_d = cache_data_q;
     hit_way_d = hit_way_q;
+    cr_resp_d = cr_resp_q;
 
     snoop_port_o.ac_ready = 1'b0;
     snoop_port_o.cr_valid = 1'b0;
@@ -119,6 +123,7 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
 
       IDLE: begin
         snoop_port_o.ac_ready = 1'b1;
+        cr_resp_d = '0;
 
         // we receive a snooping request
         if (snoop_port_i.ac_valid) begin
@@ -134,7 +139,7 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
               state_d = WAIT_MH;
             end
             // read request
-            else if (snoop_port_i.ac.snoop == snoop_pkg::READ_SHARED || snoop_port_i.ac.snoop == snoop_pkg::READ_ONCE) begin
+            else if (snoop_port_i.ac.snoop == snoop_pkg::READ_SHARED || snoop_port_i.ac.snoop == snoop_pkg::READ_ONCE || snoop_port_i.ac.snoop == snoop_pkg::READ_UNIQUE) begin
               state_d = WAIT_GNT;
               // request the cache line
               req_o = '1;
@@ -160,18 +165,32 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
           snoop_port_o.cr_resp.dataTransfer = 1'b1;
           snoop_port_o.cr_resp.passDirty = dirty;
           snoop_port_o.cr_resp.isShared = shared;
+          cr_resp_d.dataTransfer = 1'b1;
+          cr_resp_d.passDirty = dirty;
+          cr_resp_d.isShared = shared;
           case (mem_req_q.index[3])
             1'b0: cache_data_d = cl_i[63:0];
             1'b1: cache_data_d = cl_i[127:64];
           endcase
           if (snoop_port_i.cr_ready)
             state_d = SEND_CD_RESP;
+          else
+            state_d = SEND_CR_RESP_2;
         end
         // Miss
         else begin
           if (snoop_port_i.cr_ready)
             state_d = IDLE;
         end
+      end
+
+      SEND_CR_RESP_2: begin
+        snoop_port_o.cr_valid = 1'b1;
+        snoop_port_o.cr_resp.dataTransfer = 1'b1;
+        snoop_port_o.cr_resp.passDirty = cr_resp_q.passDirty;
+        snoop_port_o.cr_resp.isShared = cr_resp_q.isShared;
+        if (snoop_port_i.cr_ready)
+          state_d = SEND_CD_RESP;
       end
 
       SEND_CD_RESP: begin
@@ -215,11 +234,13 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
       mem_req_q     <= '0;
       cache_data_q  <= '0;
       hit_way_q     <= '0;
+      cr_resp_q <= '0;
     end else begin
       state_q   <= state_d;
       mem_req_q <= mem_req_d;
       cache_data_q <= cache_data_d;
       hit_way_q <= hit_way_d;
+      cr_resp_q <= cr_resp_d;
     end
   end
 

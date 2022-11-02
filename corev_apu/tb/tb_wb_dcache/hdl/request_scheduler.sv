@@ -18,6 +18,7 @@ module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import t
     parameter int unsigned NR_CPU_PORTS = 3,
     parameter int unsigned MAX_ROUNDS = 1000,
     parameter CACHE_BASE_ADDR = 64'h8000_0000,
+    parameter CACHE_END_ADDR = 64'h8000_0000,
     parameter int unsigned AxiAddrWidth = 32'd64,
     parameter int unsigned AxiDataWidth = 32'd64,
     parameter time         ApplTime = 2ns,
@@ -27,12 +28,13 @@ module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import t
    input logic clk_i,
    input logic rst_ni,
    input logic check_done_i,
-   output logic start_transaction_o,
    output      ariane_pkg::dcache_req_i_t[NR_CPU_PORTS-1:0] req_ports_i,
    input       ariane_pkg::dcache_req_o_t[NR_CPU_PORTS-1:0] req_ports_o,
    output      ariane_ace::snoop_req_t snoop_req_o,
    input       ariane_ace::snoop_resp_t snoop_resp_i
    );
+
+  localparam int timeout = 1000;
 
   SNOOP_BUS #(
               .SNOOP_ADDR_WIDTH ( AxiAddrWidth     ),
@@ -126,50 +128,49 @@ module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import t
     automatic int unsigned round = 0;
 
     req_ports_i = '0;
-    start_transaction_o = 1'b0;
 
     snoop_rand_master = new( snoop_dv );
+    snoop_rand_master.add_memory_region(CACHE_BASE_ADDR, CACHE_BASE_ADDR+32'h800, axi_pkg::DEVICE_NONBUFFERABLE);
     snoop_rand_master.reset();
 
     `WAIT_CYC(clk_i,1)
     `WAIT_SIG(clk_i,rst_ni)
 
     forever begin
+      // randomly select the next transaction
+      $cast(state_req, $urandom_range(SNOOP, READ));
+      case (state_req)
+        READ: begin
+          genRdReq();
+        end
+
+        WRITE: begin
+          genWrReq();
+        end
+
+        SNOOP: begin
+          snoop_rand_master.run(1);
+        end
+      endcase
+
       fork
         begin
-          // randomly select the next transaction
-          $cast(state_req, $urandom_range(SNOOP, READ));
-
-          case (state_req)
-
-            READ: begin
-              genRdReq();
-            end
-
-            WRITE: begin
-              genWrReq();
-            end
-
-            SNOOP: begin
-              snoop_rand_master.run(1);
-            end
-
-          endcase
+          `WAIT_SIG(clk_i, check_done_i)
+          if (round == MAX_ROUNDS-1) begin
+            $display("Simulation end");
+            $finish();
+          end
+          else begin
+            round = round + 1;
+          end
         end
         begin
-          start_transaction_o = 1'b1;
-          `WAIT_CYC(clk_i,1)
-          start_transaction_o = 1'b0;
+          `WAIT_CYC(clk_i, timeout)
+          $error("Timeout");
+          $finish();
         end
-      join
-      `WAIT_SIG(clk_i, check_done_i)
-      if (round == MAX_ROUNDS-1) begin
-        $display("Simulation end");
-        $finish();
-      end
-      else begin
-        round = round + 1;
-      end
+      join_any
+      disable fork;
     end
   end
 

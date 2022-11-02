@@ -154,7 +154,7 @@ module tb_ace import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #
   end
 
   logic                           start_rd, start_wr, start_snoop;
-  logic                           start_transaction, check_done;
+  logic                           check_done;
 
   // DUT
 
@@ -191,6 +191,7 @@ module tb_ace import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #
       .NR_CPU_PORTS (3),
       .MAX_ROUNDS (MaxRounds),
       .CACHE_BASE_ADDR (CachedAddrBeg),
+      .CACHE_END_ADDR (CachedAddrEnd),
       .AxiAddrWidth (AxiAddrWidth),
       .AxiDataWidth (AxiDataWidth),
       .ApplTime (ApplTime),
@@ -201,7 +202,6 @@ module tb_ace import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #
      .clk_i (clk_i),
      .rst_ni (rst_ni),
      .check_done_i (check_done),
-     .start_transaction_o (start_transaction),
      .req_ports_o(req_ports_o),
      .req_ports_i(req_ports_i),
      .snoop_req_o(snoop_port_i),
@@ -219,7 +219,6 @@ module tb_ace import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #
     (
      .clk_i (clk_i),
      .rst_ni (rst_ni),
-     .start_transaction_i (start_transaction),
      .check_done_o (check_done),
      .req_ports_o,
      .req_ports_i,

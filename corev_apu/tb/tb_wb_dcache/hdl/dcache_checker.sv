@@ -20,7 +20,6 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
   (
    input logic  clk_i,
    input logic  rst_ni,
-   input logic start_transaction_i,
    output logic check_done_o,
    input        ariane_pkg::dcache_req_i_t[NR_CPU_PORTS-1:0] req_ports_i,
    input        ariane_pkg::dcache_req_o_t[NR_CPU_PORTS-1:0] req_ports_o,
@@ -274,7 +273,7 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
 
       if (current_req.req_type == SNOOP_REQ) begin
         // expect a writeback before the response
-        if (isHit(cache_status, current_req) && current_req.snoop_type == snoop_pkg::CLEAN_INVALID) begin
+        if (isHit(cache_status, current_req) && isDirty(cache_status, current_req) && current_req.snoop_type == snoop_pkg::CLEAN_INVALID) begin
           `WAIT_SIG(clk_i, axi_data_o.w.last)
         end
         // wait for the response
@@ -318,11 +317,13 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
               `WAIT_SIG(clk_i, req_ports_o[current_req.active_port].data_gnt)
             end
             else begin
-              `WAIT_SIG(clk_i, req_ports_o[current_req.active_port].data_rvalid)
+              if (~req_ports_o[current_req.active_port].data_rvalid) begin
+                `WAIT_SIG(clk_i, req_ports_o[current_req.active_port].data_rvalid)
+              end
             end
           end
         end
-      end // else: !if(current_req.req_type == SNOOP_REQ)
+      end
 
       if (current_req.addr >= CACHE_BASE_ADDR)
         updateCache();

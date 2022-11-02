@@ -138,7 +138,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     ariane_pkg::amo_t amo_op;
     logic [63:0]      amo_operand_b;
 
-    logic [DCACHE_SET_ASSOC-1:0] matching_way;
+    logic [DCACHE_SET_ASSOC-1:0] matching_way, matching_dirty_way;
 
     // ------------------------------
     // Cache Management
@@ -149,7 +149,8 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         for (int unsigned i = 0; i < DCACHE_SET_ASSOC; i++) begin
             evict_way[i] = data_i[i].valid & data_i[i].dirty;
             valid_way[i] = data_i[i].valid;
-            matching_way[i] = data_i[i].valid & data_i[i].dirty & (data_i[i].tag == mshr_q.addr[DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:DCACHE_INDEX_WIDTH]);
+          matching_way[i] = data_i[i].valid & (data_i[i].tag == mshr_q.addr[DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:DCACHE_INDEX_WIDTH]);
+            matching_dirty_way[i] = data_i[i].valid & data_i[i].dirty & (data_i[i].tag == mshr_q.addr[DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:DCACHE_INDEX_WIDTH]);
         end
         // ----------------------
         // Default Assignments
@@ -245,7 +246,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
 
                 // check if we have to serve a snoop request
                 if (invalidate_i) begin
-                  state_d = INVALIDATE;
+                  state_d = INVALID_REQ_STATUS;
                   // we are taking another request so don't take the AMO
                   serve_amo_d  = 1'b0;
                   // save to MSHR
@@ -364,6 +365,8 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                     state_d = (state_q == WB_CACHELINE_MISS) ? MISS :
                               (state_q == WB_CACHELINE_FLUSH) ? FLUSH_REQ_STATUS :
                               IDLE;
+                  if (state_q == WB_CACHELINE_INVALID)
+                    miss_gnt_o[mshr_q.id] = 1'b1;
                 end
             end
 
@@ -428,13 +431,18 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
 
             INVALIDATE: begin
               cnt_d = mshr_q.addr[DCACHE_INDEX_WIDTH-1:0];
-              // check if the target cacheline is dirty
-              if (|(matching_way)) begin
-                evict_way_d = get_victim_cl(matching_way);
-                evict_cl_d  = data_i[one_hot_to_bin(matching_way)];
+              // writeback if the target cacheline is dirty
+              if (|matching_dirty_way) begin
+                evict_way_d = get_victim_cl(matching_dirty_way);
+                evict_cl_d  = data_i[one_hot_to_bin(matching_dirty_way)];
                 state_d     = WB_CACHELINE_INVALID;
               end
               else begin
+                // just invalidate otherwise
+                addr_o = mshr_q.addr[DCACHE_INDEX_WIDTH-1:0];
+                req_o       = 1'b1;
+                be_o.vldrty = matching_way;
+                we_o        = 1'b1;
                 state_d = IDLE;
                 miss_gnt_o[mshr_q.id] = 1'b1;
                 mshr_d.valid = 1'b0;
