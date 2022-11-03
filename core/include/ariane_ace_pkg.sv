@@ -89,8 +89,8 @@ package ariane_ace;
         ariane_ace::ar_chan_t ar;
         logic     ar_valid;
         logic     r_ready;
-      logic       rack;
-      logic       wack;
+        logic     wack;
+        logic     rack;
         logic ac_ready;
         logic   cr_valid;
       snoop_pkg::crresp_t cr_resp;
@@ -107,8 +107,8 @@ package ariane_ace;
     ariane_ace::ar_chan_t ar;
     logic        ar_valid;
     logic        r_ready;
-    logic        rack;
     logic        wack;
+    logic        rack;
   } m2s_nosnoop_t;
 
     typedef struct packed {

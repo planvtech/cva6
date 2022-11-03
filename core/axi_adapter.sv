@@ -395,6 +395,23 @@ module axi_adapter #(
   generate
   if ($bits(mst_req_t) == $bits(ariane_ace::m2s_nosnoop_t)) begin
 
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (~rst_ni) begin
+        axi_req_o.wack <= 1'b0;
+        axi_req_o.rack <= 1'b0;
+      end
+      else begin
+        axi_req_o.wack <= 1'b0;
+        axi_req_o.rack <= 1'b0;
+        // set RACK the cycle after the BVALID/BREADY handshake is finished
+        if (axi_req_o.b_ready & axi_resp_i.b_valid)
+          axi_req_o.wack <= 1'b1;
+        // set RACK the cycle after the RVALID/RREADY handshake is finished
+        if (axi_req_o.r_ready & axi_resp_i.r_valid)
+          axi_req_o.rack <= 1'b1;
+      end
+    end
+
     always_comb begin
       // Default assignments
       axi_req_o.aw.snoop  = '0;
