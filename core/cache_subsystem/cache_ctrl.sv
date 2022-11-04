@@ -316,7 +316,7 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
                 end else begin
                     state_d = WAIT_MSHR;
                 end
-            end // case: STORE_REQ
+            end
 
             // we've got a match on MSHR ~> miss unit is currently serving a request
             WAIT_MSHR: begin

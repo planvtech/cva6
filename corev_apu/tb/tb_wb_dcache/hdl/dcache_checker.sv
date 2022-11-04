@@ -157,8 +157,10 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
       end
       // cache hit
       else begin
-        if (current_req.req_type == WR_REQ)
+        if (current_req.req_type == WR_REQ) begin
           cache_status[current_req.mem_idx][target_way].dirty = 1'b1;
+          cache_status[current_req.mem_idx][target_way].shared = 1'b0;
+        end
       end
     end
   endtask
@@ -272,19 +274,25 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
       `WAIT_SIG(clk_i, start_transaction)
 
       if (current_req.req_type == SNOOP_REQ) begin
-        // expect a writeback before the response
-        if (isHit(cache_status, current_req) && isDirty(cache_status, current_req) && current_req.snoop_type == snoop_pkg::CLEAN_INVALID) begin
-          `WAIT_SIG(clk_i, axi_data_o.w.last)
-        end
-        // wait for the response
-        if(~snoop_resp_o.cr_valid) begin
-          `WAIT_SIG(clk_i, snoop_resp_o.cr_valid)
-        end
-        // expect the data
-        if (isHit(cache_status, current_req) &&
-            (current_req.snoop_type == snoop_pkg::READ_UNIQUE || current_req.snoop_type == snoop_pkg::READ_ONCE || current_req.snoop_type == snoop_pkg::READ_SHARED)) begin
-          `WAIT_SIG(clk_i, snoop_resp_o.cd.last)
-        end
+        fork
+          begin
+            // expect a writeback
+            if (isHit(cache_status, current_req) && isDirty(cache_status, current_req) && current_req.snoop_type == snoop_pkg::CLEAN_INVALID) begin
+              `WAIT_SIG(clk_i, axi_data_i.b_valid)
+            end
+          end
+          begin
+            // wait for the response
+            if(~snoop_resp_o.cr_valid) begin
+              `WAIT_SIG(clk_i, snoop_resp_o.cr_valid)
+            end
+            // expect the data
+            if (isHit(cache_status, current_req) &&
+                (current_req.snoop_type == snoop_pkg::READ_UNIQUE || current_req.snoop_type == snoop_pkg::READ_ONCE || current_req.snoop_type == snoop_pkg::READ_SHARED)) begin
+              `WAIT_SIG(clk_i, snoop_resp_o.cd.last)
+            end
+          end
+        join
       end
       else begin
         // bypass
