@@ -314,6 +314,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
             REQ_CACHELINE: begin
                 req_fsm_miss_valid  = 1'b1;
                 req_fsm_miss_addr   = mshr_q.addr;
+                req_fsm_miss_type = mshr_q.we ? ariane_ace::READ_UNIQUE : ariane_ace::READ_SHARED;
 
                 if (gnt_miss_fsm) begin
                     state_d = SAVE_CACHELINE;
