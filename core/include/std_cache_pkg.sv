@@ -40,6 +40,8 @@ package std_cache_pkg;
         logic         we;
         logic [63:0]  wdata;
         logic         bypass;
+        logic         make_unique;
+        logic         invalidate;
     } miss_req_t;
 
     typedef struct packed {

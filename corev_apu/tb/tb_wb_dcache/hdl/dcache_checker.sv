@@ -93,6 +93,15 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
     return 1'b0;
   endfunction
 
+  function bit isCleanUnique(
+                     ariane_ace::m2s_nosnoop_t ace_req
+                     );
+    if (ace_req.ar.snoop == 4'b1011 && ace_req.ar.bar[0] == 1'b0 && (ace_req.ar.domain == 2'b10 || ace_req.ar.domain == 2'b01))
+      return 1'b1;
+    else
+      return 1'b0;
+  endfunction
+
   logic [$clog2(DCACHE_SET_ASSOC)-1:0] target_way;
   logic [DCACHE_SET_ASSOC-1:0]         valid_v, dirty_v, shared_v;
 
@@ -338,6 +347,9 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
           if (!isHit(cache_status, current_req)) begin
             if (current_req.req_type == WR_REQ) begin
               fork
+                `WAIT_SIG(clk_i, axi_data_o.ar_valid)
+                if (axi_data_o.ar.snoop != 4'b0001 && axi_data_o.ar.bar[0] != 1'b0 && axi_data_o.ar.domain != 2'b01)
+                  $error("Error READ_SHARED request expected");
                 `WAIT_SIG(clk_i, axi_data_i.r.last)
                 `WAIT_SIG(clk_i, req_ports_o[current_req.active_port].data_gnt)
               join
@@ -350,14 +362,29 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
             end
           end
           else begin
-            // otherwise wait only for the response from the port
+            // in case of a cache hit and write request, wait for a CleanUnique transaction
             if (current_req.req_type == WR_REQ) begin
+              if (isShared(cache_status, current_req)) begin
+                `WAIT_SIG(clk_i, axi_data_o.ar_valid)
+                if (!isCleanUnique(axi_data_o))
+                  $error("AR error expected CleanUnique, actual ar_snoop %h ar_bar[0] %h ar_domain &h", axi_data_o.ar.snoop, axi_data_o.ar.bar[0], axi_data_o.ar.domain);
+              end
               `WAIT_SIG(clk_i, req_ports_o[current_req.active_port].data_gnt)
             end
+            // otherwise wait only for the response from the port
             else begin
-              if (~req_ports_o[current_req.active_port].data_rvalid) begin
-                `WAIT_SIG(clk_i, req_ports_o[current_req.active_port].data_rvalid)
-              end
+              fork
+                begin
+                  if (~req_ports_o[current_req.active_port].data_rvalid) begin
+                    `WAIT_SIG(clk_i, req_ports_o[current_req.active_port].data_rvalid)
+                  end
+                end
+                begin
+                  `WAIT_SIG(clk_i, axi_data_o.ar_valid)
+                  $error("AR_VALID error, expected 0");
+                end
+              join_any
+              disable fork;
             end
           end
         end

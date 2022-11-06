@@ -21,39 +21,40 @@
 module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
     parameter ariane_cfg_t ArianeCfg = ArianeDefaultConfig // contains cacheable regions
 ) (
-    input  logic                                 clk_i,     // Clock
-    input  logic                                 rst_ni,    // Asynchronous reset active low
-    input  logic                                 flush_i,
-    input  logic                                 bypass_i,  // enable cache
-    output logic                                 busy_o,
+    input logic                           clk_i, // Clock
+    input logic                           rst_ni, // Asynchronous reset active low
+    input logic                           flush_i,
+    input logic                           bypass_i, // enable cache
+    output logic                          busy_o,
     // Core request ports
-    input  dcache_req_i_t                        req_port_i,
-    output dcache_req_o_t                        req_port_o,
+    input                                 dcache_req_i_t req_port_i,
+    output                                dcache_req_o_t req_port_o,
     // SRAM interface
-    output logic [DCACHE_SET_ASSOC-1:0]          req_o,  // req is valid
-    output logic [DCACHE_INDEX_WIDTH-1:0]        addr_o, // address into cache array
-    input  logic                                 gnt_i,
-    output cache_line_t                          data_o,
-    output cl_be_t                               be_o,
-    output logic [DCACHE_TAG_WIDTH-1:0]          tag_o, //valid one cycle later
-    input  cache_line_t [DCACHE_SET_ASSOC-1:0]   data_i,
-    output logic                                 we_o,
-    input  logic [DCACHE_SET_ASSOC-1:0]          hit_way_i,
+    output logic [DCACHE_SET_ASSOC-1:0]   req_o, // req is valid
+    output logic [DCACHE_INDEX_WIDTH-1:0] addr_o, // address into cache array
+    input logic                           gnt_i,
+    output                                cache_line_t data_o,
+    output                                cl_be_t be_o,
+    output logic [DCACHE_TAG_WIDTH-1:0]   tag_o, //valid one cycle later
+    input                                 cache_line_t [DCACHE_SET_ASSOC-1:0] data_i,
+    output logic                          we_o,
+    input logic [DCACHE_SET_ASSOC-1:0]    hit_way_i,
+    input logic [DCACHE_SET_ASSOC-1:0]    shared_way_i,
     // Miss handling
-    output miss_req_t                            miss_req_o,
+    output                                miss_req_t miss_req_o,
     // return
-    input  logic                                 miss_gnt_i,
-    input  logic                                 active_serving_i, // the miss unit is currently active for this unit, serving the miss
-    input  logic [63:0]                          critical_word_i,
-    input  logic                                 critical_word_valid_i,
+    input logic                           miss_gnt_i,
+    input logic                           active_serving_i, // the miss unit is currently active for this unit, serving the miss
+    input logic [63:0]                    critical_word_i,
+    input logic                           critical_word_valid_i,
     // bypass ports
-    input  logic                                 bypass_gnt_i,
-    input  logic                                 bypass_valid_i,
-    input  logic [63:0]                          bypass_data_i,
+    input logic                           bypass_gnt_i,
+    input logic                           bypass_valid_i,
+    input logic [63:0]                    bypass_data_i,
     // check MSHR for aliasing
-    output logic [55:0]                          mshr_addr_o,
-    input  logic                                 mshr_addr_matches_i,
-    input  logic                                 mshr_index_matches_i
+    output logic [55:0]                   mshr_addr_o,
+    input logic                           mshr_addr_matches_i,
+    input logic                           mshr_index_matches_i
 );
 
     enum logic [3:0] {
@@ -62,12 +63,13 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
         WAIT_TAG_BYPASSED,  // 2
         WAIT_GNT,           // 3
         WAIT_GNT_SAVED,     // 4
-        STORE_REQ,          // 5
-        WAIT_REFILL_VALID,  // 6
-        WAIT_REFILL_GNT,    // 7
-        WAIT_TAG_SAVED,     // 8
-        WAIT_MSHR,          // 9
-        WAIT_CRITICAL_WORD  // 10
+        MAKE_UNIQUE,        // 5
+        STORE_REQ,          // 6
+        WAIT_REFILL_VALID,  // 7
+        WAIT_REFILL_GNT,    // 8
+        WAIT_TAG_SAVED,     // 9
+        WAIT_MSHR,          // 10
+        WAIT_CRITICAL_WORD  // 11
     } state_d, state_q;
 
     typedef struct packed {
@@ -82,6 +84,7 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
     } mem_req_t;
 
     logic [DCACHE_SET_ASSOC-1:0] hit_way_d, hit_way_q;
+  logic [DCACHE_SET_ASSOC-1:0]   shared_way_d, shared_way_q;
 
     mem_req_t mem_req_d, mem_req_q;
 
@@ -111,6 +114,7 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
         state_d   = state_q;
         mem_req_d = mem_req_q;
         hit_way_d = hit_way_q;
+        shared_way_d = shared_way_q;
         // output assignments
         req_port_o.data_gnt    = 1'b0;
         req_port_o.data_rvalid = 1'b0;
@@ -210,10 +214,17 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
                         // report data for a read
                         if (!mem_req_q.we) begin
                             req_port_o.data_rvalid = ~mem_req_q.killed;
+                        end
                         // else this was a store so we need an extra step to handle it
-                        end else begin
-                            state_d = STORE_REQ;
+                        else begin
                             hit_way_d = hit_way_i;
+                            shared_way_d = shared_way_i;
+                            // shared cacheline
+                            if (shared_way_i & hit_way_i)
+                              state_d = MAKE_UNIQUE;
+                            // unique cacheline
+                            if (~shared_way_i & hit_way_i)
+                              state_d = STORE_REQ;
                         end
                     // ------------
                     // MISS CASE
@@ -286,6 +297,19 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
                 end
             end
 
+            MAKE_UNIQUE: begin
+              miss_req_o.valid = 1'b1;
+              miss_req_o.make_unique = 1'b1;
+              miss_req_o.addr = {mem_req_q.tag, mem_req_q.index};
+              miss_req_o.bypass = '0;
+              miss_req_o.be = '0;
+              miss_req_o.size = '0;
+              miss_req_o.we = '0;
+              miss_req_o.wdata = '0;
+              if (miss_gnt_i)
+                state_d = STORE_REQ;
+            end
+
             // ~> we are here as we need a second round of memory access for a store
             STORE_REQ: begin
                 // check if the MSHR still doesn't match
@@ -307,6 +331,7 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
                     // ~> change the state
                     data_o.dirty = 1'b1;
                     data_o.valid = 1'b1;
+                    data_o.shared = 1'b0;
 
                     // got a grant ~> this is finished now
                     if (gnt_i) begin
@@ -441,10 +466,12 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
             state_q       <= IDLE;
             mem_req_q     <= '0;
             hit_way_q     <= '0;
+            shared_way_q <= '0;
         end else begin
             state_q   <= state_d;
             mem_req_q <= mem_req_d;
             hit_way_q <= hit_way_d;
+            shared_way_q <= shared_way_d;
         end
     end
 
