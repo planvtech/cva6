@@ -74,8 +74,9 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
   logic [DCACHE_SET_ASSOC-1:0]           shared_way_d, shared_way_q;
   logic [DCACHE_SET_ASSOC-1:0]           dirty_way_d, dirty_way_q;
 
-  logic [127:0]                           cache_data_d, cache_data_q;
+  logic [DCACHE_LINE_WIDTH-1:0]                           cache_data_d, cache_data_q;
   logic [DCACHE_LINE_WIDTH-1:0]          cl_i;
+  logic                                  cacheline_word_sel_d, cacheline_word_sel_q;
 
   always_comb begin : way_select
     cl_i = '0;
@@ -103,6 +104,7 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
     state_d   = state_q;
     mem_req_d = mem_req_q;
     cache_data_d = cache_data_q;
+    cacheline_word_sel_d = cacheline_word_sel_q;
     hit_way_d = hit_way_q;
     shared_way_d = shared_way_q;
     dirty_way_d = dirty_way_q;
@@ -131,6 +133,7 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
         snoop_port_o.ac_ready = 1'b1;
         cr_resp_d = '0;
         ac_snoop_d = '0;
+        cacheline_word_sel_d = 1'b0;
 
         // we receive a snooping request
         if (snoop_port_i.ac_valid) begin
@@ -243,10 +246,14 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
 
       SEND_CD_RESP: begin
         snoop_port_o.cd_valid = 1'b1;
-        snoop_port_o.cd.data = mem_req_q.index[3] ? cache_data_q[127:64] : cache_data_q[63:0];
-        snoop_port_o.cd.last = 1'b1;
-        if (snoop_port_i.cd_ready)
-          state_d = IDLE;
+        snoop_port_o.cd.data = cacheline_word_sel_q ? cache_data_q[127:64] : cache_data_q[63:0];
+        if (snoop_port_i.cd_ready) begin
+          if (cacheline_word_sel_q) begin
+            state_d = IDLE;
+            snoop_port_o.cd.last = 1'b1;
+          end
+          cacheline_word_sel_d = ~cacheline_word_sel_q;
+        end
       end
 
       WAIT_MH: begin
@@ -268,6 +275,7 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
       state_q       <= IDLE;
       mem_req_q     <= '0;
       cache_data_q  <= '0;
+      cacheline_word_sel_q <= 1'b0;
       hit_way_q     <= '0;
       shared_way_q     <= '0;
       dirty_way_q     <= '0;
@@ -277,6 +285,7 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
       state_q   <= state_d;
       mem_req_q <= mem_req_d;
       cache_data_q <= cache_data_d;
+      cacheline_word_sel_q <= cacheline_word_sel_d;
       hit_way_q <= hit_way_d;
       shared_way_q <= shared_way_d;
       dirty_way_q <= dirty_way_d;
