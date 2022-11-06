@@ -15,7 +15,8 @@
 module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*;
   #(
     parameter int unsigned NR_CPU_PORTS = 3,
-    parameter CACHE_BASE_ADDR = 64'h8000_0000
+    parameter CACHE_BASE_ADDR = 64'h8000_0000,
+    parameter SHARED_BASE_ADDR = 64'h0000_0000
     )
   (
    input logic  clk_i,
@@ -51,6 +52,9 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
 
   logic [$clog2(DCACHE_SET_ASSOC)-1:0] lfsr;
   current_req_t current_req;
+
+  logic [$clog2(DCACHE_SET_ASSOC)-1:0] target_way;
+  logic [DCACHE_SET_ASSOC-1:0]         valid_v, dirty_v, shared_v;
 
   // Helper functions
 
@@ -93,6 +97,24 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
     return 1'b0;
   endfunction
 
+  function bit isCacheable(
+                           logic [63:0] addr
+                           );
+    if (addr >= CACHE_BASE_ADDR)
+      return 1'b1;
+    else
+      return 1'b0;
+  endfunction
+
+  function bit isShareable(
+                           logic [63:0] addr
+                           );
+    if (addr >= SHARED_BASE_ADDR)
+      return 1'b1;
+    else
+      return 1'b0;
+  endfunction
+
   function bit isCleanUnique(
                      ariane_ace::m2s_nosnoop_t ace_req
                      );
@@ -102,8 +124,82 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
       return 1'b0;
   endfunction
 
-  logic [$clog2(DCACHE_SET_ASSOC)-1:0] target_way;
-  logic [DCACHE_SET_ASSOC-1:0]         valid_v, dirty_v, shared_v;
+  function bit isReadShared(
+                            ariane_ace::m2s_nosnoop_t ace_req
+                            );
+    if (ace_req.ar.snoop == 4'b0001 && ace_req.ar.bar[0] == 1'b0 && (ace_req.ar.domain == 2'b01 || ace_req.ar.domain == 2'b10))
+      return 1'b1;
+    else
+      return 1'b0;
+  endfunction
+
+  function bit isReadOnce(
+                            ariane_ace::m2s_nosnoop_t ace_req
+                            );
+    if (ace_req.ar.snoop == 4'b0000 && ace_req.ar.bar[0] == 1'b0 && (ace_req.ar.domain == 2'b01 || ace_req.ar.domain == 2'b10))
+      return 1'b1;
+    else
+      return 1'b0;
+  endfunction
+
+  function bit isReadUnique(
+                          ariane_ace::m2s_nosnoop_t ace_req
+                          );
+    if (ace_req.ar.snoop == 4'b0111 && ace_req.ar.bar[0] == 1'b0 && (ace_req.ar.domain == 2'b01 || ace_req.ar.domain == 2'b10))
+      return 1'b1;
+    else
+      return 1'b0;
+  endfunction
+
+  function bit isReadNoSnoop(
+                            ariane_ace::m2s_nosnoop_t ace_req
+                            );
+    if (ace_req.ar.snoop == 4'b0000 && ace_req.ar.bar[0] == 1'b0 && (ace_req.ar.domain == 2'b00 || ace_req.ar.domain == 2'b11))
+      return 1'b1;
+    else
+      return 1'b0;
+  endfunction
+
+  function bit isWriteBack(
+                            ariane_ace::m2s_nosnoop_t ace_req
+                            );
+    if (ace_req.aw.snoop == 3'b011 && ace_req.aw.bar[0] == 1'b0 && (ace_req.aw.domain == 2'b00 || ace_req.aw.domain == 2'b01 || ace_req.aw.domain == 2'b10))
+      return 1'b1;
+    else
+      return 1'b0;
+  endfunction
+
+  function bit isWriteUnique(
+                           ariane_ace::m2s_nosnoop_t ace_req
+                           );
+    if (ace_req.aw.snoop == 3'b000 && ace_req.aw.bar[0] == 1'b0 && (ace_req.aw.domain == 2'b01 || ace_req.aw.domain == 2'b10))
+      return 1'b1;
+    else
+      return 1'b0;
+  endfunction
+
+  function bit isWriteNoSnoop(
+                           ariane_ace::m2s_nosnoop_t ace_req
+                           );
+    if (ace_req.aw.snoop == 3'b000 && ace_req.aw.bar[0] == 1'b0 && (ace_req.aw.domain == 2'b00 || ace_req.aw.domain == 2'b11))
+      return 1'b1;
+    else
+      return 1'b0;
+  endfunction
+
+  function bit mustEvict(
+                         cache_line_t [DCACHE_NUM_WORDS-1:0][DCACHE_SET_ASSOC-1:0] cache_status,
+                         current_req_t req
+                         );
+    logic [DCACHE_SET_ASSOC-1:0]        valid;
+    for (int i = 0; i < DCACHE_SET_ASSOC; i++) begin
+      valid[i] = cache_status[req.mem_idx][i].valid;
+    end
+    if (!isHit(cache_status, req) && (&valid))
+      return 1'b1;
+    else
+      return 1'b0;
+  endfunction
 
   generate
     genvar                             i;
@@ -335,31 +431,50 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
       end
       else begin
         // bypass
-        if (current_req.addr < CACHE_BASE_ADDR) begin
-          if (current_req.req_type == WR_REQ)
+        if (!isCacheable(current_req.addr)) begin
+          if (current_req.req_type == WR_REQ) begin
+            `WAIT_SIG(clk_i, axi_bypass_o.aw_valid)
+            if (!isWriteUnique(axi_bypass_o))
+              $error("Error WRITE_UNIQUE request expected");
             `WAIT_SIG(clk_i, axi_bypass_i.b_valid)
-          else
+          end
+          else begin
+            `WAIT_SIG(clk_i, axi_bypass_o.ar_valid)
+            if (!isReadOnce(axi_bypass_o))
+              $error("Error READ_ONCE request expected");
             `WAIT_SIG(clk_i, axi_bypass_i.r.last)
+          end
         end
         // cacheable
         else begin
-          // wait for an axi transaction in case of a cache miss
+          // Cache miss
           if (!isHit(cache_status, current_req)) begin
-            if (current_req.req_type == WR_REQ) begin
-              fork
+            // check if eviction is necessary
+            if (mustEvict(cache_status, current_req)) begin
+              `WAIT_SIG(clk_i, axi_data_o.aw_valid)
+              if (!isWriteBack(axi_data_o))
+                $error("Error WRITEBACK request expected");
+            end
+            fork
+              begin
                 `WAIT_SIG(clk_i, axi_data_o.ar_valid)
-                if (axi_data_o.ar.snoop != 4'b0001 && axi_data_o.ar.bar[0] != 1'b0 && axi_data_o.ar.domain != 2'b01)
-                  $error("Error READ_SHARED request expected");
+                if (current_req.req_type == WR_REQ) begin
+                  if (!isReadUnique(axi_data_o))
+                    $error("Error READ_UNIQUE request expected");
+                end
+                else begin
+                  if (!isReadShared(axi_data_o))
+                    $error("Error READ_SHARED request expected");
+                end
                 `WAIT_SIG(clk_i, axi_data_i.r.last)
-                `WAIT_SIG(clk_i, req_ports_o[current_req.active_port].data_gnt)
-              join
-            end
-            else begin
-              fork
-                `WAIT_SIG(clk_i, axi_data_i.r.last)
-                `WAIT_SIG(clk_i, req_ports_o[current_req.active_port].data_rvalid)
-              join
-            end
+              end
+              begin
+                if (current_req.req_type == WR_REQ)
+                  `WAIT_SIG(clk_i, req_ports_o[current_req.active_port].data_gnt)
+                else
+                  `WAIT_SIG(clk_i, req_ports_o[current_req.active_port].data_rvalid)
+              end
+            join
           end
           else begin
             // in case of a cache hit and write request, wait for a CleanUnique transaction
@@ -367,7 +482,7 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
               if (isShared(cache_status, current_req)) begin
                 `WAIT_SIG(clk_i, axi_data_o.ar_valid)
                 if (!isCleanUnique(axi_data_o))
-                  $error("AR error expected CleanUnique, actual ar_snoop %h ar_bar[0] %h ar_domain &h", axi_data_o.ar.snoop, axi_data_o.ar.bar[0], axi_data_o.ar.domain);
+                  $error("Error CLEAN_UNIQUE expected");
               end
               `WAIT_SIG(clk_i, req_ports_o[current_req.active_port].data_gnt)
             end
