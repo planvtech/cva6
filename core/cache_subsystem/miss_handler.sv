@@ -18,6 +18,7 @@
 
 module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     parameter int unsigned NR_PORTS         = 3,
+    parameter ariane_cfg_t ArianeCfg        = ArianeDefaultConfig, // contains cacheable regions
     parameter type mst_req_t = logic,
     parameter type mst_resp_t = logic
 )(
@@ -117,6 +118,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     // Arbiter <-> Bypass AXI adapter
     bypass_req_t bypass_adapter_req;
     bypass_rsp_t bypass_adapter_rsp;
+    ariane_ace::ace_req_t              bypass_adapter_req_type;
 
     // Cache Line Refill <-> AXI
     logic                                    req_fsm_miss_valid;
@@ -132,6 +134,8 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     logic                                    valid_miss_fsm;
     logic [(DCACHE_LINE_WIDTH/64)-1:0][63:0] data_miss_fsm;
 
+  logic                                      shared_miss_fsm;
+  logic                                      dirty_miss_fsm;
     // Cache Management <-> LFSR
     logic                                  lfsr_enable;
     logic [DCACHE_SET_ASSOC-1:0]           lfsr_oh;
@@ -314,7 +318,12 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
             REQ_CACHELINE: begin
                 req_fsm_miss_valid  = 1'b1;
                 req_fsm_miss_addr   = mshr_q.addr;
-                req_fsm_miss_type = mshr_q.we ? ariane_ace::READ_UNIQUE : ariane_ace::READ_SHARED;
+              case ({mshr_q.we, is_inside_shareable_regions(ArianeCfg, req_fsm_miss_addr)})
+                    2'b00: req_fsm_miss_type = ariane_ace::READ_NO_SNOOP;
+                    2'b01: req_fsm_miss_type = ariane_ace::READ_SHARED;
+                    2'b10: req_fsm_miss_type = ariane_ace::WRITE_NO_SNOOP;
+                    2'b11: req_fsm_miss_type = ariane_ace::READ_UNIQUE;
+                endcase
 
                 if (gnt_miss_fsm) begin
                     state_d = SAVE_CACHELINE;
@@ -338,7 +347,8 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                     data_o.tag   = mshr_q.addr[DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:DCACHE_INDEX_WIDTH];
                     data_o.data  = data_miss_fsm;
                     data_o.valid = 1'b1;
-                    data_o.dirty = 1'b0;
+                    data_o.dirty = dirty_miss_fsm;
+                    data_o.shared = mshr_q.we ? 1'b0 : shared_miss_fsm;
 
                     // is this a write?
                     if (mshr_q.we) begin
@@ -384,8 +394,10 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                     state_d = (state_q == WB_CACHELINE_MISS) ? MISS :
                               (state_q == WB_CACHELINE_FLUSH) ? FLUSH_REQ_STATUS :
                               IDLE;
-                  if (state_q == WB_CACHELINE_INVALID)
+                  if (state_q == WB_CACHELINE_INVALID) begin
+                    mshr_d.valid = 1'b0;
                     miss_gnt_o[mshr_q.id] = 1'b1;
+                  end
                 end
             end
 
@@ -651,6 +663,25 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         .rsp_i (bypass_adapter_rsp)
     );
 
+  always_comb begin
+    if (bypass_adapter_req.we) begin
+      if (is_inside_shareable_regions(ArianeCfg, bypass_adapter_req.addr)) begin
+        bypass_adapter_req_type = ariane_ace::WRITE_UNIQUE;
+      end
+      else begin
+        bypass_adapter_req_type = ariane_ace::WRITE_NO_SNOOP;
+      end
+    end
+    else begin
+      if (is_inside_shareable_regions(ArianeCfg, bypass_adapter_req.addr)) begin
+        bypass_adapter_req_type = ariane_ace::READ_ONCE;
+      end
+      else begin
+        bypass_adapter_req_type = ariane_ace::READ_NO_SNOOP;
+      end
+    end
+  end
+
     // ----------------------
     // Bypass AXI Interface
     // ----------------------
@@ -665,7 +696,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         .rst_ni               (rst_ni),
         .req_i                (bypass_adapter_req.req),
         .type_i               (bypass_adapter_req.reqtype),
-        .trans_type_i         (bypass_adapter_req.we ? ariane_ace::WRITE_UNIQUE : ariane_ace::READ_ONCE),
+        .trans_type_i         (bypass_adapter_req_type),
         .amo_i                (bypass_adapter_req.amo),
         .id_i                 (bypass_adapter_req.id),
         .addr_i               (bypass_adapter_req.addr),
@@ -676,6 +707,8 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         .gnt_o                (bypass_adapter_rsp.gnt),
         .valid_o              (bypass_adapter_rsp.valid),
         .rdata_o              (bypass_adapter_rsp.rdata),
+        .dirty_o              (),
+        .shared_o             (),
         .id_o                 (), // not used, single outstanding request in arbiter
         .critical_word_o      (), // not used for single requests
         .critical_word_valid_o(), // not used for single requests
@@ -708,6 +741,8 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         .id_i                ( 4'b1100            ),
         .valid_o             ( valid_miss_fsm     ),
         .rdata_o             ( data_miss_fsm      ),
+        .dirty_o             ( dirty_miss_fsm     ),
+        .shared_o            ( shared_miss_fsm    ),
         .id_o                (                    ),
         .critical_word_o     ( critical_word_o    ),
         .critical_word_valid_o (critical_word_valid_o),

@@ -15,8 +15,7 @@
 module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*;
   #(
     parameter int unsigned NR_CPU_PORTS = 3,
-    parameter CACHE_BASE_ADDR = 64'h8000_0000,
-    parameter SHARED_BASE_ADDR = 64'h0000_0000
+    parameter ariane_cfg_t ArianeCfg        = ArianeDefaultConfig // contains cacheable regions
     )
   (
    input logic  clk_i,
@@ -50,11 +49,13 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
 
   // Signals
 
-  logic [$clog2(DCACHE_SET_ASSOC)-1:0] lfsr;
+  logic [DCACHE_SET_ASSOC-1:0] lfsr;
   current_req_t current_req;
 
   logic [$clog2(DCACHE_SET_ASSOC)-1:0] target_way;
   logic [DCACHE_SET_ASSOC-1:0]         valid_v, dirty_v, shared_v;
+
+  logic aceIsShared, acePassDirty;
 
   // Helper functions
 
@@ -97,22 +98,14 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
     return 1'b0;
   endfunction
 
-  function bit isCacheable(
-                           logic [63:0] addr
-                           );
-    if (addr >= CACHE_BASE_ADDR)
-      return 1'b1;
-    else
-      return 1'b0;
-  endfunction
-
-  function bit isShareable(
-                           logic [63:0] addr
-                           );
-    if (addr >= SHARED_BASE_ADDR)
-      return 1'b1;
-    else
-      return 1'b0;
+  function int getHitWay(
+                     cache_line_t [DCACHE_NUM_WORDS-1:0][DCACHE_SET_ASSOC-1:0] cache_status,
+                     current_req_t req
+                     );
+    for (int i = 0; i < DCACHE_SET_ASSOC; i++) begin
+      if (cache_status[req.mem_idx][i].valid && cache_status[req.mem_idx][i].tag == req.tag)
+        return i;
+    end
   endfunction
 
   function bit isCleanUnique(
@@ -191,15 +184,233 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
                          cache_line_t [DCACHE_NUM_WORDS-1:0][DCACHE_SET_ASSOC-1:0] cache_status,
                          current_req_t req
                          );
-    logic [DCACHE_SET_ASSOC-1:0]        valid;
+    automatic logic valid = 1'b1;
     for (int i = 0; i < DCACHE_SET_ASSOC; i++) begin
-      valid[i] = cache_status[req.mem_idx][i].valid;
+      valid = valid & cache_status[req.mem_idx][i].valid;
     end
-    if (!isHit(cache_status, req) && (&valid))
+    if (!isHit(cache_status, req) && valid == 1'b1 && cache_status[req.mem_idx][lfsr[$clog2(DCACHE_SET_ASSOC)-1:0]].dirty == 1'b1)
       return 1'b1;
     else
       return 1'b0;
   endfunction
+
+  // Coverage
+
+  // Each cache block used at least once
+  bit [DCACHE_NUM_WORDS-1:0][DCACHE_SET_ASSOC-1:0] cache_valid_bin;
+  // Read transactions targeting every way and every combination of valid/dirty/shared
+  // it is impossible to have shared or dirty flags when the cache block is invalid
+  bit [DCACHE_SET_ASSOC-1:0][7:0]                 read_bin = {DCACHE_SET_ASSOC{8'b00001110}};
+  // Write transactions targeting every way and every combination of valid/dirty/shared
+  // it is impossible to have shared or dirty flags when the cache block is invalid
+  bit [DCACHE_SET_ASSOC-1:0][7:0]                 write_bin = {DCACHE_SET_ASSOC{8'b00001110}};
+  // Snoop transactions targetin every way and every combination of valid/dirty/shared
+  // it is impossible to have shared or dirty flags when the cache block is invalid
+  bit [DCACHE_SET_ASSOC-1:0][7:0]                 snoop_bin = {DCACHE_SET_ASSOC{8'b00001110}};
+
+  task automatic updateBuckets();
+    logic [2:0] vds; // valid/dirty/shared
+    vds = {cache_status[current_req.mem_idx][target_way].valid,
+           cache_status[current_req.mem_idx][target_way].dirty,
+           cache_status[current_req.mem_idx][target_way].shared};
+
+    case (current_req.req_type)
+      SNOOP_REQ: begin
+        for (int i = 0; i < DCACHE_SET_ASSOC; i++) begin
+          if (valid_v[i] && cache_status[current_req.mem_idx][i].tag == current_req.tag) begin
+            snoop_bin[i][vds] = 1'b1;
+            break;
+          end
+        end
+      end
+      RD_REQ: begin
+        read_bin[target_way][vds] = 1'b1;
+      end
+      WR_REQ: begin
+        write_bin[target_way][vds] = 1'b1;
+      end
+    endcase
+    if (current_req.req_type == RD_REQ || current_req.req_type == WR_REQ) begin
+      if (is_inside_cacheable_regions(ArianeCfg, current_req.addr)) begin
+        cache_valid_bin[current_req.mem_idx][target_way] = 1'b1;
+      end
+    end
+  endtask
+
+  task reportCoverage(
+                      output bit finish
+                      );
+    automatic int unsigned                 total_items;
+    automatic int unsigned                 covered_items;
+    automatic real coverage;
+
+    finish = 1'b0;
+    covered_items = 0;
+
+    total_items = DCACHE_NUM_WORDS * DCACHE_SET_ASSOC + 3*DCACHE_SET_ASSOC*8;
+    for (int i = 0; i < DCACHE_NUM_WORDS; i++) begin
+      for (int j = 0; j < DCACHE_SET_ASSOC; j++) begin
+        if (cache_valid_bin[i][j])
+          covered_items = covered_items + 1;
+      end
+    end
+
+    for (int i = 0; i < DCACHE_SET_ASSOC; i++) begin
+      for (int j = 0; j < 8; j++) begin
+        if (read_bin[i][j])
+          covered_items = covered_items + 1;
+        if (write_bin[i][j])
+          covered_items = covered_items + 1;
+        if (snoop_bin[i][j])
+          covered_items = covered_items + 1;
+      end
+    end
+    coverage = 100 * real'(covered_items)/real'(total_items);
+    //$display("Coverage = %0.2f %%", coverage);
+    if (coverage == 100)
+      finish = 1'b1;
+  endtask
+
+  int total_requests = 0;
+  int snoop_requests = 0;
+  int read_requests = 0;
+  int write_requests = 0;
+  int cacheable_read_requests = 0;
+  int cacheable_write_requests = 0;
+  int shareable_read_requests = 0;
+  int shareable_write_requests = 0;
+  int valid_read_requests = 0;
+  int valid_write_requests = 0;
+  int dirty_read_requests = 0;
+  int dirty_write_requests = 0;
+  int shared_read_requests = 0;
+  int shared_write_requests = 0;
+  int cleaninvalid_snoop_requests = 0;
+  int readunique_snoop_requests = 0;
+  int readshared_snoop_requests = 0;
+  int readonce_snoop_requests = 0;
+  int valid_cleaninvalid_snoop_requests = 0;
+  int valid_readunique_snoop_requests = 0;
+  int valid_readshared_snoop_requests = 0;
+  int valid_readonce_snoop_requests = 0;
+  int dirty_cleaninvalid_snoop_requests = 0;
+  int dirty_readunique_snoop_requests = 0;
+  int dirty_readshared_snoop_requests = 0;
+  int dirty_readonce_snoop_requests = 0;
+  int shared_cleaninvalid_snoop_requests = 0;
+  int shared_readunique_snoop_requests = 0;
+  int shared_readshared_snoop_requests = 0;
+  int shared_readonce_snoop_requests = 0;
+
+  task updateTestStatistics();
+    total_requests = total_requests + 1;
+    if (current_req.req_type == RD_REQ) begin
+      read_requests = read_requests + 1;
+      if (is_inside_cacheable_regions(ArianeCfg, current_req.addr)) begin
+        cacheable_read_requests = cacheable_read_requests + 1;
+        if (isHit(cache_status, current_req))
+          valid_read_requests = valid_read_requests + 1;
+        if (isDirty(cache_status, current_req))
+          dirty_read_requests = dirty_read_requests + 1;
+        if (isShared(cache_status, current_req))
+          shared_read_requests = shared_read_requests + 1;
+      end
+      if (is_inside_shareable_regions(ArianeCfg, current_req.addr))
+        shareable_read_requests = shareable_read_requests + 1;
+    end
+    else if (current_req.req_type == WR_REQ) begin
+      write_requests = write_requests + 1;
+      if (is_inside_cacheable_regions(ArianeCfg, current_req.addr)) begin
+        cacheable_write_requests = cacheable_write_requests + 1;
+        if (isHit(cache_status, current_req))
+          valid_write_requests = valid_write_requests + 1;
+        if (isDirty(cache_status, current_req))
+          dirty_write_requests = dirty_write_requests + 1;
+        if (isShared(cache_status, current_req))
+          shared_write_requests = shared_write_requests + 1;
+      end
+      if (is_inside_shareable_regions(ArianeCfg, current_req.addr))
+        shareable_write_requests = shareable_write_requests + 1;
+    end
+    else if (current_req.req_type == SNOOP_REQ) begin
+      snoop_requests = snoop_requests + 1;
+      case (current_req.snoop_type)
+        snoop_pkg::READ_SHARED: begin
+          readshared_snoop_requests = readshared_snoop_requests + 1;
+          if (isHit(cache_status, current_req))
+            valid_readshared_snoop_requests = valid_readshared_snoop_requests + 1;
+          if (isDirty(cache_status, current_req))
+            dirty_readshared_snoop_requests = dirty_readshared_snoop_requests + 1;
+          if (isShared(cache_status, current_req))
+            shared_readshared_snoop_requests = shared_readshared_snoop_requests + 1;
+        end
+        snoop_pkg::READ_UNIQUE: begin
+          readunique_snoop_requests = readunique_snoop_requests + 1;
+          if (isHit(cache_status, current_req))
+            valid_readunique_snoop_requests = valid_readunique_snoop_requests + 1;
+          if (isDirty(cache_status, current_req))
+            dirty_readunique_snoop_requests = dirty_readunique_snoop_requests + 1;
+          if (isShared(cache_status, current_req))
+            shared_readunique_snoop_requests = shared_readunique_snoop_requests + 1;
+        end
+        snoop_pkg::CLEAN_INVALID: begin
+          cleaninvalid_snoop_requests = cleaninvalid_snoop_requests + 1;
+          if (isHit(cache_status, current_req))
+            valid_cleaninvalid_snoop_requests = valid_cleaninvalid_snoop_requests + 1;
+          if (isDirty(cache_status, current_req))
+            dirty_cleaninvalid_snoop_requests = dirty_cleaninvalid_snoop_requests + 1;
+          if (isShared(cache_status, current_req))
+            shared_cleaninvalid_snoop_requests = shared_cleaninvalid_snoop_requests + 1;
+        end
+        snoop_pkg::READ_ONCE: begin
+          readonce_snoop_requests = readonce_snoop_requests + 1;
+          if (isHit(cache_status, current_req))
+            valid_readonce_snoop_requests = valid_readonce_snoop_requests + 1;
+          if (isDirty(cache_status, current_req))
+            dirty_readonce_snoop_requests = dirty_readonce_snoop_requests + 1;
+          if (isShared(cache_status, current_req))
+            shared_readonce_snoop_requests = shared_readonce_snoop_requests + 1;
+        end
+      endcase
+    end
+  endtask
+
+  task reportStatistics();
+    $display("Total generated requests: %d", total_requests);
+
+    $display("\tSnoop requests: %d", snoop_requests);
+    $display("\t\tCleanInvalid requests: %d", cleaninvalid_snoop_requests);
+    $display("\t\t\tCleanInvalid requests targeting valid cache blocks: %d",   valid_cleaninvalid_snoop_requests);
+    $display("\t\t\tCleanInvalid requests targeting dirty cache blocks: %d",   dirty_cleaninvalid_snoop_requests);
+    $display("\t\t\tCleanInvalid requests targeting shared cache blocks: %d", shared_cleaninvalid_snoop_requests);
+    $display("\t\tReadUnique requests: %d", readunique_snoop_requests);
+    $display("\t\t\tReadUnique requests targeting valid cache blocks: %d",   valid_readunique_snoop_requests);
+    $display("\t\t\tReadUnique requests targeting dirty cache blocks: %d",   dirty_readunique_snoop_requests);
+    $display("\t\t\tReadUnique requests targeting shared cache blocks: %d", shared_readunique_snoop_requests);
+    $display("\t\tReadShared requests: %d", readshared_snoop_requests);
+    $display("\t\t\tReadShared requests targeting valid cache blocks: %d",   valid_readshared_snoop_requests);
+    $display("\t\t\tReadShared requests targeting dirty cache blocks: %d",   dirty_readshared_snoop_requests);
+    $display("\t\t\tReadShared requests targeting shared cache blocks: %d", shared_readshared_snoop_requests);
+    $display("\t\tReadOnce requests: %d", readonce_snoop_requests);
+    $display("\t\t\tReadOnce requests targeting valid cache blocks: %d",   valid_readonce_snoop_requests);
+    $display("\t\t\tReadOnce requests targeting dirty cache blocks: %d",   dirty_readonce_snoop_requests);
+    $display("\t\t\tReadOnce requests targeting shared cache blocks: %d", shared_readonce_snoop_requests);
+
+    $display("\tRead requests: %d", read_requests);
+    $display("\t\tRead requests targeting cacheable locations: %d", cacheable_read_requests);
+    $display("\t\tRead requests targeting shareable locations: %d", shareable_read_requests);
+    $display("\t\tRead requests targeting valid cache blocks: %d",  valid_read_requests);
+    $display("\t\tRead requests targeting dirty cache blocks: %d",  dirty_read_requests);
+    $display("\t\tRead requests targeting shared cache blocks: %d", shared_read_requests);
+    $display("\tWrite requests: %d", write_requests);
+    $display("\t\tWrite requests targeting cacheable locations: %d", cacheable_write_requests);
+    $display("\t\tWrite requests targeting shareable locations: %d", shareable_write_requests);
+    $display("\t\tWrite requests targeting valid cache blocks: %d",   valid_write_requests);
+    $display("\t\tWrite requests targeting dirty cache blocks: %d",   dirty_write_requests);
+    $display("\t\tWrite requests targeting shared cache blocks: %d", shared_write_requests);
+  endtask
+
+  // Helper tasks
 
   generate
     genvar                             i;
@@ -210,14 +421,11 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
     end
   endgenerate
 
-  // Helper tasks
-
   task automatic updateCache();
     if (current_req.req_type == SNOOP_REQ) begin
       // look for the right tag
       for (int i = 0; i < DCACHE_SET_ASSOC; i++) begin
-//        if (valid_v[i] && cache_status[current_req.mem_idx][i].tag == current_req.tag) begin
-          if (isHit(cache_status, current_req)) begin
+        if (valid_v[i] && cache_status[current_req.mem_idx][i].tag == current_req.tag) begin
           case (current_req.snoop_type)
             snoop_pkg::READ_SHARED: begin
               cache_status[current_req.mem_idx][i].shared = 1'b1;
@@ -245,10 +453,14 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
         if (&valid_v) begin
           target_way = lfsr[$clog2(DCACHE_SET_ASSOC)-1:0];
           cache_status[current_req.mem_idx][target_way].tag = current_req.tag;
-          if (current_req.req_type == WR_REQ)
+          if (current_req.req_type == WR_REQ) begin
             cache_status[current_req.mem_idx][target_way].dirty = 1'b1;
-          else
-            cache_status[current_req.mem_idx][target_way].dirty = 1'b0;
+            cache_status[current_req.mem_idx][target_way].shared = 1'b0;
+          end
+          else begin
+            cache_status[current_req.mem_idx][target_way].dirty = acePassDirty;
+            cache_status[current_req.mem_idx][target_way].shared = aceIsShared;
+          end
           lfsr = nextLfsr(lfsr);
         end
         // there is an empty way
@@ -256,12 +468,19 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
           target_way = one_hot_to_bin(get_victim_cl(~valid_v));
           cache_status[current_req.mem_idx][target_way].tag = current_req.tag;
           cache_status[current_req.mem_idx][target_way].valid = 1'b1;
-          if (current_req.req_type == WR_REQ)
+          if (current_req.req_type == WR_REQ) begin
             cache_status[current_req.mem_idx][target_way].dirty = 1'b1;
+            cache_status[current_req.mem_idx][target_way].shared = 1'b0;
+          end
+          else begin
+            cache_status[current_req.mem_idx][target_way].dirty = acePassDirty;
+            cache_status[current_req.mem_idx][target_way].shared = aceIsShared;
+          end
         end
       end
       // cache hit
       else begin
+        target_way = getHitWay(cache_status, current_req);
         if (current_req.req_type == WR_REQ) begin
           cache_status[current_req.mem_idx][target_way].dirty = 1'b1;
           cache_status[current_req.mem_idx][target_way].shared = 1'b0;
@@ -288,37 +507,37 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
       OK = 1'b0;
       $error("Cache mismatch index %h tag %h way %h - shared bit: expected %d, actual %d", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].shared, i_dut.valid_dirty_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][8*target_way+2]);
     end
-    if (cache_status[current_req.mem_idx][0].tag != i_dut.sram_block[0].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx]) begin
+    if (cache_status[current_req.mem_idx][0].tag != i_dut.sram_block[0].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
       OK = 1'b0;
-      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[0].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx]);
+      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[0].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
     end
-    if (cache_status[current_req.mem_idx][1].tag != i_dut.sram_block[1].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx]) begin
+    if (cache_status[current_req.mem_idx][1].tag != i_dut.sram_block[1].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
       OK = 1'b0;
-      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[1].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx]);
+      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[1].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
     end
-    if (cache_status[current_req.mem_idx][2].tag != i_dut.sram_block[2].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx]) begin
+    if (cache_status[current_req.mem_idx][2].tag != i_dut.sram_block[2].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
       OK = 1'b0;
-      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[2].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx]);
+      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[2].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
     end
-    if (cache_status[current_req.mem_idx][3].tag != i_dut.sram_block[3].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx]) begin
+    if (cache_status[current_req.mem_idx][3].tag != i_dut.sram_block[3].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
       OK = 1'b0;
-      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[3].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx]);
+      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[3].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
     end
-    if (cache_status[current_req.mem_idx][4].tag != i_dut.sram_block[4].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx]) begin
+    if (cache_status[current_req.mem_idx][4].tag != i_dut.sram_block[4].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
       OK = 1'b0;
-      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[4].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx]);
+      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[4].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
     end
-    if (cache_status[current_req.mem_idx][5].tag != i_dut.sram_block[5].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx]) begin
+    if (cache_status[current_req.mem_idx][5].tag != i_dut.sram_block[5].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
       OK = 1'b0;
-      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[5].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx]);
+      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[5].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
     end
-    if (cache_status[current_req.mem_idx][6].tag != i_dut.sram_block[6].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx]) begin
+    if (cache_status[current_req.mem_idx][6].tag != i_dut.sram_block[6].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
       OK = 1'b0;
-      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[6].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx]);
+      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[6].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
     end
-    if (cache_status[current_req.mem_idx][7].tag != i_dut.sram_block[7].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx]) begin
+    if (cache_status[current_req.mem_idx][7].tag != i_dut.sram_block[7].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
       OK = 1'b0;
-      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[7].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx]);
+      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[7].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
     end
   endtask
 
@@ -359,8 +578,6 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
   assign current_req.tag = current_req.addr[DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:DCACHE_INDEX_WIDTH];
   assign current_req.mem_idx = current_req.addr[DCACHE_INDEX_WIDTH-1:DCACHE_BYTE_OFFSET];
 
-  logic ongoing_transaction;
-
   logic start_transaction;
 
   always_comb begin
@@ -398,12 +615,15 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
 
   initial begin
     bit checkOK;
+    bit finish;
 
     cache_status = '0;
     lfsr = '0;
 
     forever begin
       check_done_o = 1'b0;
+      aceIsShared = 1'b0;
+      acePassDirty = 1'b0;
 
       `WAIT_SIG(clk_i, start_transaction)
 
@@ -431,17 +651,29 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
       end
       else begin
         // bypass
-        if (!isCacheable(current_req.addr)) begin
+        if (!is_inside_cacheable_regions(ArianeCfg, current_req.addr)) begin
           if (current_req.req_type == WR_REQ) begin
             `WAIT_SIG(clk_i, axi_bypass_o.aw_valid)
-            if (!isWriteUnique(axi_bypass_o))
-              $error("Error WRITE_UNIQUE request expected");
+            if (is_inside_shareable_regions(ArianeCfg, current_req.addr)) begin
+              if (!isWriteUnique(axi_bypass_o))
+                $error("Error WRITE_UNIQUE request expected");
+            end
+            else begin
+              if (!isWriteNoSnoop(axi_bypass_o))
+                $error("Error WRITE_NO_SNOOP request expected");
+            end
             `WAIT_SIG(clk_i, axi_bypass_i.b_valid)
           end
           else begin
             `WAIT_SIG(clk_i, axi_bypass_o.ar_valid)
-            if (!isReadOnce(axi_bypass_o))
-              $error("Error READ_ONCE request expected");
+            if (is_inside_shareable_regions(ArianeCfg, current_req.addr)) begin
+              if (!isReadOnce(axi_bypass_o))
+                $error("Error READ_ONCE request expected");
+            end
+            else begin
+              if (!isReadNoSnoop(axi_bypass_o))
+                $error("Error READ_NO_SNOOP request expected");
+            end
             `WAIT_SIG(clk_i, axi_bypass_i.r.last)
           end
         end
@@ -467,6 +699,8 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
                     $error("Error READ_SHARED request expected");
                 end
                 `WAIT_SIG(clk_i, axi_data_i.r.last)
+                acePassDirty = axi_data_i.r.resp[2];
+                aceIsShared = axi_data_i.r.resp[3];
               end
               begin
                 if (current_req.req_type == WR_REQ)
@@ -505,7 +739,12 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
         end
       end
 
-      if (current_req.addr >= CACHE_BASE_ADDR)
+      // wait for acePassDirty and aceIsShared to stabilize
+      `WAIT_CYC(clk_i, 1)
+
+      updateTestStatistics();
+
+      if (is_inside_cacheable_regions(ArianeCfg, current_req.addr))
         updateCache();
 
       // the actual cache needs 2 more cycles to be updated
@@ -513,6 +752,16 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
 
       checkCache(checkOK);
 
+      updateBuckets();
+      reportCoverage(finish);
+
+      if (finish) begin
+        $display("Simulation end");
+        reportStatistics();
+        $finish();
+      end
+
+      `WAIT_CYC(clk_i, 2)
       check_done_o = 1'b1;
       `WAIT_CYC(clk_i, 1)
     end

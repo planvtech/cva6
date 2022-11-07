@@ -206,6 +206,7 @@ import std_cache_pkg::*;
     // ------------------
     miss_handler #(
         .NR_PORTS               ( 4                    ),
+        .ArianeCfg             ( ArianeCfg            ),
         .mst_req_t (ariane_ace::m2s_nosnoop_t),
         .mst_resp_t (ariane_ace::s2m_nosnoop_t)
     ) i_miss_handler (

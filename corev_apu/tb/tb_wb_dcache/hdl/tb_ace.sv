@@ -14,19 +14,28 @@
 
 module tb_ace import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #()();
 
-  localparam MaxRounds = 1000;
+  localparam MaxRounds = 1000000;
 
   // leave this
   timeunit 1ps;
   timeprecision 1ps;
 
   // memory configuration (64bit words)
-  parameter MemBytes          = 2**DCACHE_INDEX_WIDTH * 4 * 32;
+
+  // 0 ~ 1/16 MemSize   => non-cacheable, non-shareable
+  // 1/16 ~ 1/8 MemSize => non-cacheable, shareable
+  // 1/8 ~ 9/16 MemSize => cacheable, shareable
+  // 9/16 ~ end MemSize => cacheable, non-shareable
+
+  parameter MemBytes          = 2**DCACHE_INDEX_WIDTH * 4 * 4; //2**DCACHE_INDEX_WIDTH * 4 * 32;
   parameter MemWords          = MemBytes>>3;
 
-  // noncacheable portion
-  parameter logic [63:0] CachedAddrBeg = MemBytes>>3;//1/8th of the memory is NC
+  // cacheable portion
+  parameter logic [63:0] CachedAddrBeg = MemBytes>>3; // 1/8 is non-cacheable
   parameter logic [63:0] CachedAddrEnd = 64'hFFFF_FFFF_FFFF_FFFF;
+  // shareable portion
+  parameter logic [63:0] SharedAddrBeg = MemBytes>>4; // 1/16 is the beginning of the shareable region
+  parameter logic [63:0] SharedAddrEnd = 9*MemBytes>>4-1; // 9/16 is the end of the shareable region
 
   localparam ariane_cfg_t ArianeDefaultConfig = '{
     RASDepth: 2,
@@ -44,6 +53,10 @@ module tb_ace import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #
     NrCachedRegionRules:   1,
     CachedRegionAddrBase:  {CachedAddrBeg},//1/8th of the memory is NC
     CachedRegionLength:    {CachedAddrEnd-CachedAddrBeg+64'b1},
+    // shared region
+    NrSharedRegionRules:   1,
+    SharedRegionAddrBase:  {SharedAddrBeg},
+    SharedRegionLength:    {SharedAddrEnd-SharedAddrBeg+64'b1},
     // cache config
     Axi64BitCompliant:     1'b1,
     SwapEndianess:         1'b0,
@@ -190,8 +203,7 @@ module tb_ace import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #
     #(
       .NR_CPU_PORTS (3),
       .MAX_ROUNDS (MaxRounds),
-      .CACHE_BASE_ADDR (CachedAddrBeg),
-      .CACHE_END_ADDR (CachedAddrEnd),
+      .ArianeCfg ( ArianeDefaultConfig ),
       .AxiAddrWidth (AxiAddrWidth),
       .AxiDataWidth (AxiDataWidth),
       .ApplTime (ApplTime),
@@ -199,6 +211,7 @@ module tb_ace import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #
       )
   i_request_scheduler
     (
+
      .clk_i (clk_i),
      .rst_ni (rst_ni),
      .check_done_i (check_done),
@@ -213,7 +226,7 @@ module tb_ace import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #
   dcache_checker
     #(
       .NR_CPU_PORTS (3),
-      .CACHE_BASE_ADDR (CachedAddrBeg)
+      .ArianeCfg ( ArianeDefaultConfig )
       )
   i_checker
     (

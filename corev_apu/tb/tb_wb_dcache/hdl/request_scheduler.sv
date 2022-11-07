@@ -17,8 +17,7 @@ module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import t
   #(
     parameter int unsigned NR_CPU_PORTS = 3,
     parameter int unsigned MAX_ROUNDS = 1000,
-    parameter CACHE_BASE_ADDR = 64'h8000_0000,
-    parameter CACHE_END_ADDR = 64'h8000_0000,
+    parameter ariane_cfg_t ArianeCfg        = ArianeDefaultConfig, // contains cacheable regions
     parameter int unsigned AxiAddrWidth = 32'd64,
     parameter int unsigned AxiDataWidth = 32'd64,
     parameter time         ApplTime = 2ns,
@@ -80,10 +79,9 @@ module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import t
   task automatic genRdReq();
     logic [31:0] addr;
 
-//    addr = $urandom_range(32'h8fff_ffff);
-    addr = $urandom_range(32'h800);
+    addr = $urandom_range(32'h8000);
     if ($urandom_range(1))
-      addr = addr + CACHE_BASE_ADDR;
+      addr = addr + ArianeCfg.CachedRegionAddrBase[0];
     active_port = $urandom_range(2);
     `WAIT_CYC(clk_i, 1)
     req_ports_i[active_port].data_req  = 1'b1;
@@ -101,10 +99,9 @@ module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import t
   task automatic genWrReq();
     logic [31:0] addr;
 
-//    addr = $urandom_range(32'h8fff_ffff);
-    addr = $urandom_range(32'h800);
+    addr = $urandom_range(32'h8000);
     if ($urandom_range(1))
-      addr = addr + CACHE_BASE_ADDR;
+      addr = addr + ArianeCfg.CachedRegionAddrBase[0];
     active_port = $urandom_range(2);
     `WAIT_CYC(clk_i, 1)
     req_ports_i[active_port].data_req  = 1'b1;
@@ -130,7 +127,7 @@ module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import t
     req_ports_i = '0;
 
     snoop_rand_master = new( snoop_dv );
-    snoop_rand_master.add_memory_region(CACHE_BASE_ADDR, CACHE_BASE_ADDR+32'h800, axi_pkg::DEVICE_NONBUFFERABLE);
+    snoop_rand_master.add_memory_region(ArianeCfg.SharedRegionAddrBase[0], ArianeCfg.SharedRegionAddrBase[0]+ArianeCfg.SharedRegionLength[0], axi_pkg::DEVICE_NONBUFFERABLE);
     snoop_rand_master.reset();
 
     `WAIT_CYC(clk_i,1)
@@ -157,7 +154,7 @@ module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import t
         begin
           `WAIT_SIG(clk_i, check_done_i)
           if (round == MAX_ROUNDS-1) begin
-            $display("Simulation end");
+            $warning("Simulation end - Maximum number of rounds reached");
             $finish();
           end
           else begin
