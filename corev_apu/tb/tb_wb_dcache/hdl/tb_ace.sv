@@ -37,7 +37,7 @@ module tb_ace import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #
   parameter logic [63:0] SharedAddrBeg = MemBytes>>4; // 1/16 is the beginning of the shareable region
   parameter logic [63:0] SharedAddrEnd = 9*MemBytes>>4-1; // 9/16 is the end of the shareable region
 
-  localparam ariane_cfg_t ArianeDefaultConfig = '{
+  localparam ariane_cfg_t ArianeCfg = '{
     RASDepth: 2,
     BTBEntries: 32,
     BHTEntries: 128,
@@ -175,7 +175,7 @@ module tb_ace import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #
   assign flush_i = 1'b0;
 
   std_nbdcache  #(
-    .ArianeCfg ( ArianeDefaultConfig ),
+    .ArianeCfg ( ArianeCfg ),
     .mst_req_t (ariane_ace::m2s_nosnoop_t),
     .mst_resp_t (ariane_ace::s2m_nosnoop_t)
   ) i_dut (
@@ -202,8 +202,7 @@ module tb_ace import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #
   request_scheduler
     #(
       .NR_CPU_PORTS (3),
-      .MAX_ROUNDS (MaxRounds),
-      .ArianeCfg ( ArianeDefaultConfig ),
+      .ArianeCfg ( ArianeCfg ),
       .AxiAddrWidth (AxiAddrWidth),
       .AxiDataWidth (AxiDataWidth),
       .ApplTime (ApplTime),
@@ -225,8 +224,9 @@ module tb_ace import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #
 
   dcache_checker
     #(
+      .MAX_ROUNDS (MaxRounds),
       .NR_CPU_PORTS (3),
-      .ArianeCfg ( ArianeDefaultConfig )
+      .ArianeCfg ( ArianeCfg )
       )
   i_checker
     (

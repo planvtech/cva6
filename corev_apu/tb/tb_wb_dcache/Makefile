@@ -25,6 +25,9 @@ wave         := wave.do
 ifeq ($(toplevel),tb_ace)
 	wave         := wave_ace.do
 endif
+ifeq ($(toplevel),tb_ace_direct)
+	wave         := wave_ace_direct.do
+endif
 
 # Iterate over all include directories and write them with +incdir+ prefixed
 # +incdir+ works for Verilator and QuestaSim

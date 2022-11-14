@@ -60,3 +60,4 @@ hdl/tb.sv
 hdl/dcache_checker.sv
 hdl/request_scheduler.sv
 hdl/tb_ace.sv
+hdl/tb_ace_direct.sv

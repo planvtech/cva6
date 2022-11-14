@@ -222,6 +222,12 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
         data_o.dirty = 1'b0;
         data_o.valid = 1'b0;
         data_o.shared = 1'b0;
+        // valid = 0, invalidate = 1 signals an incoming ReadUnique to the miss_handler
+        // we are not blocked by the miss_handler here
+        miss_req_o.valid = 1'b0;
+        miss_req_o.invalidate = 1'b1;
+        miss_req_o.addr = {mem_req_q.tag, mem_req_q.index};
+        miss_req_o.size = mem_req_q.size;
         if (gnt_i) begin
           state_d = SEND_CR_RESP;
         end
@@ -254,10 +260,12 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
       end
 
       WAIT_MH: begin
+        // valid = invalidate = 1 signals an incoming cleaninvalid
+        // we are blocked by the miss_handler, which should execute the invalidate to avoid a deadlock
         miss_req_o.valid = 1'b1;
+        miss_req_o.invalidate = 1'b1;
         miss_req_o.addr = {mem_req_q.tag, mem_req_q.index};
         miss_req_o.size = mem_req_q.size;
-        miss_req_o.invalidate = 1'b1;
 
         if (miss_gnt_i)
           state_d = SEND_CR_RESP;

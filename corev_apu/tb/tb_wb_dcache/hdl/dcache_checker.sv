@@ -14,8 +14,9 @@
 
 module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*;
   #(
+    parameter int unsigned MAX_ROUNDS = 1000,
     parameter int unsigned NR_CPU_PORTS = 3,
-    parameter ariane_cfg_t ArianeCfg        = ArianeDefaultConfig // contains cacheable regions
+    parameter ariane_cfg_t ArianeCfg = ArianeDefaultConfig // contains cacheable regions
     )
   (
    input logic  clk_i,
@@ -614,6 +615,7 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
   end
 
   initial begin
+    automatic int unsigned round = 0;
     bit checkOK;
     bit finish;
 
@@ -759,6 +761,13 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
         $display("Simulation end");
         reportStatistics();
         $finish();
+      end
+      else if (round == MAX_ROUNDS-1) begin
+        $warning("Simulation end - Maximum number of rounds reached");
+        $finish();
+      end
+      else begin
+        round = round + 1;
       end
 
       `WAIT_CYC(clk_i, 2)

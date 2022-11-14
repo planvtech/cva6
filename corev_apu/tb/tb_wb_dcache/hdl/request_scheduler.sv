@@ -16,7 +16,6 @@
 module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*;
   #(
     parameter int unsigned NR_CPU_PORTS = 3,
-    parameter int unsigned MAX_ROUNDS = 1000,
     parameter ariane_cfg_t ArianeCfg        = ArianeDefaultConfig, // contains cacheable regions
     parameter int unsigned AxiAddrWidth = 32'd64,
     parameter int unsigned AxiDataWidth = 32'd64,
@@ -122,8 +121,6 @@ module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import t
   state_req_t state_req;
 
   initial begin
-    automatic int unsigned round = 0;
-
     req_ports_i = '0;
 
     snoop_rand_master = new( snoop_dv );
@@ -153,13 +150,6 @@ module request_scheduler import ariane_pkg::*; import std_cache_pkg::*; import t
       fork
         begin
           `WAIT_SIG(clk_i, check_done_i)
-          if (round == MAX_ROUNDS-1) begin
-            $warning("Simulation end - Maximum number of rounds reached");
-            $finish();
-          end
-          else begin
-            round = round + 1;
-          end
         end
         begin
           `WAIT_CYC(clk_i, timeout)

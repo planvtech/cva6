@@ -8,3 +8,5 @@ add wave -group req_port_2 -position insertpoint {sim:/tb_ace/i_dut/master_ports
 add wave -group miss_handler -position insertpoint sim:/tb_ace/i_dut/i_miss_handler/*
 add wave -position insertpoint sim:/tb_ace/i_checker/cache_status
 add wave -position insertpoint sim:/tb_ace/i_dut/valid_dirty_sram/gen_cut[0]/gen_mem/i_tc_sram_wrapper/i_tc_sram/sram
+
+run -all

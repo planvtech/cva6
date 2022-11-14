@@ -92,6 +92,9 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     mshr_t                                  mshr_d, mshr_q;
     logic [DCACHE_INDEX_WIDTH-1:0]          cnt_d, cnt_q;
     logic [DCACHE_SET_ASSOC-1:0]            evict_way_d, evict_way_q;
+
+  logic [1:0]                               colliding_clean_d, colliding_clean_q;
+
     // cache line to evict
     cache_line_t                            evict_cl_d, evict_cl_q;
 
@@ -133,6 +136,8 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     logic                                    gnt_miss_fsm;
     logic                                    valid_miss_fsm;
     logic [(DCACHE_LINE_WIDTH/64)-1:0][63:0] data_miss_fsm;
+  logic                                      gnt_miss_fsm_d, gnt_miss_fsm_q;
+  logic                                      rst_gnt_miss_fsm;
 
   logic                                      shared_miss_fsm;
   logic                                      dirty_miss_fsm;
@@ -203,6 +208,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         evict_way_d  = evict_way_q;
         evict_cl_d   = evict_cl_q;
         mshr_d       = mshr_q;
+        colliding_clean_d = colliding_clean_q;
         // communicate to the requester which unit we are currently serving
         active_serving_o[mshr_q.id] = mshr_q.valid;
         // AMOs
@@ -210,9 +216,13 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         amo_resp_o.result = '0;
         amo_operand_b = '0;
 
+        rst_gnt_miss_fsm = 1'b0;
+
         case (state_q)
 
             IDLE: begin
+                rst_gnt_miss_fsm = 1'b1;
+                colliding_clean_d = '0;
                 // lowest priority are AMOs, wait until everything else is served before going for the AMOs
                 if (amo_req_i.req && !busy_i) begin
                     // 1. Flush the cache
@@ -318,13 +328,15 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
             REQ_CACHELINE: begin
                 req_fsm_miss_valid  = 1'b1;
                 req_fsm_miss_addr   = mshr_q.addr;
-              case ({mshr_q.we, is_inside_shareable_regions(ArianeCfg, req_fsm_miss_addr)})
+                case ({mshr_q.we, is_inside_shareable_regions(ArianeCfg, req_fsm_miss_addr)})
                     2'b00: req_fsm_miss_type = ariane_ace::READ_NO_SNOOP;
                     2'b01: req_fsm_miss_type = ariane_ace::READ_SHARED;
                     2'b10: req_fsm_miss_type = ariane_ace::WRITE_NO_SNOOP;
                     2'b11: req_fsm_miss_type = ariane_ace::READ_UNIQUE;
                 endcase
-
+                // start a ReadUnique also if we reached this state after a colliding invalidation
+                if (colliding_clean_q)
+                  req_fsm_miss_type = ariane_ace::READ_UNIQUE;
                 if (gnt_miss_fsm) begin
                     state_d = SAVE_CACHELINE;
                     miss_gnt_o[mshr_q.id] = 1'b1;
@@ -395,8 +407,20 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                               (state_q == WB_CACHELINE_FLUSH) ? FLUSH_REQ_STATUS :
                               IDLE;
                   if (state_q == WB_CACHELINE_INVALID) begin
-                    mshr_d.valid = 1'b0;
-                    miss_gnt_o[mshr_q.id] = 1'b1;
+                    // there has been an invalidate request while the miss_handler was sending a CleanUnique for the same cacheline
+                    if (colliding_clean_q == 2'b11) begin
+                      // release the snoop_cache_ctrl
+                      miss_gnt_o[0] = 1'b1;
+                      // go back to SEND_CLEAN
+                      // Start a ReadUnique if the axi_data bus us free
+                      state_d = SEND_CLEAN;
+                      // clear colliding_clean[1] to avoid triggering the writeback over and over
+                      colliding_clean_d[1] = 1'b0;
+                    end
+                    else begin
+                      mshr_d.valid = 1'b0;
+                      miss_gnt_o[mshr_q.id] = 1'b1;
+                    end
                   end
                 end
             end
@@ -474,9 +498,21 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                 req_o       = 1'b1;
                 be_o.vldrty = matching_way;
                 we_o        = 1'b1;
-                state_d = IDLE;
-                miss_gnt_o[mshr_q.id] = 1'b1;
-                mshr_d.valid = 1'b0;
+                // there has been an invalidate request while the miss_handler was sending a CleanUnique for the same cacheline
+                if (colliding_clean_q == 2'b11) begin
+                  // release the snoop_cache_ctrl
+                  miss_gnt_o[0] = 1'b1;
+                  // go back to SEND_CLEAN
+                  // Start a ReadUnique if the axi_data bus us free
+                  state_d = SEND_CLEAN;
+                  // clear colliding_clean[1] to avoid triggering the writeback over and over
+                  colliding_clean_d[1] = 1'b0;
+                end
+                else begin
+                  state_d = IDLE;
+                  miss_gnt_o[mshr_q.id] = 1'b1;
+                  mshr_d.valid = 1'b0;
+                end
               end
             end
 
@@ -488,10 +524,26 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
               req_fsm_miss_addr   = mshr_q.addr;
               req_fsm_miss_type   = ariane_ace::CLEAN_UNIQUE;
 
-              if (gnt_miss_fsm) begin
-                state_d = IDLE;
-                mshr_d.valid = 1'b0;
-                miss_gnt_o[mshr_q.id] = 1'b1;
+              // colliding_clean = 01 => incoming ReadUnique. The snoop_cache_ctrl is not waiting for us. A ReadUnique must be generated after the ongoing CleanUnique.
+              // colliging_clean = 11 => incoming CleanInvalid. The snoop_cache_ctrl is waiting for a cache invalidate, which must be executed immediately.
+              //                         The writeback uses the bypass line, so the occupied axi_data bus is not a problem.
+              //                         A ReadUnique will be performed after the writeback and after the axi_data bus has been released
+              if (miss_req_invalidate[0])
+                colliding_clean_d = {miss_req_valid[0] & (miss_req_addr[0]==mshr_q.addr), (miss_req_addr[0]==mshr_q.addr)};
+
+              if (gnt_miss_fsm && (colliding_clean_q == 2'b11 || colliding_clean_d == 2'b11)) begin
+                state_d = INVALID_REQ_STATUS;
+              end
+              else if (gnt_miss_fsm_q | gnt_miss_fsm) begin
+                rst_gnt_miss_fsm = 1'b1;
+                if (colliding_clean_q == 2'b01) begin
+                  state_d = REQ_CACHELINE;
+                end
+                else begin
+                  state_d = IDLE;
+                  mshr_d.valid = 1'b0;
+                  miss_gnt_o[mshr_q.id] = 1'b1;
+                end
               end
             end
 
@@ -569,6 +621,15 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         endcase
     end
 
+    // hold valid_miss_fsm
+    always_comb begin
+      gnt_miss_fsm_d = gnt_miss_fsm_q;
+      if (rst_gnt_miss_fsm)
+        gnt_miss_fsm_d = 1'b0;
+      if (gnt_miss_fsm)
+        gnt_miss_fsm_d = 1'b1;
+    end
+
     // check MSHR for aliasing
     always_comb begin
 
@@ -598,6 +659,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
             evict_way_q   <= '0;
             evict_cl_q    <= '0;
             serve_amo_q   <= 1'b0;
+            colliding_clean_q <= '0;
         end else begin
             mshr_q        <= mshr_d;
             state_q       <= state_d;
@@ -605,9 +667,17 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
             evict_way_q   <= evict_way_d;
             evict_cl_q    <= evict_cl_d;
             serve_amo_q   <= serve_amo_d;
+            colliding_clean_q <= colliding_clean_d;
         end
     end
 
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (~rst_ni) begin
+      gnt_miss_fsm_q <= 1'b0;
+    end else begin
+      gnt_miss_fsm_q <= gnt_miss_fsm_d;
+    end
+  end
     //pragma translate_off
     `ifndef VERILATOR
     // assert that cache only hits on one way
