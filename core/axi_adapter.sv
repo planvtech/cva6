@@ -42,6 +42,8 @@ module axi_adapter #(
   output logic                                                    valid_o,
   output logic [(DATA_WIDTH/riscv::XLEN)-1:0][riscv::XLEN-1:0]    rdata_o,
   output logic [AXI_ID_WIDTH-1:0]                                 id_o,
+  output logic                                                    dirty_o,
+  output logic                                                    shared_o,
   // critical word - read port
   output logic [riscv::XLEN-1:0]                                  critical_word_o,
   output logic                                                    critical_word_valid_o,
@@ -67,6 +69,9 @@ module axi_adapter #(
   // save the atomic operation and size
   ariane_pkg::amo_t amo_d, amo_q;
   logic [1:0] size_d, size_q;
+
+  logic       dirty_d, dirty_q;
+  logic       shared_d, shared_q;
 
   always_comb begin : axi_fsm
     // Default assignments
@@ -115,10 +120,14 @@ module axi_adapter #(
     critical_word_o       = axi_resp_i.r.data;
     critical_word_valid_o = 1'b0;
     rdata_o               = cache_line_q;
+    dirty_o               = dirty_q;
+    shared_o              = shared_q;
 
     state_d       = state_q;
     cnt_d         = cnt_q;
     cache_line_d  = cache_line_q;
+    dirty_d       = dirty_q;
+    shared_d      = shared_q;
     addr_offset_d = addr_offset_q;
     id_d          = id_q;
     amo_d         = amo_q;
@@ -369,16 +378,17 @@ module axi_adapter #(
           // this is the last read
           if (axi_resp_i.r.last) begin
             id_d    = axi_resp_i.r.id;
+            dirty_d = axi_resp_i.r.resp[2];
+            shared_d = axi_resp_i.r.resp[3];
             state_d = COMPLETE_READ;
           end
 
           // save the word
           if (state_q == WAIT_R_VALID_MULTIPLE) begin
             cache_line_d[index] = axi_resp_i.r.data;
-
-          end else
+          end else begin
             cache_line_d[0] = axi_resp_i.r.data;
-
+          end
           // Decrease the counter
           cnt_d = cnt_q - 1;
         end
@@ -461,7 +471,7 @@ module axi_adapter #(
 
         ariane_ace::WRITEBACK: begin
           axi_req_o.aw.domain   = 2'b00;
-          axi_req_o.aw.snoop   = 3'b010;
+          axi_req_o.aw.snoop   = 3'b011;
         end
 
       endcase // case (trans_type_i)
@@ -485,6 +495,8 @@ module axi_adapter #(
       id_q          <= '0;
       amo_q         <= ariane_pkg::AMO_NONE;
       size_q        <= '0;
+      dirty_q <= '0;
+      shared_q <= '0;
     end else begin
       state_q       <= state_d;
       cnt_q         <= cnt_d;
@@ -493,6 +505,8 @@ module axi_adapter #(
       id_q          <= id_d;
       amo_q         <= amo_d;
       size_q        <= size_d;
+      dirty_q <= dirty_d;
+      shared_q <= shared_d;
     end
   end
 

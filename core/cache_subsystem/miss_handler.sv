@@ -18,6 +18,7 @@
 
 module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     parameter int unsigned NR_PORTS         = 3,
+    parameter ariane_cfg_t ArianeCfg        = ArianeDefaultConfig, // contains cacheable regions
     parameter type mst_req_t = logic,
     parameter type mst_resp_t = logic
 )(
@@ -29,7 +30,6 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     input logic                                       busy_i, // dcache is busy with something
     // Bypass or miss
     input logic [NR_PORTS-1:0][$bits(miss_req_t)-1:0] miss_req_i,
-    input logic                                       invalidate_i,
     // Bypass handling
     output logic [NR_PORTS-1:0]                       bypass_gnt_o,
     output logic [NR_PORTS-1:0]                       bypass_valid_o,
@@ -84,13 +84,17 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         AMO_WAIT_RESP,      // D
         INVALID_REQ_STATUS, // E
         INVALIDATE,         // F
-        WB_CACHELINE_INVALID // 10
+        WB_CACHELINE_INVALID, // 10
+        SEND_CLEAN            // 11
     } state_d, state_q;
 
     // Registers
     mshr_t                                  mshr_d, mshr_q;
     logic [DCACHE_INDEX_WIDTH-1:0]          cnt_d, cnt_q;
     logic [DCACHE_SET_ASSOC-1:0]            evict_way_d, evict_way_q;
+
+  logic [1:0]                               colliding_clean_d, colliding_clean_q;
+
     // cache line to evict
     cache_line_t                            evict_cl_d, evict_cl_q;
 
@@ -103,6 +107,8 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     logic [NR_PORTS-1:0]                    miss_req_we;
     logic [NR_PORTS-1:0][7:0]               miss_req_be;
     logic [NR_PORTS-1:0][1:0]               miss_req_size;
+    logic [NR_PORTS-1:0]                    miss_req_invalidate;
+    logic [NR_PORTS-1:0]                    miss_req_make_unique;
 
     // Bypass AMO port
     bypass_req_t amo_bypass_req;
@@ -115,6 +121,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     // Arbiter <-> Bypass AXI adapter
     bypass_req_t bypass_adapter_req;
     bypass_rsp_t bypass_adapter_rsp;
+    ariane_ace::ace_req_t              bypass_adapter_req_type;
 
     // Cache Line Refill <-> AXI
     logic                                    req_fsm_miss_valid;
@@ -129,7 +136,11 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     logic                                    gnt_miss_fsm;
     logic                                    valid_miss_fsm;
     logic [(DCACHE_LINE_WIDTH/64)-1:0][63:0] data_miss_fsm;
+  logic                                      gnt_miss_fsm_d, gnt_miss_fsm_q;
+  logic                                      rst_gnt_miss_fsm;
 
+  logic                                      shared_miss_fsm;
+  logic                                      dirty_miss_fsm;
     // Cache Management <-> LFSR
     logic                                  lfsr_enable;
     logic [DCACHE_SET_ASSOC-1:0]           lfsr_oh;
@@ -138,7 +149,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     ariane_pkg::amo_t amo_op;
     logic [63:0]      amo_operand_b;
 
-    logic [DCACHE_SET_ASSOC-1:0] matching_way;
+    logic [DCACHE_SET_ASSOC-1:0] matching_way, matching_dirty_way;
 
     // ------------------------------
     // Cache Management
@@ -149,7 +160,8 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         for (int unsigned i = 0; i < DCACHE_SET_ASSOC; i++) begin
             evict_way[i] = data_i[i].valid & data_i[i].dirty;
             valid_way[i] = data_i[i].valid;
-            matching_way[i] = data_i[i].valid & data_i[i].dirty & (data_i[i].tag == mshr_q.addr[DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:DCACHE_INDEX_WIDTH]);
+          matching_way[i] = data_i[i].valid & (data_i[i].tag == mshr_q.addr[DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:DCACHE_INDEX_WIDTH]);
+            matching_dirty_way[i] = data_i[i].valid & data_i[i].dirty & (data_i[i].tag == mshr_q.addr[DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:DCACHE_INDEX_WIDTH]);
         end
         // ----------------------
         // Default Assignments
@@ -173,6 +185,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         req_fsm_miss_be     = '0;
         req_fsm_miss_req    = ariane_axi::CACHE_LINE_REQ;
         req_fsm_miss_size   = 2'b11;
+        req_fsm_miss_type   = ariane_ace::READ_SHARED;
         // to AXI bypass
         amo_bypass_req.req     = 1'b0;
         amo_bypass_req.reqtype = ariane_axi::SINGLE_REQ;
@@ -195,6 +208,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         evict_way_d  = evict_way_q;
         evict_cl_d   = evict_cl_q;
         mshr_d       = mshr_q;
+        colliding_clean_d = colliding_clean_q;
         // communicate to the requester which unit we are currently serving
         active_serving_o[mshr_q.id] = mshr_q.valid;
         // AMOs
@@ -202,9 +216,13 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         amo_resp_o.result = '0;
         amo_operand_b = '0;
 
+        rst_gnt_miss_fsm = 1'b0;
+
         case (state_q)
 
             IDLE: begin
+                rst_gnt_miss_fsm = 1'b1;
+                colliding_clean_d = '0;
                 // lowest priority are AMOs, wait until everything else is served before going for the AMOs
                 if (amo_req_i.req && !busy_i) begin
                     // 1. Flush the cache
@@ -227,6 +245,20 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
 
                 // check if one of the state machines missed
                 for (int unsigned i = 1; i < NR_PORTS; i++) begin
+                    // check if we have to generate a CleanUnique transaction
+                    if (miss_req_valid[i] && miss_req_make_unique[i]) begin
+                        state_d = SEND_CLEAN;
+                        // we are taking another request so don't take the AMO
+                        serve_amo_d  = 1'b0;
+                        // save to MSHR
+                        mshr_d.valid = 1'b1;
+                        mshr_d.we    = '0;
+                        mshr_d.id    = i;
+                        mshr_d.addr  = miss_req_addr[i][DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:0];
+                        mshr_d.wdata = '0;
+                        mshr_d.be    = '0;
+                        break;
+                    end
                     // here comes the refill portion of code
                     if (miss_req_valid[i] && !miss_req_bypass[i]) begin
                         state_d      = MISS;
@@ -242,21 +274,21 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                         break;
                     end
                 end
+              // check if we have to serve an invalidate request
+              // invalidate requests can ony come from port 0 (snoop cache controller)
+              if (miss_req_valid[0] && miss_req_invalidate[0]) begin
+                state_d = INVALID_REQ_STATUS;
+                // we are taking another request so don't take the AMO
+                serve_amo_d  = 1'b0;
+                // save to MSHR
+                mshr_d.valid = 1'b1;
+                mshr_d.we    = miss_req_we[0];
+                mshr_d.id    = 0;
+                mshr_d.addr  = miss_req_addr[0][DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:0];
+                mshr_d.wdata = miss_req_wdata[0];
+                mshr_d.be    = miss_req_be[0];
+              end
 
-                // check if we have to serve a snoop request
-                if (invalidate_i) begin
-                  state_d = INVALIDATE;
-                  // we are taking another request so don't take the AMO
-                  serve_amo_d  = 1'b0;
-                  // save to MSHR
-                  mshr_d.valid = 1'b1;
-                  // invalidate requests can ony come from port 0 (snoop cache controller)
-                  mshr_d.we    = miss_req_we[0];
-                  mshr_d.id    = 0;
-                  mshr_d.addr  = miss_req_addr[0][DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:0];
-                  mshr_d.wdata = miss_req_wdata[0];
-                  mshr_d.be    = miss_req_be[0];
-                end
             end
 
             //  ~> we missed on the cache
@@ -296,7 +328,15 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
             REQ_CACHELINE: begin
                 req_fsm_miss_valid  = 1'b1;
                 req_fsm_miss_addr   = mshr_q.addr;
-
+                case ({mshr_q.we, is_inside_shareable_regions(ArianeCfg, req_fsm_miss_addr)})
+                    2'b00: req_fsm_miss_type = ariane_ace::READ_NO_SNOOP;
+                    2'b01: req_fsm_miss_type = ariane_ace::READ_SHARED;
+                    2'b10: req_fsm_miss_type = ariane_ace::WRITE_NO_SNOOP;
+                    2'b11: req_fsm_miss_type = ariane_ace::READ_UNIQUE;
+                endcase
+                // start a ReadUnique also if we reached this state after a colliding invalidation
+                if (colliding_clean_q)
+                  req_fsm_miss_type = ariane_ace::READ_UNIQUE;
                 if (gnt_miss_fsm) begin
                     state_d = SAVE_CACHELINE;
                     miss_gnt_o[mshr_q.id] = 1'b1;
@@ -319,7 +359,8 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                     data_o.tag   = mshr_q.addr[DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:DCACHE_INDEX_WIDTH];
                     data_o.data  = data_miss_fsm;
                     data_o.valid = 1'b1;
-                    data_o.dirty = 1'b0;
+                    data_o.dirty = dirty_miss_fsm;
+                    data_o.shared = mshr_q.we ? 1'b0 : shared_miss_fsm;
 
                     // is this a write?
                     if (mshr_q.we) begin
@@ -350,6 +391,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                 req_fsm_miss_be     = '1;
                 req_fsm_miss_we     = 1'b1;
                 req_fsm_miss_wdata  = evict_cl_q.data;
+                req_fsm_miss_type = ariane_ace::WRITEBACK;
 
                 // we've got a grant --> this is timing critical, think about it
                 if (gnt_miss_fsm) begin
@@ -364,6 +406,22 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                     state_d = (state_q == WB_CACHELINE_MISS) ? MISS :
                               (state_q == WB_CACHELINE_FLUSH) ? FLUSH_REQ_STATUS :
                               IDLE;
+                  if (state_q == WB_CACHELINE_INVALID) begin
+                    // there has been an invalidate request while the miss_handler was sending a CleanUnique for the same cacheline
+                    if (colliding_clean_q == 2'b11) begin
+                      // release the snoop_cache_ctrl
+                      miss_gnt_o[0] = 1'b1;
+                      // go back to SEND_CLEAN
+                      // Start a ReadUnique if the axi_data bus us free
+                      state_d = SEND_CLEAN;
+                      // clear colliding_clean[1] to avoid triggering the writeback over and over
+                      colliding_clean_d[1] = 1'b0;
+                    end
+                    else begin
+                      mshr_d.valid = 1'b0;
+                      miss_gnt_o[mshr_q.id] = 1'b1;
+                    end
+                  end
                 end
             end
 
@@ -428,16 +486,64 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
 
             INVALIDATE: begin
               cnt_d = mshr_q.addr[DCACHE_INDEX_WIDTH-1:0];
-              // check if the target cacheline is dirty
-              if (|(matching_way)) begin
-                evict_way_d = get_victim_cl(matching_way);
-                evict_cl_d  = data_i[one_hot_to_bin(matching_way)];
+              // writeback if the target cacheline is dirty
+              if (|matching_dirty_way) begin
+                evict_way_d = get_victim_cl(matching_dirty_way);
+                evict_cl_d  = data_i[one_hot_to_bin(matching_dirty_way)];
                 state_d     = WB_CACHELINE_INVALID;
               end
               else begin
-                state_d = IDLE;
-                miss_gnt_o[mshr_q.id] = 1'b1;
-                mshr_d.valid = 1'b0;
+                // just invalidate otherwise
+                addr_o = mshr_q.addr[DCACHE_INDEX_WIDTH-1:0];
+                req_o       = 1'b1;
+                be_o.vldrty = matching_way;
+                we_o        = 1'b1;
+                // there has been an invalidate request while the miss_handler was sending a CleanUnique for the same cacheline
+                if (colliding_clean_q == 2'b11) begin
+                  // release the snoop_cache_ctrl
+                  miss_gnt_o[0] = 1'b1;
+                  // go back to SEND_CLEAN
+                  // Start a ReadUnique if the axi_data bus us free
+                  state_d = SEND_CLEAN;
+                  // clear colliding_clean[1] to avoid triggering the writeback over and over
+                  colliding_clean_d[1] = 1'b0;
+                end
+                else begin
+                  state_d = IDLE;
+                  miss_gnt_o[mshr_q.id] = 1'b1;
+                  mshr_d.valid = 1'b0;
+                end
+              end
+            end
+
+            // ----------------------
+            // Send CleanUnique
+            // ----------------------
+            SEND_CLEAN: begin
+              req_fsm_miss_valid  = 1'b1;
+              req_fsm_miss_addr   = mshr_q.addr;
+              req_fsm_miss_type   = ariane_ace::CLEAN_UNIQUE;
+
+              // colliding_clean = 01 => incoming ReadUnique. The snoop_cache_ctrl is not waiting for us. A ReadUnique must be generated after the ongoing CleanUnique.
+              // colliging_clean = 11 => incoming CleanInvalid. The snoop_cache_ctrl is waiting for a cache invalidate, which must be executed immediately.
+              //                         The writeback uses the bypass line, so the occupied axi_data bus is not a problem.
+              //                         A ReadUnique will be performed after the writeback and after the axi_data bus has been released
+              if (miss_req_invalidate[0])
+                colliding_clean_d = {miss_req_valid[0] & (miss_req_addr[0]==mshr_q.addr), (miss_req_addr[0]==mshr_q.addr)};
+
+              if (gnt_miss_fsm && (colliding_clean_q == 2'b11 || colliding_clean_d == 2'b11)) begin
+                state_d = INVALID_REQ_STATUS;
+              end
+              else if (gnt_miss_fsm_q | gnt_miss_fsm) begin
+                rst_gnt_miss_fsm = 1'b1;
+                if (colliding_clean_q == 2'b01) begin
+                  state_d = REQ_CACHELINE;
+                end
+                else begin
+                  state_d = IDLE;
+                  mshr_d.valid = 1'b0;
+                  miss_gnt_o[mshr_q.id] = 1'b1;
+                end
               end
             end
 
@@ -515,6 +621,15 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         endcase
     end
 
+    // hold valid_miss_fsm
+    always_comb begin
+      gnt_miss_fsm_d = gnt_miss_fsm_q;
+      if (rst_gnt_miss_fsm)
+        gnt_miss_fsm_d = 1'b0;
+      if (gnt_miss_fsm)
+        gnt_miss_fsm_d = 1'b1;
+    end
+
     // check MSHR for aliasing
     always_comb begin
 
@@ -544,6 +659,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
             evict_way_q   <= '0;
             evict_cl_q    <= '0;
             serve_amo_q   <= 1'b0;
+            colliding_clean_q <= '0;
         end else begin
             mshr_q        <= mshr_d;
             state_q       <= state_d;
@@ -551,9 +667,17 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
             evict_way_q   <= evict_way_d;
             evict_cl_q    <= evict_cl_d;
             serve_amo_q   <= serve_amo_d;
+            colliding_clean_q <= colliding_clean_d;
         end
     end
 
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (~rst_ni) begin
+      gnt_miss_fsm_q <= 1'b0;
+    end else begin
+      gnt_miss_fsm_q <= gnt_miss_fsm_d;
+    end
+  end
     //pragma translate_off
     `ifndef VERILATOR
     // assert that cache only hits on one way
@@ -609,6 +733,25 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         .rsp_i (bypass_adapter_rsp)
     );
 
+  always_comb begin
+    if (bypass_adapter_req.we) begin
+      if (is_inside_shareable_regions(ArianeCfg, bypass_adapter_req.addr)) begin
+        bypass_adapter_req_type = ariane_ace::WRITE_UNIQUE;
+      end
+      else begin
+        bypass_adapter_req_type = ariane_ace::WRITE_NO_SNOOP;
+      end
+    end
+    else begin
+      if (is_inside_shareable_regions(ArianeCfg, bypass_adapter_req.addr)) begin
+        bypass_adapter_req_type = ariane_ace::READ_ONCE;
+      end
+      else begin
+        bypass_adapter_req_type = ariane_ace::READ_NO_SNOOP;
+      end
+    end
+  end
+
     // ----------------------
     // Bypass AXI Interface
     // ----------------------
@@ -623,7 +766,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         .rst_ni               (rst_ni),
         .req_i                (bypass_adapter_req.req),
         .type_i               (bypass_adapter_req.reqtype),
-        .trans_type_i         (bypass_adapter_req.we ? ariane_ace::WRITE_UNIQUE : ariane_ace::READ_ONCE),
+        .trans_type_i         (bypass_adapter_req_type),
         .amo_i                (bypass_adapter_req.amo),
         .id_i                 (bypass_adapter_req.id),
         .addr_i               (bypass_adapter_req.addr),
@@ -634,14 +777,14 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         .gnt_o                (bypass_adapter_rsp.gnt),
         .valid_o              (bypass_adapter_rsp.valid),
         .rdata_o              (bypass_adapter_rsp.rdata),
+        .dirty_o              (),
+        .shared_o             (),
         .id_o                 (), // not used, single outstanding request in arbiter
         .critical_word_o      (), // not used for single requests
         .critical_word_valid_o(), // not used for single requests
         .axi_req_o            (axi_bypass_o),
         .axi_resp_i           (axi_bypass_i)
     );
-
-  assign req_fsm_miss_type = req_fsm_miss_we ? ariane_ace::CLEAN_UNIQUE : ariane_ace::READ_SHARED;
 
     // ----------------------
     // Cache Line AXI Refill
@@ -668,6 +811,8 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         .id_i                ( 4'b1100            ),
         .valid_o             ( valid_miss_fsm     ),
         .rdata_o             ( data_miss_fsm      ),
+        .dirty_o             ( dirty_miss_fsm     ),
+        .shared_o            ( shared_miss_fsm    ),
         .id_o                (                    ),
         .critical_word_o     ( critical_word_o    ),
         .critical_word_valid_o (critical_word_valid_o),
@@ -701,6 +846,8 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
             miss_req_we     [i]  = miss_req.we;
             miss_req_be     [i]  = miss_req.be;
             miss_req_size   [i]  = miss_req.size;
+            miss_req_invalidate   [i]  = miss_req.invalidate;
+            miss_req_make_unique   [i]  = miss_req.make_unique;
         end
     end
 endmodule

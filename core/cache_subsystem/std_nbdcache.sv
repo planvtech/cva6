@@ -120,7 +120,6 @@ import std_cache_pkg::*;
 
         .miss_req_o            ( miss_req        [0]  ),
         .miss_gnt_i            ( miss_gnt        [0]  ),
-        .invalidate_o          ( invalidate ),
         .active_serving_i      ( active_serving  [0]  ),
 
         .mshr_addr_o           ( mshr_addr         [0] ),
@@ -137,8 +136,8 @@ import std_cache_pkg::*;
                 .bypass_i              ( ~enable_i            ),
                 .busy_o                ( busy            [i]  ),
                 // from core
-                .req_port_i            ( req_ports_i     [i]  ),
-                .req_port_o            ( req_ports_o     [i]  ),
+                .req_port_i            ( req_ports_i     [i-1]  ),
+                .req_port_o            ( req_ports_o     [i-1]  ),
                 // to SRAM array
                 .req_o                 ( req            [i+1] ),
                 .addr_o                ( addr           [i+1] ),
@@ -149,6 +148,7 @@ import std_cache_pkg::*;
                 .we_o                  ( we             [i+1] ),
                 .be_o                  ( be             [i+1] ),
                 .hit_way_i             ( hit_way              ),
+                .shared_way_i          ( shared_way           ),
 
                 .miss_req_o            ( miss_req        [i]  ),
                 .miss_gnt_i            ( miss_gnt        [i]  ),
@@ -206,6 +206,7 @@ import std_cache_pkg::*;
     // ------------------
     miss_handler #(
         .NR_PORTS               ( 4                    ),
+        .ArianeCfg             ( ArianeCfg            ),
         .mst_req_t (ariane_ace::m2s_nosnoop_t),
         .mst_resp_t (ariane_ace::s2m_nosnoop_t)
     ) i_miss_handler (
@@ -215,7 +216,6 @@ import std_cache_pkg::*;
         .amo_req_i              ( amo_req_i            ),
         .amo_resp_o             ( amo_resp_o           ),
         .miss_req_i             ( miss_req             ),
-        .invalidate_i           ( invalidate ),
         .miss_gnt_o             ( miss_gnt             ),
         .bypass_gnt_o           ( bypass_gnt           ),
         .bypass_valid_o         ( bypass_valid         ),
