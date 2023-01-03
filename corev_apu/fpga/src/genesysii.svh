@@ -21,7 +21,7 @@
 // `define PROTOCOL_CHECKER
 
 // write-back cache
-// `define WB_DCACHE
+`define WB_DCACHE
 
 // write-through cache
-`define WT_DCACHE
+//`define WT_DCACHE
