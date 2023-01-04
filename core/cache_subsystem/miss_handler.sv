@@ -892,18 +892,20 @@ module axi_adapter_arbiter #(
         case (state_q)
 
             IDLE: begin
+                req_d = '0;
+                req_o = '0;
+
                 // wait for incoming requests
                 for (int unsigned i = 0; i < NR_PORTS; i++) begin
                     if (req_i[i].req == 1'b1) begin
                         sel_d   = i[$bits(sel_d)-1:0];
+                        req_d = req_i[sel_d];
+                        req_o = req_i[sel_d];
+                        rsp_o[sel_d].gnt = req_i[sel_d].req;
                         state_d = SERVING;
                         break;
                     end
                 end
-
-                req_d = req_i[sel_d];
-                req_o = req_i[sel_d];
-                rsp_o[sel_d].gnt = req_i[sel_d].req;
             end
 
             SERVING: begin
