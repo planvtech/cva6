@@ -250,10 +250,10 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
       SEND_CD_RESP: begin
         snoop_port_o.cd_valid = 1'b1;
         snoop_port_o.cd.data = cacheline_word_sel_q ? cache_data_q[127:64] : cache_data_q[63:0];
+        snoop_port_o.cd.last = cacheline_word_sel_q;
         if (snoop_port_i.cd_ready) begin
           if (cacheline_word_sel_q) begin
             state_d = IDLE;
-            snoop_port_o.cd.last = 1'b1;
           end
           cacheline_word_sel_d = ~cacheline_word_sel_q;
         end
