@@ -121,6 +121,8 @@ import std_cache_pkg::*;
         .miss_req_o            ( miss_req        [0]  ),
         .miss_gnt_i            ( miss_gnt        [0]  ),
         .active_serving_i      ( active_serving  [0]  ),
+        .bypass_gnt_i          ( bypass_gnt      [0]  ),
+        .bypass_valid_i        ( bypass_valid    [0]  ),
 
         .mshr_addr_o           ( mshr_addr         [0] ),
         .mshr_addr_matches_i   ( mshr_addr_matches [0] ),

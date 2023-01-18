@@ -634,7 +634,9 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
           begin
             // expect a writeback
             if (isHit(cache_status, current_req) && isDirty(cache_status, current_req) && current_req.snoop_type == snoop_pkg::CLEAN_INVALID) begin
-              `WAIT_SIG(clk_i, axi_data_i.b_valid)
+              // writebacks use the bypass port
+              `WAIT_SIG(clk_i, axi_bypass_i.b_valid)
+              `WAIT_SIG(clk_i, axi_bypass_i.b_valid)
             end
           end
           begin

@@ -38,6 +38,9 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
     // return
    input logic                           miss_gnt_i,
    input logic                           active_serving_i, // the miss unit is currently active for this unit, serving the miss
+   // bypass ports
+   input logic                           bypass_gnt_i,
+   input logic                           bypass_valid_i,
     // check MSHR for aliasing
    output logic [55:0]                   mshr_addr_o,
    input logic                           mshr_addr_matches_i,
@@ -54,7 +57,7 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
         INVALIDATE, // 5
         SEND_CR_RESP, // 6
         SEND_CD_RESP, // 7
-        WAIT_MH // 8
+        WRITEBACK // 8
         } state_d, state_q;
 
   typedef struct                         packed {
@@ -137,13 +140,18 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
           // save the request details
           mem_req_d.index = snoop_port_i.ac.addr[DCACHE_INDEX_WIDTH-1:0];
           mem_req_d.tag = snoop_port_i.ac.addr[DCACHE_INDEX_WIDTH+:DCACHE_TAG_WIDTH];
+          mem_req_d.size = 2'b11;
           if (bypass_i) begin
             state_d = SEND_CR_RESP;
           end
           else begin
             // invalidate request
             if (snoop_port_i.ac.snoop == snoop_pkg::CLEAN_INVALID) begin
-              state_d = WAIT_MH;
+              //state_d = WAIT_MH;
+              state_d = WAIT_GNT;
+              ac_snoop_d = snoop_port_i.ac.snoop;
+              // request the cache line
+              req_o = '1;
             end
             // read request
             else if (snoop_port_i.ac.snoop == snoop_pkg::READ_SHARED || snoop_port_i.ac.snoop == snoop_pkg::READ_ONCE || snoop_port_i.ac.snoop == snoop_pkg::READ_UNIQUE) begin
@@ -177,6 +185,12 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
           cr_resp_d.isShared = shared;
           cache_data_d = cl_i;
           case (ac_snoop_q)
+            snoop_pkg::CLEAN_INVALID: begin
+              cr_resp_d.dataTransfer = 1'b0;
+              cr_resp_d.passDirty = 1'b0;
+              cr_resp_d.isShared = 1'b0;
+              state_d = INVALIDATE;
+            end
             snoop_pkg::READ_ONCE: begin
               state_d = SEND_CR_RESP;
             end
@@ -229,7 +243,10 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
         miss_req_o.addr = {mem_req_q.tag, mem_req_q.index};
         miss_req_o.size = mem_req_q.size;
         if (gnt_i) begin
-          state_d = SEND_CR_RESP;
+          if ((hit_way_q & dirty_way_q) && ac_snoop_q == snoop_pkg::CLEAN_INVALID)
+            state_d = WRITEBACK;
+          else
+            state_d = SEND_CR_RESP;
         end
       end
 
@@ -259,17 +276,33 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
         end
       end
 
-      WAIT_MH: begin
+      WRITEBACK: begin
         // valid = invalidate = 1 signals an incoming cleaninvalid
-        // we are blocked by the miss_handler, which should execute the invalidate to avoid a deadlock
+        // we are not blocked by the miss_handler (invalidation is done here, and we use the bypass port), to avoid a deadlock
+        miss_req_o.bypass = 1'b1;
         miss_req_o.valid = 1'b1;
         miss_req_o.invalidate = 1'b1;
-        miss_req_o.addr = {mem_req_q.tag, mem_req_q.index};
+        miss_req_o.we = 1'b1;
+        miss_req_o.addr = cacheline_word_sel_q ? {mem_req_q.tag, mem_req_q.index + 12'h8} : {mem_req_q.tag, mem_req_q.index};
         miss_req_o.size = mem_req_q.size;
-
-        if (miss_gnt_i)
+        miss_req_o.wdata = cacheline_word_sel_q ? cache_data_q[127:64] : cache_data_q[63:0];
+        if (bypass_gnt_i) begin
+          cacheline_word_sel_d = ~cacheline_word_sel_q;
+        end
+        if (!cacheline_word_sel_q & bypass_valid_i)
           state_d = SEND_CR_RESP;
       end
+//      WAIT_MH: begin
+//        // valid = invalidate = 1 signals an incoming cleaninvalid
+//        // we are blocked by the miss_handler, which should execute the invalidate to avoid a deadlock
+//        miss_req_o.valid = 1'b1;
+//        miss_req_o.invalidate = 1'b1;
+//        miss_req_o.addr = {mem_req_q.tag, mem_req_q.index};
+//        miss_req_o.size = mem_req_q.size;
+//
+//        if (miss_gnt_i)
+//          state_d = SEND_CR_RESP;
+//      end
     endcase
   end
 
