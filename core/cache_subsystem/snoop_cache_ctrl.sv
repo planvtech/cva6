@@ -147,7 +147,6 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
           else begin
             // invalidate request
             if (snoop_port_i.ac.snoop == snoop_pkg::CLEAN_INVALID) begin
-              //state_d = WAIT_MH;
               state_d = WAIT_GNT;
               ac_snoop_d = snoop_port_i.ac.snoop;
               // request the cache line
@@ -292,17 +291,6 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
         if (!cacheline_word_sel_q & bypass_valid_i)
           state_d = SEND_CR_RESP;
       end
-//      WAIT_MH: begin
-//        // valid = invalidate = 1 signals an incoming cleaninvalid
-//        // we are blocked by the miss_handler, which should execute the invalidate to avoid a deadlock
-//        miss_req_o.valid = 1'b1;
-//        miss_req_o.invalidate = 1'b1;
-//        miss_req_o.addr = {mem_req_q.tag, mem_req_q.index};
-//        miss_req_o.size = mem_req_q.size;
-//
-//        if (miss_gnt_i)
-//          state_d = SEND_CR_RESP;
-//      end
     endcase
   end
 
