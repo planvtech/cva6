@@ -54,7 +54,10 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
     // check MSHR for aliasing
     output logic [55:0]                   mshr_addr_o,
     input logic                           mshr_addr_matches_i,
-    input logic                           mshr_index_matches_i
+    input logic                           mshr_index_matches_i,
+
+    input readshared_done_t readshared_done_i,
+    output logic updating_cache_o
 );
 
     enum logic [3:0] {
@@ -85,6 +88,8 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
 
     logic [DCACHE_SET_ASSOC-1:0] hit_way_d, hit_way_q;
   logic [DCACHE_SET_ASSOC-1:0]   shared_way_d, shared_way_q;
+  logic                          colliding_read_d, colliding_read_q;
+  logic                          sample_readshared_d, sample_readshared_q;
 
     mem_req_t mem_req_d, mem_req_q;
 
@@ -130,9 +135,16 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
 
         mem_req_d.killed |= req_port_i.kill_req;
 
+        updating_cache_o = 1'b0;
+
+        sample_readshared_d = sample_readshared_q;
+        colliding_read_d = colliding_read_q;
+
         case (state_q)
 
             IDLE: begin
+                colliding_read_d = 1'b0;
+                sample_readshared_d = 1'b0;
                 // a new request arrived
                 if (req_port_i.data_req && !flush_i) begin
                     // request the cache line - we can do this speculatively
@@ -306,6 +318,7 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
               miss_req_o.size = '0;
               miss_req_o.we = '0;
               miss_req_o.wdata = '0;
+              sample_readshared_d = 1'b1;
               if (miss_gnt_i)
                 state_d = STORE_REQ;
             end
@@ -314,6 +327,8 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
             STORE_REQ: begin
                 // check if the MSHR still doesn't match
                 mshr_addr_o = {mem_req_q.tag, mem_req_q.index};
+
+                updating_cache_o = 1'b1;
 
                 // We need to re-check for MSHR aliasing here as the store requires at least
                 // two memory look-ups on a single-ported SRAM and therefore is non-atomic
@@ -333,10 +348,16 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
                     data_o.valid = 1'b1;
                     data_o.shared = 1'b0;
 
-                    // got a grant ~> this is finished now
+                    // got a grant ~> this is finished if there has not been a colliding readshared request during a makeunique+write, otherwise redo a CleanUnique
                     if (gnt_i) begin
-                        req_port_o.data_gnt = 1'b1;
-                        state_d = IDLE;
+                      if (colliding_read_q) begin
+                          colliding_read_d = 1'b0;
+                          state_d = MAKE_UNIQUE;
+                        end
+                        else begin
+                          req_port_o.data_gnt = 1'b1;
+                          state_d = IDLE;
+                        end
                     end
                 end else begin
                     state_d = WAIT_MSHR;
@@ -456,6 +477,10 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
                 state_d = IDLE;
             end
         end
+        // check if we've received a ReadShared while doing a CleanUnique
+        // in this case, we have to rerun the CleanUnique
+        if (sample_readshared_q & readshared_done_i.valid & readshared_done_i.addr == {mem_req_q.tag, mem_req_q.index})
+          colliding_read_d = 1'b1;
     end
 
     // --------------
@@ -467,11 +492,15 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
             mem_req_q     <= '0;
             hit_way_q     <= '0;
             shared_way_q <= '0;
+            colliding_read_q <= 1'b0;
+            sample_readshared_q <= 1'b0;
         end else begin
             state_q   <= state_d;
             mem_req_q <= mem_req_d;
             hit_way_q <= hit_way_d;
             shared_way_q <= shared_way_d;
+            colliding_read_q <= colliding_read_d;
+            sample_readshared_q <= sample_readshared_d;
         end
     end
 

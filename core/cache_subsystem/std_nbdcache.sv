@@ -76,6 +76,9 @@ import std_cache_pkg::*;
     logic [3:0][$bits(miss_req_t)-1:0] miss_req;
     logic [3:0]                        miss_gnt;
     logic [3:0]                        active_serving;
+    logic                                flushing;
+  logic                                  serve_amo;
+
 
     logic [3:0]                        bypass_gnt;
     logic [3:0]                        bypass_valid;
@@ -92,6 +95,9 @@ import std_cache_pkg::*;
     cache_line_t                         wdata_ram;
     cache_line_t [DCACHE_SET_ASSOC-1:0]  rdata_ram;
     cl_be_t                              be_ram;
+
+    readshared_done_t[3:0] readshared_done;
+    logic [3:0]                               updating_cache;
 
     // ------------------
     // Cache Controller
@@ -127,6 +133,10 @@ import std_cache_pkg::*;
         .mshr_addr_o           ( mshr_addr         [0] ),
         .mshr_addr_matches_i   ( mshr_addr_matches [0] ),
         .mshr_index_matches_i  ( mshr_index_matches[0] ),
+
+        .readshared_done_o (readshared_done[1]),
+        .updating_cache_i (updating_cache[2]),
+        .flushing_i (serve_amo),
         .*
     );
 
@@ -164,6 +174,9 @@ import std_cache_pkg::*;
                 .mshr_addr_o           ( mshr_addr         [i] ),
                 .mshr_addr_matches_i   ( mshr_addr_matches [i] ),
                 .mshr_index_matches_i  ( mshr_index_matches[i] ),
+
+                .readshared_done_i (readshared_done[i-1]),
+                .updating_cache_o (updating_cache[i-1]),
                 .*
             );
         end
@@ -228,6 +241,8 @@ import std_cache_pkg::*;
         .mshr_addr_matches_o    ( mshr_addr_matches    ),
         .mshr_index_matches_o   ( mshr_index_matches   ),
         .active_serving_o       ( active_serving       ),
+        .flushing_o (flushing),
+        .serve_amo_o (serve_amo),
         .req_o                  ( req             [0]  ),
         .addr_o                 ( addr            [0]  ),
         .data_i                 ( rdata                ),
@@ -347,6 +362,40 @@ import std_cache_pkg::*;
     assign dirty_way[j] = rdata_ram[j].dirty;
     assign shared_way[j] = rdata_ram[j].shared;
   end
+
+  logic started_o;
+  logic started_i;
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (~rst_ni) begin
+      started_o <= 1'b0;
+      started_i <= 1'b0;
+    end else begin
+      if (axi_data_o.ar.addr == 64'hbb17e1c0 && axi_data_o.aw_valid == 1'b1)
+        started_o <= 1'b1;
+      if (snoop_port_i.ac.addr == 64'hbb17e1c0 && snoop_port_i.ac_valid == 1'b1)
+        started_i <= 1'b1;
+    end
+  end
+
+
+  xlnx_ila i_ila
+    (
+     .clk (clk_i),
+     .probe0 (axi_bypass_o.ar.addr[31:0]),
+     .probe1 (axi_bypass_i.r.data[31:0]),
+     .probe2 (axi_data_o.ar.addr[31:0]),
+     .probe3 (axi_data_o.w.data[31:0]),
+     .probe4 (snoop_port_o.cd.data[31:0]),
+     .probe5 (snoop_port_i.ac.addr[31:0]),
+     .probe6 (axi_bypass_o.w.data[31:0]),
+     .probe7 (req_ports_i[2].data_wdata),
+     .probe8 (req_ports_o[1].data_rdata),
+     .probe9 ({req_ports_i[2].address_index, req_ports_i[2].address_tag[19:0]}),
+     .probe10 ({req_ports_i[1].address_index, req_ports_i[1].address_tag[19:0]}),
+     .probe11 (axi_data_i.r.data[31:0]),
+     .probe12 ({req_ports_o[1].data_rvalid, req_ports_o[1].data_gnt, req_ports_i[2].data_req, req_ports_i[1].data_req, snoop_port_i.ac.snoop, snoop_port_i.ac_valid, snoop_port_o.cr_valid, snoop_port_o.cd_valid, snoop_port_o.cd_valid, snoop_port_o.cr_resp, axi_bypass_o.ar_valid, axi_bypass_o.ar.snoop, axi_bypass_i.r_valid, axi_bypass_o.aw_valid, axi_bypass_o.aw.snoop, axi_bypass_o.w_valid, axi_data_o.w_valid, axi_data_o.aw_valid, axi_data_o.ar_valid, axi_data_o.aw.snoop, axi_data_o.ar.snoop, axi_data_i.r_valid, started_o, started_i})
+     );
 
 //pragma translate_off
     initial begin
