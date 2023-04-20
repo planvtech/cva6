@@ -53,7 +53,11 @@ module ariane import ariane_pkg::*; #(
   cvxif_pkg::cvxif_req_t  cvxif_req;
   cvxif_pkg::cvxif_resp_t cvxif_resp;
 
+`ifdef CULSANS_TB_UNIT_TEST
+  cva6_cache_dummy #(
+`else
   cva6 #(
+`endif
     .ArianeCfg  ( ArianeCfg ),
     .mst_req_t (mst_req_t),
     .mst_resp_t (mst_resp_t)
