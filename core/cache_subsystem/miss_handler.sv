@@ -56,6 +56,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     output                                            amo_resp_t amo_resp_o,
     output logic                                      flushing_o,
     output logic                                      serve_amo_o,
+    output logic                                      updating_cache_o,
     // Port to SRAMs, for refill and eviction
     output logic [DCACHE_SET_ASSOC-1:0]               req_o,
     output logic [DCACHE_INDEX_WIDTH-1:0]             addr_o, // address into cache array
@@ -173,6 +174,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         miss_gnt_o = '0;
         active_serving_o = '0;
         flushing_o = 1'b0;
+        updating_cache_o = 1'b0;
         // LFSR replacement unit
         lfsr_enable = 1'b0;
         // to AXI refill
@@ -339,6 +341,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                 cl_offset = mshr_q.addr[DCACHE_BYTE_OFFSET-1:3] << 6;
                 // we've got a valid response from refill unit
                 if (valid_miss_fsm) begin
+                    updating_cache_o = 1'b1;
 
                     addr_o       = mshr_q.addr[DCACHE_INDEX_WIDTH-1:0];
                     req_o        = evict_way_q;

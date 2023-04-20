@@ -162,8 +162,8 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
             else if (snoop_port_i.ac.snoop == snoop_pkg::READ_SHARED || snoop_port_i.ac.snoop == snoop_pkg::READ_ONCE || snoop_port_i.ac.snoop == snoop_pkg::READ_UNIQUE) begin
               state_d = WAIT_GNT;
               ac_snoop_d = snoop_port_i.ac.snoop;
-              // request the cache line
-              req_o = '1;
+              // request the cache line (unless there is another cache controller which is uploading the cache content)
+              req_o = !updating_cache_i ? '1 : '0;
             end
             // wrong request
             else begin
@@ -183,9 +183,11 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
       end
 
       EVAL_FLAGS: begin
-        if (updating_cache_i)
-          state_d = WAIT_GNT;
-        else begin
+        // keep the request to avoid interference from other cache controllers
+        req_o = '1;
+//        if (updating_cache_i)
+//          state_d = WAIT_GNT;
+//        else begin
           hit_way_d = hit_way_i;
           shared_way_d = shared_way_i;
           dirty_way_d = dirty_way_i;
@@ -223,7 +225,7 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
             cr_resp_d.isShared = 1'b0;
             state_d = SEND_CR_RESP;
           end
-        end
+//        end
       end
 
         UPDATE_SHARED: begin
