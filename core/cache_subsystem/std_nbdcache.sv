@@ -96,7 +96,7 @@ import std_cache_pkg::*;
     cache_line_t [DCACHE_SET_ASSOC-1:0]  rdata_ram;
     cl_be_t                              be_ram;
 
-    readshared_done_t[3:0] readshared_done;
+    readshared_done_t readshared_done;
     logic [3:0]                               updating_cache;
 
     // ------------------
@@ -134,7 +134,7 @@ import std_cache_pkg::*;
         .mshr_addr_matches_i   ( mshr_addr_matches [0] ),
         .mshr_index_matches_i  ( mshr_index_matches[0] ),
 
-        .readshared_done_o (readshared_done[1]),
+        .readshared_done_o (readshared_done),
         .updating_cache_i (|updating_cache),
         .flushing_i (serve_amo),
         .*
@@ -175,7 +175,7 @@ import std_cache_pkg::*;
                 .mshr_addr_matches_i   ( mshr_addr_matches [i] ),
                 .mshr_index_matches_i  ( mshr_index_matches[i] ),
 
-                .readshared_done_i (readshared_done[i-1]),
+                .readshared_done_i (readshared_done),
                 .updating_cache_o (updating_cache[i]),
                 .*
             );
