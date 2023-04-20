@@ -78,6 +78,11 @@ package std_cache_pkg;
         logic [ariane_pkg::DCACHE_SET_ASSOC-1:0]        vldrty; // bit enable into state array (valid for a pair of dirty/valid bits)
     } cl_be_t;
 
+  typedef struct                                        packed {
+    logic                                               valid;
+    logic [63:0]                                        addr;
+  } readshared_done_t;
+
     // convert one hot to bin for -> needed for cache replacement
     function automatic logic [$clog2(ariane_pkg::DCACHE_SET_ASSOC)-1:0] one_hot_to_bin (
         input logic [ariane_pkg::DCACHE_SET_ASSOC-1:0] in
