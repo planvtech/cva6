@@ -67,8 +67,6 @@ module cva6_cache_dummy
   assign dcache_en_csr_nbdcache       = 1'b1;
   assign dcache_flush_ctrl_cache      = 1'b0;
 
-  assign amo_req = '0;
-
   assign cvxif_req_o = '0;
 
   assign priv_lvl_i = riscv::PRIV_LVL_M;

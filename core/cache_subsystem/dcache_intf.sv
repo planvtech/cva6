@@ -9,7 +9,7 @@ interface dcache_intf (
     dcache_req_i_t req;
     dcache_req_o_t resp;
 
-    // this should be hooked up to the gnt_i input of the cache_ctrl instance 
+    // this should be hooked up to (cache_ctrl.gnt_i && (cache_ctrl.state==IDLE))
     // to detect when a write request is accepted
     logic          wr_gnt;
 
