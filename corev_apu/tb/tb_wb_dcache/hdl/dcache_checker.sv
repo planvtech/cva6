@@ -563,15 +563,16 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
         OK = 1'b0;
       end
 
-      if (snoop_resp_o.cr_resp.passDirty == 1'b1 && snoop_resp_o.cr_resp.error == 1'b0) begin
-        $error("CR.resp.passDirty mismatch: expected 0, actual 1");
+      if(isDirty(cache_status, current_req) != snoop_resp_o.cr_resp.passDirty && snoop_resp_o.cr_resp.error == 1'b0) begin
+        $error("CR.resp.passDirty mismatch: expected %h, actual %h", isDirty(cache_status, current_req), snoop_resp_o.cr_resp.passDirty);
         OK = 1'b0;
       end
 
-      if (snoop_resp_o.cr_resp.dataTransfer == 1'b1 && snoop_resp_o.cr_resp.error == 1'b0) begin
-        $error("CR.resp.dataTransfer mismatch: expected 0, actual 1");
+      if(isDirty(cache_status, current_req) != snoop_resp_o.cr_resp.dataTransfer && snoop_resp_o.cr_resp.error == 1'b0) begin
+        $error("CR.resp.dataTransfer mismatch: expected %h, actual %h", isDirty(cache_status, current_req), snoop_resp_o.cr_resp.dataTransfer);
         OK = 1'b0;
       end
+
     end else if (current_req.snoop_type == snoop_pkg::READ_SHARED) begin
 
       if(isHit(cache_status, current_req) != snoop_resp_o.cr_resp.isShared && snoop_resp_o.cr_resp.error == 1'b0) begin
@@ -682,28 +683,19 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
       `WAIT_SIG(clk_i, start_transaction)
 
       if (current_req.req_type == SNOOP_REQ) begin
-        fork
-          begin
-            // expect a writeback
-            if (isHit(cache_status, current_req) && isDirty(cache_status, current_req) && current_req.snoop_type == snoop_pkg::CLEAN_INVALID) begin
-              // writebacks use the bypass port
-              `WAIT_SIG(clk_i, axi_bypass_i.b_valid)
-              `WAIT_SIG(clk_i, axi_bypass_i.b_valid)
-            end
-          end
-          begin
-            // wait for the response
-            if(~snoop_resp_o.cr_valid) begin
-              `WAIT_SIG(clk_i, snoop_resp_o.cr_valid)
-              checkCRResp(checkOK);
-            end
-            // expect the data
-            if (isHit(cache_status, current_req) &&
-                (current_req.snoop_type == snoop_pkg::READ_UNIQUE || current_req.snoop_type == snoop_pkg::READ_ONCE || current_req.snoop_type == snoop_pkg::READ_SHARED)) begin
-              `WAIT_SIG(clk_i, snoop_resp_o.cd.last)
-            end
-          end
-        join
+        // wait for the response
+        if(~snoop_resp_o.cr_valid) begin
+          `WAIT_SIG(clk_i, snoop_resp_o.cr_valid)
+          checkCRResp(checkOK);
+        end
+        // expect the data
+        if (isHit(cache_status, current_req) && (current_req.snoop_type == snoop_pkg::READ_UNIQUE || 
+                                                 current_req.snoop_type == snoop_pkg::READ_ONCE || 
+                                                 current_req.snoop_type == snoop_pkg::READ_SHARED)) begin
+          `WAIT_SIG(clk_i, snoop_resp_o.cd.last)
+        end else if (isDirty(cache_status, current_req) && (current_req.snoop_type == snoop_pkg::CLEAN_INVALID)) begin
+          `WAIT_SIG(clk_i, snoop_resp_o.cd.last)
+        end
       end
       else begin
         // bypass
