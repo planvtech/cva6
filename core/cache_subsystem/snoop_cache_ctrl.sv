@@ -152,14 +152,10 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
           end
           else begin
             // invalidate request
-            if (snoop_port_i.ac.snoop == snoop_pkg::CLEAN_INVALID) begin
-              state_d = WAIT_GNT;
-              ac_snoop_d = snoop_port_i.ac.snoop;
-              // request the cache line
-              req_o = '1;
-            end
-            // read request
-            else if (snoop_port_i.ac.snoop == snoop_pkg::READ_SHARED || snoop_port_i.ac.snoop == snoop_pkg::READ_ONCE || snoop_port_i.ac.snoop == snoop_pkg::READ_UNIQUE) begin
+            if (snoop_port_i.ac.snoop == snoop_pkg::CLEAN_INVALID ||
+                snoop_port_i.ac.snoop == snoop_pkg::READ_SHARED ||
+                snoop_port_i.ac.snoop == snoop_pkg::READ_ONCE ||
+                snoop_port_i.ac.snoop == snoop_pkg::READ_UNIQUE) begin
               state_d = WAIT_GNT;
               ac_snoop_d = snoop_port_i.ac.snoop;
               // request the cache line (unless there is another cache controller which is uploading the cache content)
