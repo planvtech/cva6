@@ -411,8 +411,6 @@ module tb_ace_direct import ariane_pkg::*; import std_cache_pkg::*; import tb_pk
           dirty = cache_status[addr[DCACHE_INDEX_WIDTH-1:DCACHE_BYTE_OFFSET]][way].dirty;
           shared = cache_status[addr[DCACHE_INDEX_WIDTH-1:DCACHE_BYTE_OFFSET]][way].shared;
           $display("Processing %x, addr %x, dirty=%x, shared=%x", snoop_port_i.ac.snoop, addr, dirty, shared);
-          if (i%256 == 255)
-            way = way + 1;
 
           fork
             begin
@@ -511,8 +509,8 @@ module tb_ace_direct import ariane_pkg::*; import std_cache_pkg::*; import tb_pk
                     $error("Unexpected CR.RESP.dataTransfer = 0");
                   if (snoop_port_o.cr_resp.isShared)
                     $error("Unexpected CR.RESP.isShared");
-                  if (snoop_port_o.cr_resp.passDirty)
-                    $error("Unexpected CR.RESP.passDirty");
+                  if (!snoop_port_o.cr_resp.passDirty)
+                    $error("Unexpected CR.RESP.passDirty = 0");
                   `WAIT_SIG(clk_i, snoop_port_o.cd_valid)
                 end
                 {READ_UNIQUE, 1'b0, 1'b1} : begin
@@ -528,8 +526,8 @@ module tb_ace_direct import ariane_pkg::*; import std_cache_pkg::*; import tb_pk
                         $error("Unexpected CR.RESP.error");
                       if (!snoop_port_o.cr_resp.dataTransfer)
                         $error("Unexpected CR.RESP.dataTransfer = 0");
-                      if (!snoop_port_o.cr_resp.isShared)
-                        $error("Unexpected CR.RESP.isShared = 0");
+                      if (snoop_port_o.cr_resp.isShared)
+                        $error("Unexpected CR.RESP.isShared");
                       if (snoop_port_o.cr_resp.passDirty)
                         $error("Unexpected CR.RESP.passDirty");
                       `WAIT_SIG(clk_i, snoop_port_o.cd_valid)
@@ -556,8 +554,8 @@ module tb_ace_direct import ariane_pkg::*; import std_cache_pkg::*; import tb_pk
                         $error("Unexpected CR.RESP.error");
                       if (!snoop_port_o.cr_resp.dataTransfer)
                         $error("Unexpected CR.RESP.dataTransfer = 0");
-                      if (!snoop_port_o.cr_resp.isShared)
-                        $error("Unexpected CR.RESP.isShared = 0");
+                      if (snoop_port_o.cr_resp.isShared)
+                        $error("Unexpected CR.RESP.isShared");
                       if (!snoop_port_o.cr_resp.passDirty)
                         $error("Unexpected CR.RESP.passDirty = 0");
                       `WAIT_SIG(clk_i, snoop_port_o.cd_valid)
@@ -579,6 +577,9 @@ module tb_ace_direct import ariane_pkg::*; import std_cache_pkg::*; import tb_pk
           check_done = 1'b1;
           `WAIT_CYC(clk_i,2)
           check_done = 1'b0;
+
+          if (i%256 == 255)
+            way = way + 1;
 
         end
         begin
