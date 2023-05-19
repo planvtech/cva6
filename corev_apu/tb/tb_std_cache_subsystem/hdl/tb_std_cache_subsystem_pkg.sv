@@ -1,6 +1,6 @@
 // Description: test utilities for the standard Ariane cache subsystem.
 // main package definition
-package std_cache_test;
+package tb_std_cache_subsystem_pkg;
     import ariane_pkg::*;
     import snoop_test::*;
     import std_cache_pkg::*;
