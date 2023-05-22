@@ -51,4 +51,4 @@
 	url = https://github.com/pulp-platform/common_verification.git
 [submodule "corev_apu/axi"]
 	path = corev_apu/axi
-	url = https://github.com/planvtech/axi.git
+	url = git@github.com:planvtech/axi.git
