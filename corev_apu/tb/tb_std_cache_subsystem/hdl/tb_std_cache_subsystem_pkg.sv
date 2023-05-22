@@ -626,6 +626,46 @@ package tb_std_cache_subsystem_pkg;
 
 
     //--------------------------------------------------------------------------
+    // Driver for the dcache management interface
+    //--------------------------------------------------------------------------
+    class dcache_mgmt_driver;
+
+        virtual dcache_mgmt_intf vif;
+        string name;
+        int verbosity;
+
+        function new (virtual dcache_mgmt_intf vif, string name="dcache_driver");
+            this.vif = vif;
+            vif.dcache_enable = 1'b1;
+            vif.dcache_flush  = 1'b0;
+            this.name=name;
+            verbosity = 0;
+        endfunction
+
+        // flush
+        task flush ();
+
+            #0;
+            vif.dcache_flush = 1'b1;
+
+            if (verbosity > 0) begin
+                $display("%t ns %s requesting flush", $time, name);
+            end
+
+            do begin
+                @(posedge vif.clk);
+            end while (!vif.dcache_flush_ack);
+            #0;
+            vif.dcache_flush = 1'b0;
+
+            if (verbosity > 0) begin
+                $display("%t ns %s flush done", $time, name);
+            end
+        endtask
+    endclass
+
+
+    //--------------------------------------------------------------------------
     // scoreboard
     //--------------------------------------------------------------------------
     class std_cache_scoreboard #(
