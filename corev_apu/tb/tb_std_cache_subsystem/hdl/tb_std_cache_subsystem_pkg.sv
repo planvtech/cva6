@@ -1222,13 +1222,21 @@ package tb_std_cache_subsystem_pkg;
                                     repeat(2) begin
                                         ax_ace_beat_t aw_beat;
                                         b_beat_t      b_beat;
+                                        w_beat_t      w_beat = new;
                                         aw_mbx.get(aw_beat);
                                         if (!isWriteBack(aw_beat))
                                             $error("%s.check_snoop : WRITEBACK request expected after CLEAN_INVALID",name);
+
+                                        // wait for W beat
+                                        while (!w_beat.w_last) begin
+                                            w_mbx.get(w_beat);
+                                            $display("%t ns %s.check_snoop: got W beat with last = %0d", $time, name, w_beat.w_last);
+                                        end
                                         b_mbx.get(b_beat);
                                     end
                                 end
                                 a_empty_aw : assert (aw_mbx.num() == 0) else $error ("%S.check_snoop : AW mailbox not empty", name);
+                                a_empty_w : assert (w_mbx.num() == 0) else $error ("%S.check_snoop : W mailbox not empty", name);
                                 a_empty_b : assert (b_mbx.num() == 0) else $error ("%S.check_snoop : B mailbox not empty", name);
                             end
 */
@@ -1538,6 +1546,7 @@ package tb_std_cache_subsystem_pkg;
                     if (!is_inside_cacheable_regions(ArianeCfg, addr_v)) begin
                         if (msg.trans_type == WR_REQ) begin
                             b_beat_t b_beat = new();
+                            w_beat_t w_beat = new();
                             if (is_inside_shareable_regions(ArianeCfg, addr_v)) begin
                                 ax_ace_beat_t aw_beat = new();
                                 aw_mbx.get(aw_beat);
@@ -1554,6 +1563,15 @@ package tb_std_cache_subsystem_pkg;
                                     $error("%s.check_cache_msg : WRITE_NO_SNOOP request expected for message : %s", name, msg.print_me());
                             end
                             a_empty_aw : assert (aw_mbx.num() == 0) else $error ("%S.check_cache_msg : AW mailbox not empty", name);
+
+                            // wait for W beat
+                            while (!w_beat.w_last) begin
+                                w_mbx.get(w_beat);
+                                $display("%t ns %s.check_cache_msg: got W beat with last = %0d for message : %s", $time, name, w_beat.w_last, msg.print_me());
+                            end
+                            a_empty_w : assert (w_mbx.num() == 0) else $error ("%S.flush_cache : W mailbox not empty", name);
+
+                            // wait for B beat
                             b_mbx.get(b_beat);
                             a_empty_b : assert (b_mbx.num() == 0) else $error ("%S.check_cache_msg : B mailbox not empty", name);
                         end else begin
