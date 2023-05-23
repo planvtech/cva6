@@ -12,7 +12,7 @@
 // Description: CVA6 Top-level module with only cache subsystem instantiated
 //              Used for unit testing of cache
 
-module cva6_cache_dummy
+module cva6
   import ariane_pkg::*;
 #(
   parameter ariane_pkg::ariane_cfg_t ArianeCfg  = ariane_pkg::ArianeDefaultConfig,

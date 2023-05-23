@@ -1,6 +1,5 @@
 //------------------------------------------------------------------------------
 // interface to the dcache request / response ports
-// for use in testbenches
 //------------------------------------------------------------------------------
 interface dcache_intf (
     input logic clk
@@ -19,7 +18,6 @@ endinterface
 
 //------------------------------------------------------------------------------
 // interface to probe internal SRAM
-// for use in testbenches
 //------------------------------------------------------------------------------
 interface dcache_sram_if (input logic clk);
     import ariane_pkg::*;
@@ -41,7 +39,6 @@ endinterface
 
 //------------------------------------------------------------------------------
 // interface to probe internal cache grant signals
-// for use in testbenches
 //------------------------------------------------------------------------------
 interface dcache_gnt_if (input logic clk);
     logic [4:0] gnt;
