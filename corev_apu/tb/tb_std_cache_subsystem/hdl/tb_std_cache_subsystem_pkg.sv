@@ -375,6 +375,10 @@ package tb_std_cache_subsystem_pkg;
             end
         endfunction
 
+        function logic [63:0] get_addr;
+            return tag_index2addr(.tag(address_tag), .index(address_index));
+        endfunction
+
     endclass
 
 
@@ -1462,6 +1466,7 @@ package tb_std_cache_subsystem_pkg;
                 end
 
                 begin
+
                     ax_ace_beat_t ar_beat     = new();
                     r_ace_beat_t  r_beat      = new();
                     r_ace_beat_t  r_beat_peek = new();
@@ -1475,11 +1480,25 @@ package tb_std_cache_subsystem_pkg;
                     a_empty_ar : assert (ar_mbx.num() == 0) else $error ("%S.do_miss : AR mailbox not empty", name);
 
                     if (msg.trans_type == WR_REQ) begin
-                        if (!isReadUnique(ar_beat))
-                            $error("%s.do_miss : READ_UNIQUE request expected for message : %s", name, msg.print_me());
-                    end else begin
-                        if (!isReadShared(ar_beat))
-                            $error("%s.do_miss : READ_SHARED request expected for message : %s", name, msg.print_me());
+                        if (is_inside_shareable_regions(ArianeCfg, msg.get_addr())) begin
+                            if (!isReadUnique(ar_beat)) begin
+                                $error("%s.do_miss : READ_UNIQUE request expected for message : %s", name, msg.print_me());
+                            end
+                        end else begin
+                            if (!isReadNoSnoop(ar_beat)) begin
+                                $error("%s.do_miss : READ_NO_SNOOP request expected for message : %s", name, msg.print_me());
+                            end
+                        end
+                    end else begin // RD_REQ
+                        if (is_inside_shareable_regions(ArianeCfg, msg.get_addr())) begin
+                            if (!isReadShared(ar_beat)) begin
+                                $error("%s.do_miss : READ_SHARED request expected for message : %s", name, msg.print_me());
+                            end
+                        end else begin
+                            if (!isReadNoSnoop(ar_beat)) begin
+                                $error("%s.do_miss : READ_NO_SNOOP request expected for message : %s", name, msg.print_me());
+                            end
+                        end
                     end
 
                     // wait for R beat
