@@ -1,4 +1,4 @@
-// interface to the dcache request / response ports
+// interface to the AMO request / response ports
 interface amo_intf (
     input logic clk
 );
