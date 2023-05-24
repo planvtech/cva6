@@ -1,5 +1,4 @@
 // interface to the AMO request / response ports
-// for use in testbenches
 interface amo_intf (
     input logic clk
 );
