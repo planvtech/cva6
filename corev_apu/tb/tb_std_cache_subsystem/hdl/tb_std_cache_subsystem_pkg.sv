@@ -31,6 +31,10 @@ package tb_std_cache_subsystem_pkg;
     // Helper functions
     //--------------------------------------------------------------------------
 
+    // define min and max functions
+    let max(a,b) = (a > b) ? a : b;
+    let min(a,b) = (a < b) ? a : b;
+
     // get tag from address
     function automatic logic [DCACHE_TAG_WIDTH-1:0] addr2tag (input logic[63:0] addr);
         return addr[DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:DCACHE_INDEX_WIDTH];
@@ -48,7 +52,7 @@ package tb_std_cache_subsystem_pkg;
 
     // get address from index and tag
     function automatic logic [63:0] tag_index2addr (
-        input logic [DCACHE_TAG_WIDTH-1:0]   tag, 
+        input logic [DCACHE_TAG_WIDTH-1:0]   tag,
         input logic [DCACHE_INDEX_WIDTH-1:0] index
     );
         return {tag, index};
@@ -70,6 +74,38 @@ package tb_std_cache_subsystem_pkg;
     endfunction
 
 
+    function automatic logic [63:0] get_rand_addr_from_cfg(ariane_cfg_t cfg);
+        logic [63:0] start_addr, end_addr;
+        logic [31:0] addr_msb, addr_lsb;
+        int region;
+
+        region = $urandom_range(2);
+        case (region)
+            0 : begin
+                start_addr = cfg.ExecuteRegionAddrBase[0];
+                end_addr   = cfg.ExecuteRegionAddrBase[0] + cfg.ExecuteRegionLength[0];
+            end
+            1 : begin
+                start_addr = cfg.CachedRegionAddrBase[0];
+                end_addr   = cfg.CachedRegionAddrBase[0] + cfg.CachedRegionLength[0];
+            end
+            2 : begin
+                start_addr = cfg.SharedRegionAddrBase[0];
+                end_addr   = cfg.SharedRegionAddrBase[0] + cfg.SharedRegionLength[0];
+            end
+        endcase
+
+        a_lsb_zero : assert (start_addr[31:0] === 0 && end_addr[31:0] === 0) else
+            $error("expected 32 LSB zeros for address range");
+
+        addr_msb = $urandom_range((end_addr-1) >> 32, start_addr>>32);
+        addr_lsb = $urandom;
+
+        return {addr_msb, addr_lsb};
+
+    endfunction
+
+
     //--------------------------------------------------------------------------
     // AMO request class
     //--------------------------------------------------------------------------
@@ -81,7 +117,7 @@ package tb_std_cache_subsystem_pkg;
         function string print_me();
             if (trans_type == AMO_WR_REQ)
                 return $sformatf("type %0s, address 0x%16h, data 0x%16h",trans_type.name(), addr, data);
-            else 
+            else
                 return $sformatf("type %0s, address 0x%16h",trans_type.name(), addr);
         endfunction
     endclass
@@ -104,29 +140,33 @@ package tb_std_cache_subsystem_pkg;
         virtual amo_intf vif;
         string name;
         int verbosity;
+        ariane_cfg_t cfg;
 
-        function new (virtual amo_intf vif, string name="amo_driver");
+        function new (virtual amo_intf vif, ariane_cfg_t cfg, string name="amo_driver");
             this.vif = vif;
             vif.req = '0;
             this.name=name;
             verbosity = 0;
+            this.cfg = cfg;
         endfunction
 
         // read request
         task rd (
-            input logic [63:0] addr      = '0,
-            input bit          rand_addr = 0
+            input logic [63:0] addr         = '0,
+            input bit          rand_addr    = 1'b0,
+            input bit          check_result = 1'b0,
+            input logic [63:0] exp_result   = '0
         );
             logic [63:0] addr_int;
 
             if (rand_addr) begin
-                addr_int = {$urandom(),$urandom()};
+                addr_int = get_rand_addr_from_cfg(cfg);
             end else begin
                 addr_int = addr;
             end
 
             if (verbosity > 0) begin
-                $display("%t ns %s sending read request for address 0x%8h", $time, name, addr_int);
+                $display("%t ns %s : sending read request for address 0x%8h", $time, name, addr_int);
             end
 
             #0;
@@ -141,6 +181,11 @@ package tb_std_cache_subsystem_pkg;
 
             if (verbosity > 0) begin
                 $display("%t ns %s got ack for read address 0x%8h", $time, name, addr_int);
+            end
+
+            if (check_result) begin
+                a_rd_check : assert (vif.resp.result == exp_result) else 
+                    $error("%s : data mismatch. Expected 0x%16h, got 0x%16h", name, exp_result, vif.resp.result);
             end
 
             #0;
@@ -159,7 +204,7 @@ package tb_std_cache_subsystem_pkg;
             logic [63:0] data_int;
 
             if (rand_addr) begin
-                addr_int = {$urandom(),$urandom()};
+                addr_int = get_rand_addr_from_cfg(cfg);
             end else begin
                 addr_int = addr;
             end
@@ -348,16 +393,18 @@ package tb_std_cache_subsystem_pkg;
     class dcache_driver;
 
         virtual dcache_intf vif;
+        ariane_cfg_t cfg;
         string name;
         int verbosity;
 
-        function new (virtual dcache_intf vif, string name="dcache_driver");
-            this.vif = vif;
-            vif.req = '0;
+        function new (virtual dcache_intf vif, ariane_cfg_t cfg, string name="dcache_driver");
+            this.vif              = vif;
+            vif.req               = '0;
             vif.req.address_tag   = $urandom;
             vif.req.address_index = $urandom;
-            this.name=name;
-            verbosity = 0;
+            this.cfg              = cfg;
+            this.name             = name;
+            verbosity             = 0;
         endfunction
 
         // read request
@@ -368,7 +415,7 @@ package tb_std_cache_subsystem_pkg;
             logic [63:0] addr_int;
 
             if (rand_addr) begin
-                addr_int = {$urandom(),$urandom()};
+                addr_int = get_rand_addr_from_cfg(cfg);
             end else begin
                 addr_int = addr;
             end
@@ -419,7 +466,7 @@ package tb_std_cache_subsystem_pkg;
             logic [63:0] addr_int;
 
             if (rand_addr) begin
-                addr_int = {$urandom(),$urandom()};
+                addr_int = get_rand_addr_from_cfg(cfg);
             end else begin
                 addr_int = addr;
             end
@@ -468,7 +515,7 @@ package tb_std_cache_subsystem_pkg;
             int          data_int;
 
             if (rand_addr) begin
-                addr_int = {$urandom(),$urandom()};
+                addr_int = get_rand_addr_from_cfg(cfg);
             end else begin
                 addr_int = addr;
             end
@@ -544,7 +591,7 @@ package tb_std_cache_subsystem_pkg;
                     rd_req = new();
                     rd_req.trans_type      = RD_REQ;
                     rd_req.address_index = vif.req.address_index;
-                    rd_req.port_idx      = port_idx;                    
+                    rd_req.port_idx      = port_idx;
 
                     @(posedge vif.clk);
                     while (!vif.req.tag_valid) begin
@@ -696,7 +743,7 @@ package tb_std_cache_subsystem_pkg;
         mailbox #(dcache_req)    dcache_req_mbox_prio_tmp;
         mailbox #(dcache_req)    dcache_req_mbox  [2:0];
         mailbox #(dcache_resp)   dcache_resp_mbox [2:0];
-        
+
         mailbox #(dcache_req)    req_to_cache_update;
 
         mailbox #(dcache_req)    req_to_cache_check;
@@ -999,7 +1046,7 @@ package tb_std_cache_subsystem_pkg;
                     end
                 end
 
-                // actual cache update takes 3 more cycles with grant                
+                // actual cache update takes 3 more cycles with grant
                 repeat (3) begin
                     int cnt = 0;
                     while (!gnt_vif.gnt[1]) begin
@@ -1047,7 +1094,7 @@ package tb_std_cache_subsystem_pkg;
                             cache_status[mem_idx_v][hit_way].valid,
                             cache_status[mem_idx_v][hit_way].dirty,
                             cache_status[mem_idx_v][hit_way].shared,
-                            cache_status[mem_idx_v][hit_way].tag);                        
+                            cache_status[mem_idx_v][hit_way].tag);
                     end
                     CheckOK = checkCache(ac.ac_addr, hit_way, "update_cache_from_snoop");
                 end else begin
@@ -1067,7 +1114,7 @@ package tb_std_cache_subsystem_pkg;
                 dcache_req   req_t;
                 req_to_cache_update.get(req_t);
 
-                fork 
+                fork
                     begin
                         // declare variables here to get sepa
                         logic [DCACHE_SET_ASSOC-1:0]                      valid_v;
@@ -1192,19 +1239,17 @@ package tb_std_cache_subsystem_pkg;
         // check behaviour when receiving snoop requests
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         local task automatic check_snoop;
-            ace_cd_beat_t cd;
-            ace_ac_beat_t ac;
-            ax_ace_beat_t aw_beat;
-            b_beat_t      b_beat;
-            bit           CheckOK;
             forever begin
-                bit timeout = 0;
-                acsnoop_enum e;
+                ace_ac_beat_t ac;
+                bit           timeout = 0;
+                acsnoop_enum  e;
 
                 // wait for snoop request
+                ac = new();
                 ac_mbx.get(ac);
                 e = acsnoop_enum'(ac.ac_snoop);
                 $display("%t ns %s.check_snoop: Got snoop request %0s", $time, name, e.name());
+                a_empty_ac : assert (ac_mbx.num() == 0) else $error ("%S.check_snoop : AC mailbox not empty", name);
 
                 fork
                     begin
@@ -1214,15 +1259,28 @@ package tb_std_cache_subsystem_pkg;
                                 if (isHit(ac.ac_addr) && isDirty(ac.ac_addr) && ac.ac_snoop == snoop_pkg::CLEAN_INVALID) begin
                                     // writebacks use the bypass port
                                     repeat(2) begin
+                                        ax_ace_beat_t aw_beat;
+                                        b_beat_t      b_beat;
+                                        w_beat_t      w_beat = new;
                                         aw_mbx.get(aw_beat);
                                         if (!isWriteBack(aw_beat))
                                             $error("%s.check_snoop : WRITEBACK request expected after CLEAN_INVALID",name);
+
+                                        // wait for W beat
+                                        while (!w_beat.w_last) begin
+                                            w_mbx.get(w_beat);
+                                            $display("%t ns %s.check_snoop: got W beat with last = %0d", $time, name, w_beat.w_last);
+                                        end
                                         b_mbx.get(b_beat);
                                     end
                                 end
+                                a_empty_aw : assert (aw_mbx.num() == 0) else $error ("%S.check_snoop : AW mailbox not empty", name);
+                                a_empty_w : assert (w_mbx.num() == 0) else $error ("%S.check_snoop : W mailbox not empty", name);
+                                a_empty_b : assert (b_mbx.num() == 0) else $error ("%S.check_snoop : B mailbox not empty", name);
                             end
 
                             begin
+                                bit           CheckOK;
                                 ace_cr_beat_t cr, cr_exp;
 
                                 if (is_inside_cacheable_regions(ArianeCfg, ac.ac_addr)) begin
@@ -1243,14 +1301,15 @@ package tb_std_cache_subsystem_pkg;
                                 // wait for the response
                                 cr_mbx.get(cr);
                                 $display("%t ns %s.check_snoop: Got snoop response 0b%5b (WasUnique : %1b, isShared : %1b, PassDirty : %1b, Error : %1b, DataTransfer : %1b)", $time, name, cr.cr_resp, cr.cr_resp[4],cr.cr_resp[3],cr.cr_resp[2],cr.cr_resp[1],cr.cr_resp[0]);
+                                a_empty_cr : assert (cr_mbx.num() == 0) else $error ("%S.check_snoop : CR mailbox not empty", name);
 
                                 CheckOK = checkCRResp(.req(ac), .exp(cr_exp), .resp(cr));
 
                                 // expect the data
-                                if (isHit(ac.ac_addr) && (ac.ac_snoop == snoop_pkg::READ_UNIQUE ||
-                                                          ac.ac_snoop == snoop_pkg::READ_ONCE   ||
-                                                          ac.ac_snoop == snoop_pkg::READ_SHARED)
-                                ) begin
+                                $display("%t ns %s.check_snoop: CD mailbox size : %0d", $time, name, cd_mbx.num());
+
+                                if (cr_exp.cr_resp.dataTransfer) begin
+                                    ace_cd_beat_t cd;
                                     cd = new();
                                     cd.cd_last = 1'b0;
                                     while (!cd.cd_last) begin
@@ -1258,6 +1317,8 @@ package tb_std_cache_subsystem_pkg;
                                         $display("%t ns %s.check_snoop: Got snoop data 0x%16h, last = %0d", $time, name, cd.cd_data,cd.cd_last);
                                     end
                                 end
+                                // check that no unexpected CD response has been generated
+                                a_empty_cd : assert (cd_mbx.num() == 0) else $error ("%S.check_snoop : CD mailbox not empty", name);
                             end
                         join
                     end
@@ -1287,7 +1348,7 @@ package tb_std_cache_subsystem_pkg;
                     if (dcache_req_mbox[i].try_get(msg)) begin
                         dcache_req msg_t;
                         msg_t = new msg;
-                        dcache_req_mbox_prio_tmp.put(msg_t);                                               
+                        dcache_req_mbox_prio_tmp.put(msg_t);
                     end
                 end
                 @(posedge sram_vif.clk);
@@ -1297,13 +1358,13 @@ package tb_std_cache_subsystem_pkg;
         local task automatic get_cache_msg_tmp;
             dcache_req msg;
             forever begin
-                dcache_req_mbox_prio_tmp.get(msg);                                               
+                dcache_req_mbox_prio_tmp.get(msg);
                 fork
                     begin
                         dcache_req msg_t;
                         msg_t = new msg;
-                        dcache_req_mbox_prio.put(msg_t);                                               
-                        check_cache_msg();                        
+                        dcache_req_mbox_prio.put(msg_t);
+                        check_cache_msg();
                     end
                     begin
                         @(posedge sram_vif.clk);
@@ -1331,17 +1392,18 @@ package tb_std_cache_subsystem_pkg;
                     ax_ace_beat_t ar_beat     = new();
                     r_ace_beat_t  r_beat      = new();
                     r_ace_beat_t  r_beat_peek = new();
-                    
+
                     // wait for AR beat
                     ar_mbx.get(ar_beat);
                     $display("%t ns %s.do_hit: got AR beat for message : %s", $time, name, msg.print_me());
                     if (!isCleanUnique(ar_beat))
                         $error("%s Error CLEAN_UNIQUE expected for message : %s", name, msg.print_me());
+                    a_empty_ar : assert (ar_mbx.num() == 0) else $error ("%S.do_hit : AR mailbox not empty", name);
 
                     // wait for R beat
                     while (!r_beat.r_last) begin
                         r_mbx.peek(r_beat_peek);
-                        if (r_beat_peek.r_id == ar_beat.ax_id) begin                            
+                        if (r_beat_peek.r_id == ar_beat.ax_id) begin
                             // this is our response
                             r_mbx.get(r_beat);
                             $display("%t ns %s.do_hit: got R beat with last = %0d for message : %s", $time, name, r_beat.r_last, msg.print_me());
@@ -1349,6 +1411,7 @@ package tb_std_cache_subsystem_pkg;
                             @(posedge sram_vif.clk);
                         end
                     end
+                    a_empty_r : assert (r_mbx.num() == 0) else $error ("%S.do_hit : R mailbox not empty", name);
 
                     msg.insert_readback = 1'b1;
                 end
@@ -1377,24 +1440,25 @@ package tb_std_cache_subsystem_pkg;
             fork
                 begin
                     ax_ace_beat_t aw_beat = new();
-        
+
                     // monitor if eviction is necessary
                     dcache_req evict_msg;
                     while (!mustEvict(addr_v)) begin
                         @(posedge sram_vif.clk);
                     end
-                    
+
                     $display("%t ns %s Eviction needed, wait for eviction AW beat for message : %s", $time, name, msg.print_me());
                     aw_mbx.get(aw_beat);
                     if (!isWriteBack(aw_beat))
                         $error("%s.do_miss : WRITEBACK request expected after eviction for message : %s", name, msg.print_me());
+                    a_empty_aw : assert (aw_mbx.num() == 0) else $error ("%S.do_miss : AW mailbox not empty", name);
 
                     evict_msg          = new msg;
                     evict_msg.trans_type = EVICT;
                     $display("%t ns %s inserting a new dcache message :%s", $time, name, msg.print_me());
                     req_to_cache_update.put(evict_msg);
                     wait (0); // avoid exiting fork
-                    
+
                 end
 
                 begin
@@ -1408,6 +1472,7 @@ package tb_std_cache_subsystem_pkg;
                     // wait for AR beat
                     ar_mbx.get(ar_beat);
                     $display("%t ns %s.do_miss: got AR beat for message : %s", $time, name, msg.print_me());
+                    a_empty_ar : assert (ar_mbx.num() == 0) else $error ("%S.do_miss : AR mailbox not empty", name);
 
                     if (msg.trans_type == WR_REQ) begin
                         if (!isReadUnique(ar_beat))
@@ -1420,7 +1485,7 @@ package tb_std_cache_subsystem_pkg;
                     // wait for R beat
                     while (!r_beat.r_last) begin
                         r_mbx.peek(r_beat_peek);
-                        if (r_beat_peek.r_id == ar_beat.ax_id) begin                            
+                        if (r_beat_peek.r_id == ar_beat.ax_id) begin
                             // this is our response
                             r_mbx.get(r_beat);
                             msg.add_to_cache_line(r_beat.r_data);
@@ -1437,6 +1502,7 @@ package tb_std_cache_subsystem_pkg;
                             @(posedge sram_vif.clk);
                         end
                     end
+                    a_empty_r : assert (r_mbx.num() == 0) else $error ("%S.do_miss : R mailbox not empty", name);
 
                     msg.r_dirty  = r_beat.r_resp[2];
                     msg.r_shared = r_beat.r_resp[3];
@@ -1481,6 +1547,7 @@ package tb_std_cache_subsystem_pkg;
                 end
             join_any
             disable fork;
+
             assert (ar_mbx.num() == 0) else $error("AR mailbox not empty");
             assert (r_mbx.num() == 0) else $error("R mailbox not empty");
 
@@ -1517,6 +1584,7 @@ package tb_std_cache_subsystem_pkg;
                     if (!is_inside_cacheable_regions(ArianeCfg, addr_v)) begin
                         if (msg.trans_type == WR_REQ) begin
                             b_beat_t b_beat = new();
+                            w_beat_t w_beat = new();
                             if (is_inside_shareable_regions(ArianeCfg, addr_v)) begin
                                 ax_ace_beat_t aw_beat = new();
                                 aw_mbx.get(aw_beat);
@@ -1532,7 +1600,18 @@ package tb_std_cache_subsystem_pkg;
                                 if (!isWriteNoSnoop(aw_beat))
                                     $error("%s.check_cache_msg : WRITE_NO_SNOOP request expected for message : %s", name, msg.print_me());
                             end
+                            a_empty_aw : assert (aw_mbx.num() == 0) else $error ("%S.check_cache_msg : AW mailbox not empty", name);
+
+                            // wait for W beat
+                            while (!w_beat.w_last) begin
+                                w_mbx.get(w_beat);
+                                $display("%t ns %s.check_cache_msg: got W beat with last = %0d for message : %s", $time, name, w_beat.w_last, msg.print_me());
+                            end
+                            a_empty_w : assert (w_mbx.num() == 0) else $error ("%S.flush_cache : W mailbox not empty", name);
+
+                            // wait for B beat
                             b_mbx.get(b_beat);
+                            a_empty_b : assert (b_mbx.num() == 0) else $error ("%S.check_cache_msg : B mailbox not empty", name);
                         end else begin
                             ax_ace_beat_t ar_beat     = new();
                             r_ace_beat_t  r_beat      = new();
@@ -1547,11 +1626,12 @@ package tb_std_cache_subsystem_pkg;
                                 if (!isReadNoSnoop(ar_beat))
                                     $error("%s.check_cache_msg : READ_NO_SNOOP request expected for message : %s", name, msg.print_me());
                             end
+                            a_empty_ar : assert (ar_mbx.num() == 0) else $error ("%S.check_cache_msg : AR mailbox not empty", name);
 
                             // wait for R beat
                             while (!r_beat.r_last) begin
                                 r_mbx.peek(r_beat_peek);
-                                if (r_beat_peek.r_id == ar_beat.ax_id) begin                            
+                                if (r_beat_peek.r_id == ar_beat.ax_id) begin
                                     // this is our response
                                     r_mbx.get(r_beat);
                                     $display("%t ns %s.check_cache_msg: got R beat with last = %0d for message : %s", $time, name, r_beat.r_last, msg.print_me());
@@ -1559,6 +1639,7 @@ package tb_std_cache_subsystem_pkg;
                                     @(posedge sram_vif.clk);
                                 end
                             end
+                            a_empty_r : assert (r_mbx.num() == 0) else $error ("%S.check_cache_msg : R mailbox not empty", name);
 
                             msg.r_dirty  = r_beat.r_resp[2];
                             msg.r_shared = r_beat.r_resp[3];
@@ -1615,16 +1696,19 @@ package tb_std_cache_subsystem_pkg;
                         aw_mbx.get(aw_beat);
                         if (!isWriteBack(aw_beat))
                             $error("%s.flush_cache : WRITEBACK request expected after eviction of cache[%0d][%0d]", name, w, l);
+                        a_empty_aw : assert (aw_mbx.num() == 0) else $error ("%S.flush_cache : AW mailbox not empty", name);
 
                         // wait for W beat
                         while (!w_beat.w_last) begin
                             w_mbx.get(w_beat);
                             $display("%t ns %s.flush_cache: got W beat with last = %0d for cache[%0d][%0d]", $time, name, w_beat.w_last, w, l);
-                        end                        
+                        end
+                        a_empty_w : assert (w_mbx.num() == 0) else $error ("%S.flush_cache : W mailbox not empty", name);
 
                         // wait for B beat
                         b_mbx.get(b_beat);
                         $display("%t ns %s.flush_cache: got B beat for cache[%0d][%0d]", $time, name, w, l);
+                        a_empty_b : assert (b_mbx.num() == 0) else $error ("%S.flush_cache : B mailbox not empty", name);
                     end
                 end
             end
@@ -1665,16 +1749,19 @@ package tb_std_cache_subsystem_pkg;
                                 if (!isWriteNoSnoop(aw_beat))
                                     $error("%s.check_amo_msg : WRITE_NO_SNOOP request expected for message %s", name, msg.print_me());
                             end
+                            a_empty_aw : assert (aw_mbx.num() == 0) else $error ("%S.check_amo_msg : AW mailbox not empty", name);
 
                             // wait for W beat
                             while (!w_beat.w_last) begin
                                 w_mbx.get(w_beat);
                                 $display("%t ns %s.check_amo_msg: got W beat with last = %0d for message %s", $time, name, w_beat.w_last, msg.print_me());
                             end
+                            a_empty_w : assert (w_mbx.num() == 0) else $error ("%S.check_amo_msg : W mailbox not empty", name);
 
                             // wait for B beat
                             b_mbx.get(b_beat);
                             $display("%t ns %s.check_amo_msg: got B beat for message %s", $time, name, msg.print_me());
+                            a_empty_b : assert (b_mbx.num() == 0) else $error ("%S.check_amo_msg : B mailbox not empty", name);
                         end else begin
                             ax_ace_beat_t ar_beat     = new();
                             r_ace_beat_t  r_beat      = new();
@@ -1689,11 +1776,12 @@ package tb_std_cache_subsystem_pkg;
                                 if (!isReadNoSnoop(ar_beat))
                                     $error("%s.check_amo_msg : READ_NO_SNOOP request expected for message %s", name, msg.print_me());
                             end
+                            a_empty_ar : assert (ar_mbx.num() == 0) else $error ("%S.check_amo_msg : AR mailbox not empty", name);
 
                             // wait for R beat
                             while (!r_beat.r_last) begin
                                 r_mbx.peek(r_beat_peek);
-                                if (r_beat_peek.r_id == ar_beat.ax_id) begin                            
+                                if (r_beat_peek.r_id == ar_beat.ax_id) begin
                                     // this is our response
                                     r_mbx.get(r_beat);
                                     $display("%t ns %s.check_amo_msg: got R beat with last = %0d for message %s", $time, name, r_beat.r_last, msg.print_me());
@@ -1701,6 +1789,7 @@ package tb_std_cache_subsystem_pkg;
                                     @(posedge sram_vif.clk);
                                 end
                             end
+                            a_empty_r : assert (r_mbx.num() == 0) else $error ("%S.check_amo_msg : R mailbox not empty", name);
 
                         end
 
