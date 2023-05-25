@@ -152,8 +152,10 @@ package tb_std_cache_subsystem_pkg;
 
         // read request
         task rd (
-            input logic [63:0] addr      = '0,
-            input bit          rand_addr = 0
+            input logic [63:0] addr         = '0,
+            input bit          rand_addr    = 1'b0,
+            input bit          check_result = 1'b0,
+            input logic [63:0] exp_result   = '0
         );
             logic [63:0] addr_int;
 
@@ -164,7 +166,7 @@ package tb_std_cache_subsystem_pkg;
             end
 
             if (verbosity > 0) begin
-                $display("%t ns %s sending read request for address 0x%8h", $time, name, addr_int);
+                $display("%t ns %s : sending read request for address 0x%8h", $time, name, addr_int);
             end
 
             #0;
@@ -179,6 +181,11 @@ package tb_std_cache_subsystem_pkg;
 
             if (verbosity > 0) begin
                 $display("%t ns %s got ack for read address 0x%8h", $time, name, addr_int);
+            end
+
+            if (check_result) begin
+                a_rd_check : assert (vif.resp.result == exp_result) else 
+                    $error("%s : data mismatch. Expected 0x%16h, got 0x%16h", name, exp_result, vif.resp.result);
             end
 
             #0;
