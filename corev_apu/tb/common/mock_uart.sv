@@ -54,7 +54,11 @@ module mock_uart (
     assign pslverr_o = 1'b0;
 
     function void uart_tx(byte ch);
+      int fd;
         $write("%c", ch);
+      fd = $fopen("uart.log", "a");
+      $fwrite(fd, "%c", ch);
+      $fclose(fd);
     endfunction : uart_tx
 
     always_ff @(posedge clk_i or negedge rst_ni) begin
