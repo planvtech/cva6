@@ -556,19 +556,71 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
       OK = 1'b0;
     end
 
-    if (isShared(cache_status, current_req) != snoop_resp_o.cr_resp.isShared && snoop_resp_o.cr_resp.error == 1'b0 && current_req.snoop_type != snoop_pkg::CLEAN_INVALID) begin
-      $error("CR.resp.isShared mismatch: expected %h, actual %h", isShared(cache_status, current_req), snoop_resp_o.cr_resp.isShared);
-      OK = 1'b0;
-    end
+    if (current_req.snoop_type == snoop_pkg::CLEAN_INVALID) begin
 
-    if(isDirty(cache_status, current_req) != snoop_resp_o.cr_resp.passDirty && snoop_resp_o.cr_resp.error == 1'b0 && current_req.snoop_type != snoop_pkg::CLEAN_INVALID) begin
-      $error("CR.resp.passDirty mismatch: expected %h, actual %h", isDirty(cache_status, current_req), snoop_resp_o.cr_resp.passDirty);
-      OK = 1'b0;
-    end
+      if (snoop_resp_o.cr_resp.isShared == 1'b1 && snoop_resp_o.cr_resp.error == 1'b0) begin
+        $error("CR.resp.isShared mismatch: expected 0, actual 1");
+        OK = 1'b0;
+      end
 
-    if(isHit(cache_status, current_req) != snoop_resp_o.cr_resp.dataTransfer && snoop_resp_o.cr_resp.error == 1'b0 && current_req.snoop_type != snoop_pkg::CLEAN_INVALID) begin
-      $error("CR.resp.transferData mismatch: expected %h, actual %h", isHit(cache_status, current_req), snoop_resp_o.cr_resp.dataTransfer);
-      OK = 1'b0;
+      if (snoop_resp_o.cr_resp.passDirty == 1'b1 && snoop_resp_o.cr_resp.error == 1'b0) begin
+        $error("CR.resp.passDirty mismatch: expected 0, actual 1");
+        OK = 1'b0;
+      end
+
+      if (snoop_resp_o.cr_resp.dataTransfer == 1'b1 && snoop_resp_o.cr_resp.error == 1'b0) begin
+        $error("CR.resp.dataTransfer mismatch: expected 0, actual 1");
+        OK = 1'b0;
+      end
+    end else if (current_req.snoop_type == snoop_pkg::READ_SHARED) begin
+
+      if(isHit(cache_status, current_req) != snoop_resp_o.cr_resp.isShared && snoop_resp_o.cr_resp.error == 1'b0) begin
+        $error("CR.resp.isShared mismatch: expected %h, actual %h", isHit(cache_status, current_req), snoop_resp_o.cr_resp.isShared);
+        OK = 1'b0;
+      end
+
+      if (snoop_resp_o.cr_resp.passDirty == 1'b1 && snoop_resp_o.cr_resp.error == 1'b0) begin
+        $error("CR.resp.passDirty mismatch: expected 0, actual 1");
+        OK = 1'b0;
+      end
+
+      if(isHit(cache_status, current_req) != snoop_resp_o.cr_resp.dataTransfer && snoop_resp_o.cr_resp.error == 1'b0) begin
+        $error("CR.resp.transferData mismatch: expected %h, actual %h", isHit(cache_status, current_req), snoop_resp_o.cr_resp.dataTransfer);
+        OK = 1'b0;
+      end
+    end else if (current_req.snoop_type == snoop_pkg::READ_ONCE) begin
+
+      if (isShared(cache_status, current_req) != snoop_resp_o.cr_resp.isShared && snoop_resp_o.cr_resp.error == 1'b0) begin
+        $error("CR.resp.isShared mismatch: expected %h, actual %h", isShared(cache_status, current_req), snoop_resp_o.cr_resp.isShared);
+        OK = 1'b0;
+      end
+
+      if (snoop_resp_o.cr_resp.passDirty == 1'b1 && snoop_resp_o.cr_resp.error == 1'b0) begin
+        $error("CR.resp.passDirty mismatch: expected 0, actual 1");
+        OK = 1'b0;
+      end
+
+      if(isHit(cache_status, current_req) != snoop_resp_o.cr_resp.dataTransfer && snoop_resp_o.cr_resp.error == 1'b0) begin
+        $error("CR.resp.transferData mismatch: expected %h, actual %h", isHit(cache_status, current_req), snoop_resp_o.cr_resp.dataTransfer);
+        OK = 1'b0;
+      end
+
+    end else begin // READ_UNIQUE
+
+      if (snoop_resp_o.cr_resp.isShared == 1'b1 && snoop_resp_o.cr_resp.error == 1'b0) begin
+        $error("CR.resp.isShared mismatch: expected 0, actual 1");
+        OK = 1'b0;
+      end
+
+      if(isDirty(cache_status, current_req) != snoop_resp_o.cr_resp.passDirty && snoop_resp_o.cr_resp.error == 1'b0) begin
+        $error("CR.resp.passDirty mismatch: expected %h, actual %h", isDirty(cache_status, current_req), snoop_resp_o.cr_resp.passDirty);
+        OK = 1'b0;
+      end
+
+      if(isHit(cache_status, current_req) != snoop_resp_o.cr_resp.dataTransfer && snoop_resp_o.cr_resp.error == 1'b0) begin
+        $error("CR.resp.transferData mismatch: expected %h, actual %h", isHit(cache_status, current_req), snoop_resp_o.cr_resp.dataTransfer);
+        OK = 1'b0;
+      end
     end
 
   endtask
@@ -634,7 +686,9 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
           begin
             // expect a writeback
             if (isHit(cache_status, current_req) && isDirty(cache_status, current_req) && current_req.snoop_type == snoop_pkg::CLEAN_INVALID) begin
-              `WAIT_SIG(clk_i, axi_data_i.b_valid)
+              // writebacks use the bypass port
+              `WAIT_SIG(clk_i, axi_bypass_i.b_valid)
+              `WAIT_SIG(clk_i, axi_bypass_i.b_valid)
             end
           end
           begin

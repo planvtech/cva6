@@ -1,3 +1,26 @@
+#!/usr/bin/env python3
+
+from string import Template
+import argparse
+import os.path
+import sys
+import binascii
+
+
+parser = argparse.ArgumentParser(description='Generate dts file')
+parser.add_argument('ncores', metavar='ncores', nargs=1,
+                   help='number of cores')
+
+args = parser.parse_args()
+ncores = int(args.ncores[0])
+
+if ncores < 1:
+    print("ncores must be 1 or greater - assuming 1...")
+    ncores = 1
+
+filename = "ariane.dts"
+
+header = """\
 /dts-v1/;
 
 / {
@@ -9,22 +32,28 @@
     #address-cells = <1>;
     #size-cells = <0>;
     timebase-frequency = <32768>; // 32.768 kHz
-    CPU0: cpu@0 {
-      clock-frequency = <50000000>; // 50 MHz
-      device_type = "cpu";
-      reg = <0>;
-      status = "okay";
-      compatible = "eth, ariane", "riscv";
-      riscv,isa = "rv64imafdc";
-      mmu-type = "riscv,sv39";
-      tlb-split;
-      // HLIC - hart local interrupt controller
-      CPU0_intc: interrupt-controller {
-        #interrupt-cells = <1>;
-        interrupt-controller;
-        compatible = "riscv,cpu-intc";
-      };
-    };
+"""
+
+cpus = ""
+for c in range(ncores):
+    cpus = cpus + "    CPU" + str(c) + ": cpu@" + str(c) + " {\n"
+    cpus = cpus + "      clock-frequency = <50000000>; // 50 MHz\n"
+    cpus = cpus + "      device_type = \"cpu\";\n"
+    cpus = cpus + "      reg = <" + str(c) + ">;\n"
+    cpus = cpus + "      status = \"okay\";\n"
+    cpus = cpus + "      compatible = \"eth, ariane\", \"riscv\";\n"
+    cpus = cpus + "      riscv,isa = \"rv64imafdc\";\n"
+    cpus = cpus + "      mmu-type = \"riscv,sv39\";\n"
+    cpus = cpus + "      tlb-split;\n"
+    cpus = cpus + "      // HLIC - hart local interrupt controller\n"
+    cpus = cpus + "      CPU" + str(c) + "_intc: interrupt-controller {\n"
+    cpus = cpus + "        #interrupt-cells = <1>;\n"
+    cpus = cpus + "        interrupt-controller;\n"
+    cpus = cpus + "        compatible = \"riscv,cpu-intc\";\n"
+    cpus = cpus + "      };\n"
+    cpus = cpus + "    };\n"
+
+footer = """\
   };
   memory@80000000 {
     device_type = "memory";
@@ -80,3 +109,12 @@
     };
   };
 };
+"""
+
+""" Generate device tree file
+"""
+with open(filename, "w") as f:
+    f.write(header)
+    f.write(cpus)
+    f.write(footer)
+    f.close()

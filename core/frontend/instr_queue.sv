@@ -118,13 +118,13 @@ module instr_queue import ariane_pkg::*; (
   logic [ariane_pkg::INSTR_PER_FETCH-1:0] instr_overflow_fifo;
 
   assign ready_o = ~(|instr_queue_full) & ~full_address;
-  
+
   if (ariane_pkg::RVC) begin : gen_multiple_instr_per_fetch_with_C
-  
+
     for (genvar i = 0; i < ariane_pkg::INSTR_PER_FETCH; i++) begin : gen_unpack_taken
       assign taken[i] = cf_type_i[i] != ariane_pkg::NoCF;
     end
-   
+
     // calculate a branch mask, e.g.: get the first taken branch
     lzc #(
       .WIDTH   ( ariane_pkg::INSTR_PER_FETCH ),
@@ -134,8 +134,8 @@ module instr_queue import ariane_pkg::*; (
       .cnt_o   ( branch_index   ), // first branch on branch_index
       .empty_o ( branch_empty   )
     );
-  
- 
+
+
     // the first index is for sure valid
     // for example (64 bit fetch):
     // taken mask: 0 1 1 0
@@ -172,7 +172,7 @@ module instr_queue import ariane_pkg::*; (
     // the fifo_position signal can directly be used to guide the push signal of each FIFO
     // make sure it is not full
     assign push_instr = fifo_pos & ~instr_queue_full;
-  
+
     // duplicate the entries for easier selection e.g.: 3 2 1 0 3 2 1 0
     for (genvar i = 0; i < ariane_pkg::INSTR_PER_FETCH; i++) begin : gen_duplicate_instr_input
       assign instr[i] = instr_i[i];
@@ -191,7 +191,7 @@ module instr_queue import ariane_pkg::*; (
       /* verilator lint_on WIDTH */
     end
   end else begin : gen_multiple_instr_per_fetch_without_C
-    
+
     assign taken = '0;
     assign branch_empty = '0;
     assign branch_index = '0;
@@ -204,14 +204,14 @@ module instr_queue import ariane_pkg::*; (
     assign popcount = '0;
     assign shamt = '0;
     assign valid = '0;
-    
-    
+
+
     assign consumed_o = push_instr_fifo[0];
     // ----------------------
     // Input interface
     // ----------------------
-    assign push_instr = valid_i & ~instr_queue_full;    
-    
+    assign push_instr = valid_i & ~instr_queue_full;
+
     /* verilator lint_off WIDTH */
     assign instr_data_in[0].instr = instr_i[0];
     assign instr_data_in[0].cf = cf_type_i[0];
@@ -246,13 +246,13 @@ module instr_queue import ariane_pkg::*; (
   end else begin : gen_replay_addr_o_without_C
     assign replay_addr_o = addr_i[0];
   end
-  
+
   // ----------------------
   // Downstream interface
   // ----------------------
   // as long as there is at least one queue which can take the value we have a valid instruction
   assign fetch_entry_valid_o = ~(&instr_queue_empty);
-  
+
   if (ariane_pkg::RVC) begin : gen_downstream_itf_with_c
     always_comb begin
       idx_ds_d = idx_ds_q;
@@ -293,7 +293,7 @@ module instr_queue import ariane_pkg::*; (
       idx_is_d = '0;
       fetch_entry_o.instruction = instr_data_out[0].instr;
       fetch_entry_o.address = pc_q;
-    
+
       fetch_entry_o.ex.valid = instr_data_out[0].ex != ariane_pkg::FE_NONE;
       if (instr_data_out[0].ex == ariane_pkg::FE_INSTR_ACCESS_FAULT) begin
         fetch_entry_o.ex.cause = riscv::INSTR_ACCESS_FAULT;
@@ -301,10 +301,10 @@ module instr_queue import ariane_pkg::*; (
         fetch_entry_o.ex.cause = riscv::INSTR_PAGE_FAULT;
       end
       fetch_entry_o.ex.tval = {{64-riscv::VLEN{1'b0}}, instr_data_out[0].ex_vaddr};
-    
+
       fetch_entry_o.branch_predict.predict_address = address_out;
       fetch_entry_o.branch_predict.cf = instr_data_out[0].cf;
-    
+
       pop_instr[0] = fetch_entry_valid_o & fetch_entry_ready_i;
     end
   end
@@ -388,11 +388,11 @@ module instr_queue import ariane_pkg::*; (
     .pop_i      ( pop_address                  )
   );
 
-  unread i_unread_address_fifo (.d_i(|{empty_address, address_queue_usage}));
-  unread i_unread_branch_mask (.d_i(|branch_mask_extended));
-  unread i_unread_lzc (.d_i(|{branch_empty}));
-  unread i_unread_fifo_pos (.d_i(|fifo_pos_extended)); // we don't care about the lower signals
-  unread i_unread_instr_fifo (.d_i(|instr_queue_usage));
+  //unread i_unread_address_fifo (.d_i(|{empty_address, address_queue_usage}));
+  //unread i_unread_branch_mask (.d_i(|branch_mask_extended));
+  //unread i_unread_lzc (.d_i(|{branch_empty}));
+  //unread i_unread_fifo_pos (.d_i(|fifo_pos_extended)); // we don't care about the lower signals
+  //unread i_unread_instr_fifo (.d_i(|instr_queue_usage));
 
   if (ariane_pkg::RVC) begin : gen_pc_q_with_c
     always_ff @(posedge clk_i or negedge rst_ni) begin

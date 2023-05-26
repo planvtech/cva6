@@ -47,6 +47,7 @@ package std_cache_pkg;
     typedef struct packed {
         logic                req;
         ariane_axi::ad_req_t reqtype;
+        ariane_ace::ace_req_t acetype;
         ariane_pkg::amo_t    amo;
         logic [3:0]          id;
         logic [63:0]         addr;
@@ -76,6 +77,11 @@ package std_cache_pkg;
         logic [(ariane_pkg::DCACHE_LINE_WIDTH+7)/8-1:0] data;   // byte enable into data array
         logic [ariane_pkg::DCACHE_SET_ASSOC-1:0]        vldrty; // bit enable into state array (valid for a pair of dirty/valid bits)
     } cl_be_t;
+
+  typedef struct                                        packed {
+    logic                                               valid;
+    logic [63:0]                                        addr;
+  } readshared_done_t;
 
     // convert one hot to bin for -> needed for cache replacement
     function automatic logic [$clog2(ariane_pkg::DCACHE_SET_ASSOC)-1:0] one_hot_to_bin (

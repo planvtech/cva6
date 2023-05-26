@@ -38,6 +38,13 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
     // return
    input logic                           miss_gnt_i,
    input logic                           active_serving_i, // the miss unit is currently active for this unit, serving the miss
+   input logic                           flushing_i,
+   // bypass ports
+   input logic                           bypass_gnt_i,
+   input logic                           bypass_valid_i,
+   //
+   input logic updating_cache_i,
+   output                                readshared_done_t readshared_done_o,
     // check MSHR for aliasing
    output logic [55:0]                   mshr_addr_o,
    input logic                           mshr_addr_matches_i,
@@ -54,7 +61,7 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
         INVALIDATE, // 5
         SEND_CR_RESP, // 6
         SEND_CD_RESP, // 7
-        WAIT_MH // 8
+        WRITEBACK // 8
         } state_d, state_q;
 
   typedef struct                         packed {
@@ -124,33 +131,39 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
     be_o = '0;
     data_o = '0;
 
+    readshared_done_o = '0;
+
     case (state_q)
 
       IDLE: begin
-        snoop_port_o.ac_ready = 1'b1;
+        snoop_port_o.ac_ready = !flushing_i; //1'b1;
         cr_resp_d = '0;
         ac_snoop_d = '0;
         cacheline_word_sel_d = 1'b0;
 
         // we receive a snooping request
-        if (snoop_port_i.ac_valid) begin
+        if (snoop_port_i.ac_valid & !flushing_i) begin
           // save the request details
           mem_req_d.index = snoop_port_i.ac.addr[DCACHE_INDEX_WIDTH-1:0];
           mem_req_d.tag = snoop_port_i.ac.addr[DCACHE_INDEX_WIDTH+:DCACHE_TAG_WIDTH];
+          mem_req_d.size = 2'b11;
           if (bypass_i) begin
             state_d = SEND_CR_RESP;
           end
           else begin
             // invalidate request
             if (snoop_port_i.ac.snoop == snoop_pkg::CLEAN_INVALID) begin
-              state_d = WAIT_MH;
+              state_d = WAIT_GNT;
+              ac_snoop_d = snoop_port_i.ac.snoop;
+              // request the cache line
+              req_o = '1;
             end
             // read request
             else if (snoop_port_i.ac.snoop == snoop_pkg::READ_SHARED || snoop_port_i.ac.snoop == snoop_pkg::READ_ONCE || snoop_port_i.ac.snoop == snoop_pkg::READ_UNIQUE) begin
               state_d = WAIT_GNT;
               ac_snoop_d = snoop_port_i.ac.snoop;
-              // request the cache line
-              req_o = '1;
+              // request the cache line (unless there is another cache controller which is uploading the cache content)
+              req_o = !updating_cache_i ? '1 : '0;
             end
             // wrong request
             else begin
@@ -162,39 +175,57 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
       end
 
       WAIT_GNT: begin
-        req_o = '1;
-        if (gnt_i)
-          state_d = EVAL_FLAGS;
+        if (!updating_cache_i) begin
+          req_o = '1;
+          if (gnt_i)
+            state_d = EVAL_FLAGS;
+        end
       end
 
       EVAL_FLAGS: begin
-        hit_way_d = hit_way_i;
-        shared_way_d = shared_way_i;
-        dirty_way_d = dirty_way_i;
-        if (|hit_way_i) begin
-          cr_resp_d.dataTransfer = 1'b1;
-          cr_resp_d.passDirty = dirty;
-          cr_resp_d.isShared = shared;
-          cache_data_d = cl_i;
-          case (ac_snoop_q)
-            snoop_pkg::READ_ONCE: begin
-              state_d = SEND_CR_RESP;
-            end
-            snoop_pkg::READ_SHARED: begin
-              state_d = UPDATE_SHARED;
-            end
-            snoop_pkg::READ_UNIQUE: begin
-              state_d = INVALIDATE;
-            end
-          endcase
-        end
-        // Miss
-        else begin
-          cr_resp_d.dataTransfer = 1'b0;
-          cr_resp_d.passDirty = 1'b0;
-          cr_resp_d.isShared = 1'b0;
-          state_d = SEND_CR_RESP;
-        end
+        // keep the request to avoid interference from other cache controllers
+        req_o = '1;
+//        if (updating_cache_i)
+//          state_d = WAIT_GNT;
+//        else begin
+          hit_way_d = hit_way_i;
+          shared_way_d = shared_way_i;
+          dirty_way_d = dirty_way_i;
+          if (|hit_way_i) begin
+            cr_resp_d.dataTransfer = 1'b1;
+            cr_resp_d.passDirty = 1'b0; //dirty;
+            //cr_resp_d.isShared = shared;
+            cache_data_d = cl_i;
+            case (ac_snoop_q)
+              snoop_pkg::CLEAN_INVALID: begin
+                cr_resp_d.dataTransfer = 1'b0;
+                cr_resp_d.passDirty = 1'b0;
+                cr_resp_d.isShared = 1'b0;
+                state_d = INVALIDATE;
+              end
+              snoop_pkg::READ_ONCE: begin
+                cr_resp_d.isShared = shared;
+                state_d = SEND_CR_RESP;
+              end
+              snoop_pkg::READ_SHARED: begin
+                cr_resp_d.isShared = 1'b1;
+                state_d = UPDATE_SHARED;
+              end
+              snoop_pkg::READ_UNIQUE: begin
+                cr_resp_d.passDirty = dirty;
+                cr_resp_d.isShared = 1'b0;
+                state_d = INVALIDATE;
+              end
+            endcase
+          end
+          // Miss
+          else begin
+            cr_resp_d.dataTransfer = 1'b0;
+            cr_resp_d.passDirty = 1'b0;
+            cr_resp_d.isShared = 1'b0;
+            state_d = SEND_CR_RESP;
+          end
+//        end
       end
 
         UPDATE_SHARED: begin
@@ -212,6 +243,8 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
           data_o.shared = 1'b1;
           if (gnt_i) begin
             state_d = SEND_CR_RESP;
+            readshared_done_o.valid = 1'b1;
+            readshared_done_o.addr = {mem_req_q.tag, mem_req_q.index};
           end
         end
 
@@ -229,7 +262,10 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
         miss_req_o.addr = {mem_req_q.tag, mem_req_q.index};
         miss_req_o.size = mem_req_q.size;
         if (gnt_i) begin
-          state_d = SEND_CR_RESP;
+          if ((hit_way_q & dirty_way_q) && ac_snoop_q == snoop_pkg::CLEAN_INVALID)
+            state_d = WRITEBACK;
+          else
+            state_d = SEND_CR_RESP;
         end
       end
 
@@ -250,24 +286,30 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
       SEND_CD_RESP: begin
         snoop_port_o.cd_valid = 1'b1;
         snoop_port_o.cd.data = cacheline_word_sel_q ? cache_data_q[127:64] : cache_data_q[63:0];
+        snoop_port_o.cd.last = cacheline_word_sel_q;
         if (snoop_port_i.cd_ready) begin
           if (cacheline_word_sel_q) begin
             state_d = IDLE;
-            snoop_port_o.cd.last = 1'b1;
           end
           cacheline_word_sel_d = ~cacheline_word_sel_q;
         end
       end
 
-      WAIT_MH: begin
+      WRITEBACK: begin
         // valid = invalidate = 1 signals an incoming cleaninvalid
-        // we are blocked by the miss_handler, which should execute the invalidate to avoid a deadlock
+        // we are not blocked by the miss_handler (invalidation is done here, and we use the bypass port), to avoid a deadlock
+        miss_req_o.bypass = 1'b1;
         miss_req_o.valid = 1'b1;
         miss_req_o.invalidate = 1'b1;
-        miss_req_o.addr = {mem_req_q.tag, mem_req_q.index};
+        miss_req_o.we = 1'b1;
+        miss_req_o.be = '1;
+        miss_req_o.addr = cacheline_word_sel_q ? {mem_req_q.tag, mem_req_q.index + 12'h8} : {mem_req_q.tag, mem_req_q.index};
         miss_req_o.size = mem_req_q.size;
-
-        if (miss_gnt_i)
+        miss_req_o.wdata = cacheline_word_sel_q ? cache_data_q[127:64] : cache_data_q[63:0];
+        if (bypass_gnt_i) begin
+          cacheline_word_sel_d = ~cacheline_word_sel_q;
+        end
+        if (!cacheline_word_sel_q & bypass_valid_i)
           state_d = SEND_CR_RESP;
       end
     endcase
@@ -298,5 +340,23 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
       ac_snoop_q <= ac_snoop_d;
     end
   end
-
+/*
+  xlnx_ila i_ila
+    (
+     .clk (clk_i),
+     .probe0 (tag_o),
+     .probe1 (addr_o),
+     .probe2 (snoop_port_i.ac.addr[31:0]),
+     .probe3 ({hit_way_i, dirty_way_i, shared_way_i}),
+     .probe4 ('0),
+     .probe5 ('0),
+     .probe6 ('0),
+     .probe7 ('0),
+     .probe8 ('0),
+     .probe9 ('0),
+     .probe10 ('0),
+     .probe11 ('0),
+     .probe12 ({snoop_port_i.ac_valid, snoop_port_i.ac.snoop, req_o, we_o, gnt_i, state_q})
+     );
+ */
 endmodule
