@@ -8,6 +8,9 @@ package tb_std_cache_subsystem_pkg;
     // definitions for dcache request and response
     typedef enum {WR_REQ, RD_REQ, RD_RESP, WR_RESP, EVICT, READBACK} dcache_trans_t;
 
+    // definitions for dcache management transactions
+    typedef enum {FLUSH_REQ} dcache_mgmt_trans_t;
+
     // definitions for amo request and response
     typedef enum {AMO_WR_REQ, AMO_RD_REQ, AMO_RD_RESP} amo_trans_t;
 
@@ -464,8 +467,10 @@ package tb_std_cache_subsystem_pkg;
 
         // read request, wait for read data
         task rd_wait (
-            input logic [63:0] addr      = '0,
-            input bit          rand_addr = 0
+            input logic [63:0] addr         = '0,
+            input bit          rand_addr    = 0,
+            input bit          check_result = 1'b0,
+            input logic [63:0] exp_result   = '0
         );
             logic [63:0] addr_int;
 
@@ -505,6 +510,12 @@ package tb_std_cache_subsystem_pkg;
                 #0;
                 vif.req.tag_valid = '0;
             end while (!vif.resp.data_rvalid);
+
+            if (check_result) begin
+                a_rd_check : assert (vif.resp.data_rdata == exp_result) else 
+                    $error("%s : data mismatch. Expected 0x%16h, got 0x%16h", name, exp_result, vif.resp.data_rdata);
+            end
+
 
         endtask
 
@@ -676,6 +687,20 @@ package tb_std_cache_subsystem_pkg;
     endclass
 
 
+
+    //--------------------------------------------------------------------------
+    // dcache management transaction
+    //--------------------------------------------------------------------------
+    class dcache_mgmt_trans;
+        dcache_mgmt_trans_t            trans_type;
+
+        function string print_me();
+            return $sformatf("type %0s",trans_type.name());
+        endfunction
+
+    endclass
+
+
     //--------------------------------------------------------------------------
     // Driver for the dcache management interface
     //--------------------------------------------------------------------------
@@ -714,6 +739,54 @@ package tb_std_cache_subsystem_pkg;
             end
         endtask
     endclass
+
+
+    //--------------------------------------------------------------------------
+    // Monitor for the dcache management interface
+    //--------------------------------------------------------------------------
+    class dcache_mgmt_monitor;
+
+        mailbox #(dcache_mgmt_trans) mbox;
+
+        virtual dcache_mgmt_intf     vif;
+
+        string                       name;
+        int                          verbosity;
+
+        function new (virtual dcache_mgmt_intf vif, string name="dcache_mgmt_monitor");
+            this.vif  = vif;
+            this.name = name;
+            verbosity = 0;
+        endfunction
+
+        // get flush requests
+        local task mon_flush;
+            dcache_mgmt_trans trans;
+            $display("%t ns %s monitoring flush requests", $time, name);
+            forever begin
+                if (vif.dcache_flush) begin // got flush request
+                    trans = new();
+                    trans.trans_type = FLUSH_REQ;
+                    if (verbosity > 0) begin
+                        $display("%t ns %s got flush request", $time, name);
+                    end
+                    mbox.put(trans);
+
+                    // wait for ack
+                    while (!vif.dcache_flush_ack) begin
+                        @(posedge vif.clk);
+                    end
+                end
+                @(posedge vif.clk);
+            end
+        endtask
+
+        task monitor;
+            mon_flush();
+        endtask
+
+    endclass
+
 
 
     //--------------------------------------------------------------------------
@@ -756,6 +829,8 @@ package tb_std_cache_subsystem_pkg;
         mailbox #(amo_req)       amo_req_mbox;
         mailbox #(amo_resp)      amo_resp_mbox;
 
+        mailbox #(dcache_mgmt_trans) mgmt_mbox;
+
         // ACE mailboxes
         mailbox aw_mbx = new, w_mbx = new, b_mbx = new, ar_mbx = new, r_mbx = new;
 
@@ -785,6 +860,7 @@ package tb_std_cache_subsystem_pkg;
 
             this.dcache_req_mbox_prio = new();
             this.dcache_req_mbox_prio_tmp = new();
+            this.mgmt_mbox            = new();
 
             cache_status              = '0;
             lfsr                      = '0;
@@ -1006,17 +1082,17 @@ package tb_std_cache_subsystem_pkg;
             end
 
             if (isShared(req.ac_addr) != resp.cr_resp.isShared && resp.cr_resp.error == 1'b0 && req.ac_snoop != snoop_pkg::CLEAN_INVALID) begin
-                $error("%s: CR.resp.isShared mismatch: expected %h, actual %h", name, isShared(req.ac_addr), resp.cr_resp.isShared);
+                $error("%s: CR.resp.isShared mismatch for address 0x%16h : expected %h, actual %h", name, req.ac_addr, isShared(req.ac_addr), resp.cr_resp.isShared);
                 OK = 1'b0;
             end
 
             if(exp.cr_resp.passDirty != resp.cr_resp.passDirty && resp.cr_resp.error == 1'b0) begin
-                $error("%s: CR.resp.passDirty mismatch: expected %h, actual %h", name, exp.cr_resp.passDirty, resp.cr_resp.passDirty);
+                $error("%s: CR.resp.passDirty mismatch for address 0x%16h : expected %h, actual %h", name, req.ac_addr, exp.cr_resp.passDirty, resp.cr_resp.passDirty);
                 OK = 1'b0;
             end
 
             if(exp.cr_resp.dataTransfer != resp.cr_resp.dataTransfer && resp.cr_resp.error == 1'b0) begin
-                $error("%s: CR.resp.dataTransfer mismatch: expected %h, actual %h", name, resp.cr_resp.dataTransfer, resp.cr_resp.dataTransfer);
+                $error("%s: CR.resp.dataTransfer mismatch for address 0x%16h : expected %h, actual %h", name, req.ac_addr, exp.cr_resp.dataTransfer, resp.cr_resp.dataTransfer);
                 OK = 1'b0;
             end
 
@@ -1034,6 +1110,7 @@ package tb_std_cache_subsystem_pkg;
             bit                                               CheckOK;
             ace_ac_beat_t                                     ac;
             logic [$clog2(DCACHE_SET_ASSOC)-1:0]              hit_way;
+            int                                               cnt;
 
             forever begin
                 snoop_to_cache_update.get(ac);
@@ -1050,9 +1127,27 @@ package tb_std_cache_subsystem_pkg;
                     end
                 end
 
-                // actual cache update takes 3 more cycles with grant
-                repeat (3) begin
-                    int cnt = 0;
+                // actual cache update takes 3 more cycles (with grant for some)
+                cnt = 0;
+                // 1. wait for grant to read cache
+                while (!gnt_vif.gnt[1]) begin
+                    $display("%t ns %s: skipping cycle without grant for snoop", $time, name);
+                    @(posedge sram_vif.clk); // skip cycles without grant
+                    cnt++;
+                    if (cnt > 1000) begin
+                        $error("%t timeout while waiting for grant for snoop update", $time);
+                        break;
+                    end
+                end
+                @(posedge sram_vif.clk);
+
+                // 2. wait for FSM
+                @(posedge sram_vif.clk);
+
+                // 3. wait for grant to write cache, if required
+                if (hit_v && (ac.ac_snoop == snoop_pkg::READ_SHARED ||
+                              ac.ac_snoop == snoop_pkg::READ_UNIQUE ||
+                              ac.ac_snoop == snoop_pkg::CLEAN_INVALID)) begin
                     while (!gnt_vif.gnt[1]) begin
                         $display("%t ns %s: skipping cycle without grant for snoop", $time, name);
                         @(posedge sram_vif.clk); // skip cycles without grant
@@ -1062,9 +1157,10 @@ package tb_std_cache_subsystem_pkg;
                             break;
                         end
                     end
-                    @(posedge sram_vif.clk);
                 end
+                @(posedge sram_vif.clk);
                 $display("%t ns %s updating cache status from snoop", $time, name);
+
 
                 if (hit_v) begin
                     case (ac.ac_snoop)
@@ -1269,18 +1365,19 @@ package tb_std_cache_subsystem_pkg;
                                         aw_mbx.get(aw_beat);
                                         if (!isWriteBack(aw_beat))
                                             $error("%s.check_snoop : WRITEBACK request expected after CLEAN_INVALID",name);
+                                        a_empty_aw : assert (aw_mbx.num() == 0) else $error ("%S.check_snoop : AW mailbox not empty", name);
 
                                         // wait for W beat
                                         while (!w_beat.w_last) begin
                                             w_mbx.get(w_beat);
                                             $display("%t ns %s.check_snoop: got W beat with last = %0d", $time, name, w_beat.w_last);
                                         end
+                                        a_empty_w : assert (w_mbx.num() == 0) else $error ("%S.check_snoop : W mailbox not empty", name);
+                
                                         b_mbx.get(b_beat);
+                                        a_empty_b : assert (b_mbx.num() == 0) else $error ("%S.check_snoop : B mailbox not empty", name);
                                     end
                                 end
-                                a_empty_aw : assert (aw_mbx.num() == 0) else $error ("%S.check_snoop : AW mailbox not empty", name);
-                                a_empty_w : assert (w_mbx.num() == 0) else $error ("%S.check_snoop : W mailbox not empty", name);
-                                a_empty_b : assert (b_mbx.num() == 0) else $error ("%S.check_snoop : B mailbox not empty", name);
                             end
 
                             begin
@@ -1292,15 +1389,17 @@ package tb_std_cache_subsystem_pkg;
                                 end
 
                                 // wait to prepare expected response until last cycle before cache is updated by snoop
-                                repeat (3-1) begin
-                                    while (!gnt_vif.gnt[1]) begin
-                                        $display("%t ns %s.check_snoop: skipping cycle without grant for snoop", $time, name);
-                                        @(posedge sram_vif.clk); // skip cycles without grant
-                                    end
-                                    @(posedge sram_vif.clk);
+                                // 1. wait for grant to read cache
+                                while (!gnt_vif.gnt[1]) begin
+                                    $display("%t ns %s.check_snoop: skipping cycle without grant for snoop", $time, name);
+                                    @(posedge sram_vif.clk); // skip cycles without grant
                                 end
+                                @(posedge sram_vif.clk);
+                                // 2. wait for FSM
+                                @(posedge sram_vif.clk);
+
                                 cr_exp = GetCRResp(ac);
-                                $display("%t ns %s.check_snoop: Got expected response PassDirty : %1b, DataTransfer : %1b, Error : %1b", $time, name, cr_exp.cr_resp.passDirty, cr_exp.cr_resp.dataTransfer, cr_exp.cr_resp.error);
+                                $display("%t ns %s.check_snoop: Got expected response PassDirty : %1b, DataTransfer : %1b, Error : %1b for address %16h", $time, name, cr_exp.cr_resp.passDirty, cr_exp.cr_resp.dataTransfer, cr_exp.cr_resp.error, ac.ac_addr);
 
                                 // wait for the response
                                 cr_mbx.get(cr);
@@ -1444,6 +1543,8 @@ package tb_std_cache_subsystem_pkg;
             fork
                 begin
                     ax_ace_beat_t aw_beat = new();
+                    b_beat_t      b_beat  = new();
+                    w_beat_t      w_beat  = new();
 
                     // monitor if eviction is necessary
                     dcache_req evict_msg;
@@ -1461,6 +1562,20 @@ package tb_std_cache_subsystem_pkg;
                     evict_msg.trans_type = EVICT;
                     $display("%t ns %s inserting a new dcache message :%s", $time, name, msg.print_me());
                     req_to_cache_update.put(evict_msg);
+
+
+                    // wait for W beat
+                    while (!w_beat.w_last) begin
+                        w_mbx.get(w_beat);
+                        $display("%t ns %s.do_miss : got W beat with last = %0d for message %s", $time, name, w_beat.w_last, msg.print_me());
+                    end
+                    a_empty_w : assert (w_mbx.num() == 0) else $error ("%S.do_miss : W mailbox not empty", name);
+
+                    // wait for B beat
+                    b_mbx.get(b_beat);
+                    $display("%t ns %s.do_miss : got B beat for message %s", $time, name, msg.print_me());
+                    a_empty_b : assert (b_mbx.num() == 0) else $error ("%S.do_miss : B mailbox not empty", name);
+
                     wait (0); // avoid exiting fork
 
                 end
@@ -1703,37 +1818,80 @@ package tb_std_cache_subsystem_pkg;
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         local task automatic flush_cache;
             $display("%t ns %s.flush_cache: Flushing started", $time, name);
-            // write back all dirty data
+
             for (int w = 0; w < DCACHE_NUM_WORDS; w++) begin
+                int w_cnt = 0;
                 for (int l = 0; l < DCACHE_SET_ASSOC; l++) begin
                     if (cache_status[w][l].valid && cache_status[w][l].dirty) begin
-                        ax_ace_beat_t aw_beat = new();
-                        b_beat_t      b_beat  = new();
-                        w_beat_t      w_beat  = new();
+                        fork
+                            begin
+                                automatic int ll = l;
+                                automatic int ww = w;
+                                // expect write back of dirty data
+                                ax_ace_beat_t aw_beat = new();
+                                b_beat_t      b_beat  = new();
+                                w_beat_t      w_beat  = new();
 
-                        // wait for AW beat
-                        aw_mbx.get(aw_beat);
-                        if (!isWriteBack(aw_beat))
-                            $error("%s.flush_cache : WRITEBACK request expected after eviction of cache[%0d][%0d]", name, w, l);
-                        a_empty_aw : assert (aw_mbx.num() == 0) else $error ("%S.flush_cache : AW mailbox not empty", name);
+                                // wait for AW beat
+                                aw_mbx.get(aw_beat);
+                                $display("%t ns %s.flush_cache: got AW beat for cache[%0d][%0d]", $time, name, ww, ll);
+                                if (!isWriteBack(aw_beat))
+                                    $error("%s.flush_cache : WRITEBACK request expected after eviction of cache[%0d][%0d]", name, ww, ll);
+                                a_empty_aw : assert (aw_mbx.num() == 0) else $error ("%S.flush_cache : AW mailbox not empty", name);
 
-                        // wait for W beat
-                        while (!w_beat.w_last) begin
-                            w_mbx.get(w_beat);
-                            $display("%t ns %s.flush_cache: got W beat with last = %0d for cache[%0d][%0d]", $time, name, w_beat.w_last, w, l);
-                        end
-                        a_empty_w : assert (w_mbx.num() == 0) else $error ("%S.flush_cache : W mailbox not empty", name);
+                                // wait for W beat
+                                while (!w_beat.w_last) begin
+                                    w_mbx.get(w_beat);
+                                    $display("%t ns %s.flush_cache: got W beat with last = %0d for cache[%0d][%0d]", $time, name, w_beat.w_last, ww, ll);
+                                end
+                                a_empty_w : assert (w_mbx.num() == 0) else $error ("%S.flush_cache : W mailbox not empty", name);
 
-                        // wait for B beat
-                        b_mbx.get(b_beat);
-                        $display("%t ns %s.flush_cache: got B beat for cache[%0d][%0d]", $time, name, w, l);
-                        a_empty_b : assert (b_mbx.num() == 0) else $error ("%S.flush_cache : B mailbox not empty", name);
+                                // wait for B beat
+                                b_mbx.get(b_beat);
+                                $display("%t ns %s.flush_cache: got B beat for cache[%0d][%0d]", $time, name, ww, ll);
+                                a_empty_b : assert (b_mbx.num() == 0) else $error ("%S.flush_cache : B mailbox not empty", name);
+                            end
+                            begin
+                                // expect clear of cache entry
+                                automatic int ll  = l;
+                                automatic int ww  = w;
+                                automatic int cnt = 0;
+                                while (!gnt_vif.gnt[0]) begin
+                                    $display("%t ns %s.flush_cache : skipping cycle without grant for flush of cache entry [%0d][%0d]", $time, name, ww, ll);
+                                    @(posedge sram_vif.clk); // skip cycles without grant
+                                    cnt++;
+                                    if (cnt > 1000) begin
+                                        $error("%s.flush_cache : timeout while waiting for grant for flush of cache entry [%0d][%0d]", name, ww, ll);
+                                        break;
+                                    end
+                                end
+                                @(posedge sram_vif.clk);
+
+                                // clear entry in cache model
+                                $display("%t ns %s.flush_cache: Flushing cache entry [%0d][%0d]", $time, name, ww, ll);
+                                cache_status[ww][ll] = '0;
+                            end
+                        join_any
+                    end
+                end // l
+
+                // expect clear of cache entry
+                while (!gnt_vif.gnt[0]) begin
+                    $display("%t ns %s.flush_cache : skipping cycle without grant for clear of cache set [%0d]", $time, name, w);
+                    @(posedge sram_vif.clk); // skip cycles without grant
+                    w_cnt++;
+                    if (w_cnt > 1000) begin
+                        $error("%s.flush_cache : timeout while waiting for grant for clear of cache set [%0d]", name, w);
+                        break;
                     end
                 end
-            end
-            // clear cache
-            $display("%t ns %s.flush_cache: Clearing cache contents", $time, name);
-            cache_status = '0;
+                @(posedge sram_vif.clk);
+
+                // clear entry in cache model
+                $display("%t ns %s.flush_cache: Clear cache set [%0d]", $time, name, w);
+                cache_status[w] = '0;
+
+            end // w
 
         endtask
 
@@ -1826,12 +1984,45 @@ package tb_std_cache_subsystem_pkg;
 
         endtask
 
+
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // Handle management transactions (currently only flush implemented)
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        local task automatic check_mgmt_trans;
+
+            forever begin
+                dcache_mgmt_trans trans;
+                bit timeout = 0;
+
+                mgmt_mbox.get(trans);
+                $display("%t ns %s.check_mgmt_trans: Got management transaction %s", $time, name, trans.print_me());
+
+                fork
+                    begin
+                        if (trans.trans_type == FLUSH_REQ) begin
+                            flush_cache();
+                        end
+                    end
+
+                    // timeout
+                    begin
+                        repeat (10000) @(posedge sram_vif.clk);
+                        timeout = 1;
+                    end
+
+                join_any
+                if (timeout) $error("%s.check_mgmt_trans : Timeout for transaction %s", name, trans.print_me());
+            end
+
+        endtask
+
         task run;
             fork
                 get_cache_msg();
                 get_cache_msg_tmp();
                 check_snoop();
                 check_amo_msg();
+                check_mgmt_trans();
                 update_cache_from_req();
                 update_cache_from_snoop();
             join
