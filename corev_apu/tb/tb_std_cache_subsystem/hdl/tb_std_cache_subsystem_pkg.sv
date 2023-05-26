@@ -847,6 +847,8 @@ package tb_std_cache_subsystem_pkg;
         cache_line_t [DCACHE_NUM_WORDS-1:0][DCACHE_SET_ASSOC-1:0] cache_status;
         logic                              [DCACHE_SET_ASSOC-1:0] lfsr;
 
+        int cache_msg_timeout = 1000;
+
         function new (
             virtual dcache_sram_if sram_vif,
             virtual dcache_gnt_if  gnt_vif,
@@ -869,6 +871,10 @@ package tb_std_cache_subsystem_pkg;
             req_to_cache_check = new();
             snoop_to_cache_update = new();
 
+        endfunction
+
+        function void set_cache_msg_timeout(int t);
+            cache_msg_timeout = t;
         endfunction
 
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1241,7 +1247,7 @@ package tb_std_cache_subsystem_pkg;
                                 $display("%t ns %s skipping cycle without grant for dcache req : %s", $time, name, req.print_me());
                                 @(posedge sram_vif.clk); // skip cycles without grant
                                 cnt++;
-                                if (cnt > 50) begin
+                                if (cnt > cache_msg_timeout) begin
                                     $error("%s : Timeout while waiting for grant for dcache req : %s", name, req.print_me());
                                     break;
                                 end
@@ -1801,7 +1807,12 @@ package tb_std_cache_subsystem_pkg;
 
                 // timeout
                 begin
-                    repeat (1000) @(posedge sram_vif.clk);
+                    automatic int cnt;
+                    cnt = cache_msg_timeout;
+                    while (cnt > 0) begin
+                        cnt--;
+                        @(posedge sram_vif.clk);
+                    end
                     timeout = 1;
                 end
 
