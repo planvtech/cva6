@@ -1439,7 +1439,7 @@ package tb_std_cache_subsystem_pkg;
 
                     // timeout
                     begin
-                        int cnt=0;
+                        automatic int cnt = 0;
                         while (cnt < snoop_msg_timeout) begin
                             @(posedge sram_vif.clk);
                             cnt++;
