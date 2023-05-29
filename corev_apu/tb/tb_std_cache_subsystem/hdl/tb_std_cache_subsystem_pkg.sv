@@ -848,6 +848,7 @@ package tb_std_cache_subsystem_pkg;
         logic                              [DCACHE_SET_ASSOC-1:0] lfsr;
 
         int cache_msg_timeout = 1000;
+        int snoop_msg_timeout = 1000;
 
         function new (
             virtual dcache_sram_if sram_vif,
@@ -875,6 +876,10 @@ package tb_std_cache_subsystem_pkg;
 
         function void set_cache_msg_timeout(int t);
             cache_msg_timeout = t;
+        endfunction
+
+        function void set_snoop_msg_timeout(int t);
+            snoop_msg_timeout = t;
         endfunction
 
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1434,7 +1439,11 @@ package tb_std_cache_subsystem_pkg;
 
                     // timeout
                     begin
-                        repeat (1000) @(posedge sram_vif.clk);
+                        int cnt=0;
+                        while (cnt < snoop_msg_timeout) begin
+                            @(posedge sram_vif.clk);
+                            cnt++;
+                        end
                         timeout = 1;
                     end
 
