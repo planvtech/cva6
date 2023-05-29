@@ -521,13 +521,13 @@ package tb_std_cache_subsystem_pkg;
 
         // write request
         task wr (
-            input logic [63:0]          data      = 0,
+            input logic [63:0] data      = 0,
             input logic [63:0] addr      = '0,
             input bit          rand_data = 0,
             input bit          rand_addr = 0
         );
             logic [63:0] addr_int;
-            int          data_int;
+            logic [63:0] data_int;
 
             if (rand_addr) begin
                 addr_int = get_rand_addr_from_cfg(cfg);
@@ -536,7 +536,7 @@ package tb_std_cache_subsystem_pkg;
             end
 
             if (rand_data) begin
-                data_int = $urandom;
+                data_int = {$urandom,$urandom};
             end else begin
                 data_int = data;
             end
@@ -549,7 +549,7 @@ package tb_std_cache_subsystem_pkg;
             vif.req.data_we       = 1'b1;
             vif.req.data_be       = '1;
             vif.req.data_size     = 2'b11;
-            vif.req.data_wdata    = data;
+            vif.req.data_wdata    = data_int;
             vif.req.address_index = addr2index(addr_int);
             vif.req.address_tag   = addr2tag(addr_int);
             vif.req.tag_valid     = 1'b1;
