@@ -51,6 +51,7 @@ $(MAIN): $(DTB) $(OBJS_C) $(OBJS_S) linker.lds
 
 %.dts:
 	$(PYTHON) ./gen_dts.py $(CORES)
+	mv ariane.dts $@
 
 %.dtb: %.dts
 	dtc -I dts $< -O dtb -o $@
