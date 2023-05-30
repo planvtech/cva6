@@ -340,19 +340,25 @@ package tb_std_cache_subsystem_pkg;
     // dcache request
     //--------------------------------------------------------------------------
     class dcache_req;
-        dcache_trans_t                 trans_type;
-        logic [DCACHE_INDEX_WIDTH-1:0] address_index;
-        logic [DCACHE_TAG_WIDTH-1:0]   address_tag;
-        riscv::xlen_t                  data;
+        dcache_trans_t                       trans_type;
+        logic [DCACHE_INDEX_WIDTH-1:0]       address_index;
+        logic [DCACHE_TAG_WIDTH-1:0]         address_tag;
+        riscv::xlen_t                        data;
         // help variables
-        int                            port_idx;
-        int                            prio;
-        bit                            update_cache;
-        bit                            insert_readback;
-        bit                            r_dirty;
-        bit                            r_shared;
-        int                            data_offset; // data offset into cache line
-        logic [DCACHE_LINE_WIDTH-1:0]  cache_line;  // for carrying an entire cache line from read response
+        int                                  port_idx;
+        int                                  prio;
+        bit                                  update_cache;
+        bit                                  insert_readback;
+        bit                                  r_dirty;
+        bit                                  r_shared;
+        int                                  data_offset; // data offset into cache line
+        logic [DCACHE_LINE_WIDTH-1:0]        cache_line;  // for carrying an entire cache line from read response
+        logic [$clog2(DCACHE_SET_ASSOC)-1:0] target_way;
+        logic                                target_way_valid;
+
+        function new();
+            this.target_way_valid = 1'b0;
+        endfunction
 
         task set_data_offset;
             data_offset = address_index[3];
@@ -364,6 +370,11 @@ package tb_std_cache_subsystem_pkg;
             cache_line = {d, cache_line} >> (riscv::XLEN);
 
         endtask
+
+        function logic [63:0] get_addr ();
+            return tag_index2addr(.tag(this.address_tag), .index(this.address_index));
+        endfunction
+
 
         function string print_me();
             if ((trans_type == WR_REQ) || (trans_type == RD_RESP)) begin
@@ -863,6 +874,55 @@ package tb_std_cache_subsystem_pkg;
             return {n[6:0], tmp};
         endfunction
 
+
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // get target way and update lfsr
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        function automatic logic [$clog2(DCACHE_SET_ASSOC)-1:0] get_way_from_lfsr (
+            inout logic [7:0] lfsr
+        );
+            logic [$clog2(DCACHE_SET_ASSOC)-1:0] result;
+
+            result = lfsr[$clog2(DCACHE_SET_ASSOC)-1:0];
+            lfsr       = nextLfsr(lfsr);
+
+            return result;
+        endfunction
+
+
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // get target way from cache_status
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        function automatic logic get_way_from_cache (
+            input  logic [63:0]                         addr,
+            output logic [$clog2(DCACHE_SET_ASSOC)-1:0] way
+        );
+            logic [DCACHE_INDEX_WIDTH-DCACHE_BYTE_OFFSET-1:0] mem_idx_v;
+            logic [DCACHE_SET_ASSOC-1:0]                      valid_v;
+
+            mem_idx_v = addr2mem_idx(addr);
+            for (int i=0; i<DCACHE_SET_ASSOC; i++) begin
+                valid_v[i] = cache_status[mem_idx_v][i].valid;
+            end
+            way = one_hot_to_bin(get_victim_cl(~valid_v));
+            return !(&valid_v);
+        endfunction
+
+
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // check target way in cache_status
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        function automatic logic check_way_from_cache (
+            input logic [63:0]                         addr,
+            input logic [$clog2(DCACHE_SET_ASSOC)-1:0] way
+        );
+            logic [DCACHE_INDEX_WIDTH-DCACHE_BYTE_OFFSET-1:0] mem_idx_v;
+            mem_idx_v = addr2mem_idx(addr);
+            return cache_status[mem_idx_v][way].valid;
+        endfunction
+
+
+
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         // Check cache contents against real memory
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1065,6 +1125,7 @@ package tb_std_cache_subsystem_pkg;
         endtask
 
 
+
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         // update cache model contents when receiving dcache request
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1129,7 +1190,13 @@ package tb_std_cache_subsystem_pkg;
                             if (&valid_v) begin
                                 // all ways occupied
                                 $display("No empty way");
-                                target_way = lfsr[$clog2(DCACHE_SET_ASSOC)-1:0];
+
+                                if (req.target_way_valid) begin
+                                    target_way = req.target_way;
+                                end else begin
+                                    target_way = get_way_from_lfsr(lfsr);
+                                end
+
                                 if (req.trans_type == EVICT) begin
                                     $display("Evict");
                                     cache_status[mem_idx_v][target_way].valid  = 1'b0;
@@ -1149,11 +1216,15 @@ package tb_std_cache_subsystem_pkg;
                                 end else begin
                                     $error("Didn't expect trans_type %s", req.trans_type.name());
                                 end
-                                lfsr = nextLfsr(lfsr);
                             end else begin
                                 // there is an empty way
-                                $display("Empty way found");
-                                target_way = one_hot_to_bin(get_victim_cl(~valid_v));
+                                if (req.target_way_valid) begin
+                                    $display("Using target way from request");
+                                    target_way = req.target_way;
+                                end else begin
+                                    $display("Empty way found");
+                                    target_way = one_hot_to_bin(get_victim_cl(~valid_v));
+                                end
                                 cache_status[mem_idx_v][target_way].tag   = req.address_tag;
                                 cache_status[mem_idx_v][target_way].valid = 1'b1;
                                 if (req.trans_type == WR_REQ) begin
@@ -1404,8 +1475,27 @@ package tb_std_cache_subsystem_pkg;
                     // monitor if eviction is necessary
                     dcache_req evict_msg;
                     while (!mustEvict(addr_v)) begin
+                        // check if target way gets taken, then update to new way
+                        if (msg.target_way_valid && check_way_from_cache(msg.get_addr(), msg.target_way)) begin
+                            msg.target_way_valid = get_way_from_cache(msg.get_addr(), msg.target_way);
+                            if (msg.target_way_valid) begin
+                                $display("%t ns %s target way got occupied, update way to %d for message : %s", $time, name, msg.target_way, msg.print_me());
+                            end else begin
+                                $display("%t ns %s all ways got occupied, invalidate target way for message : %s", $time, name, msg.print_me());
+                            end
+                        end
                         @(posedge sram_vif.clk);
                     end
+
+                    // get target way to evict msg
+                    evict_msg                  = new msg;
+                    evict_msg.trans_type       = EVICT;
+                    evict_msg.target_way       = get_way_from_lfsr(lfsr);
+                    evict_msg.target_way_valid = 1'b1;
+
+                    // copy target way to msg
+                    msg.target_way       = evict_msg.target_way;
+                    msg.target_way_valid = 1'b1;
 
                     $display("%t ns %s Eviction needed, wait for eviction AW beat for message : %s", $time, name, msg.print_me());
                     aw_mbx.get(aw_beat);
@@ -1413,10 +1503,13 @@ package tb_std_cache_subsystem_pkg;
                         $error("%s.do_miss : WRITEBACK request expected after eviction for message : %s", name, msg.print_me());
                     a_empty_aw : assert (aw_mbx.num() == 0) else $error ("%S.do_miss : AW mailbox not empty", name);
 
-                    evict_msg          = new msg;
-                    evict_msg.trans_type = EVICT;
                     $display("%t ns %s inserting a new dcache message :%s", $time, name, msg.print_me());
                     req_to_cache_update.put(evict_msg);
+
+                    // copy target way to msg
+                    msg.target_way       = evict_msg.target_way;
+                    msg.target_way_valid = 1'b1;
+
                     wait (0); // avoid exiting fork
 
                 end
@@ -1427,8 +1520,19 @@ package tb_std_cache_subsystem_pkg;
                     r_ace_beat_t  r_beat_peek = new();
                     int           r_cnt       = 0;
 
-                    $display("%t ns %s wait for AR beat for message : %s", $time, name, msg.print_me());
+                    // wait for miss FSM before getting target way
+                    repeat (2)
+                        @(posedge sram_vif.clk);
+                    msg.target_way_valid = get_way_from_cache(msg.get_addr(), msg.target_way);
 
+                    if (msg.target_way_valid) begin
+                        $display("%t ns %s.do_miss: set target way to %d for message : %s", $time, name, msg.target_way, msg.print_me());
+                    end else begin
+                        $display("%t ns %s.do_miss: all ways occupied for message : %s", $time, name, msg.print_me());
+                    end
+
+
+                    $display("%t ns %s wait for AR beat for message : %s", $time, name, msg.print_me());
                     // wait for AR beat
                     ar_mbx.get(ar_beat);
                     $display("%t ns %s.do_miss: got AR beat for message : %s", $time, name, msg.print_me());
