@@ -59,13 +59,10 @@ module cva6
   amo_resp_t                amo_resp;
 
 
-  assign icache_en_csr                = 1'b1;
-  assign icache_flush_ctrl_cache      = 1'b0;
-  assign icache_areq_ex_cache         = '0;
-  assign icache_dreq_if_cache         = '0;
-
-  assign dcache_en_csr_nbdcache       = 1'b1;
-  assign dcache_flush_ctrl_cache      = 1'b0;
+  assign icache_en_csr            = 1'b1;
+  assign icache_flush_ctrl_cache  = 1'b0;
+  assign icache_areq_ex_cache     = '0;
+  assign icache_dreq_if_cache     = '0;
 
   assign cvxif_req_o = '0;
 
