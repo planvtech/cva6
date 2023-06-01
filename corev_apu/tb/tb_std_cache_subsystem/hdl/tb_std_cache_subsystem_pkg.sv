@@ -389,10 +389,6 @@ package tb_std_cache_subsystem_pkg;
             end
         endfunction
 
-        function logic [63:0] get_addr;
-            return tag_index2addr(.tag(address_tag), .index(address_index));
-        endfunction
-
     endclass
 
 
