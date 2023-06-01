@@ -377,7 +377,8 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                 req_fsm_miss_be     = '1;
                 req_fsm_miss_we     = 1'b1;
                 req_fsm_miss_wdata  = evict_cl_q.data;
-                req_fsm_miss_type = ariane_ace::WRITEBACK;
+                req_fsm_miss_type   = ariane_ace::WRITEBACK;
+                flushing_o          = state_q == WB_CACHELINE_FLUSH;
 
                 // we've got a grant --> this is timing critical, think about it
                 if (gnt_miss_fsm) begin
