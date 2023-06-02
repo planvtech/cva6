@@ -136,7 +136,7 @@ import std_cache_pkg::*;
 
         .readshared_done_o (readshared_done),
         .updating_cache_i (|updating_cache),
-        .flushing_i (serve_amo),
+        .flushing_i (serve_amo | flushing),
         .*
     );
 
