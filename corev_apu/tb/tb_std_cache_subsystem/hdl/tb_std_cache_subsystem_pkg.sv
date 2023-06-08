@@ -113,15 +113,12 @@ package tb_std_cache_subsystem_pkg;
     // AMO request class
     //--------------------------------------------------------------------------
     class amo_req;
-        amo_trans_t  trans_type;
+        amo_t        op;
         logic [63:0] addr; // address
         logic [63:0] data; // data as layouted in the register
 
         function string print_me();
-            if (trans_type == AMO_WR_REQ)
-                return $sformatf("type %0s, address 0x%16h, data 0x%16h",trans_type.name(), addr, data);
-            else
-                return $sformatf("type %0s, address 0x%16h",trans_type.name(), addr);
+            return $sformatf("type %0s, address 0x%16h, data 0x%16h", op.name(), addr, data);
         endfunction
     endclass
 
@@ -130,7 +127,7 @@ package tb_std_cache_subsystem_pkg;
     // AMO response class
     //--------------------------------------------------------------------------
     class amo_resp;
-        amo_trans_t  trans_type;
+        amo_t        op;
         logic [63:0] data;
     endclass
 
@@ -149,62 +146,24 @@ package tb_std_cache_subsystem_pkg;
             this.vif = vif;
             vif.req = '0;
             this.name=name;
-            verbosity = 0;
+            verbosity = 1;
             this.cfg = cfg;
         endfunction
 
-        // read request
-        task rd (
+        // request
+        task req (
+            input logic [63:0] data         = '0,
             input logic [63:0] addr         = '0,
-            input bit          rand_addr    = 1'b0,
+            input amo_t        op           = AMO_ADD,
+            input bit          rand_data    = 0,
+            input bit          rand_addr    = 0,
+            input bit          rand_op      = 0,
             input bit          check_result = 1'b0,
             input logic [63:0] exp_result   = '0
         );
             logic [63:0] addr_int;
-
-            if (rand_addr) begin
-                addr_int = get_rand_addr_from_cfg(cfg);
-            end else begin
-                addr_int = addr;
-            end
-
-            if (verbosity > 0) begin
-                $display("%t ns %s : sending read request for address 0x%8h", $time, name, addr_int);
-            end
-
-            #0;
-            vif.req.req       = 1;       // this request is valid
-            vif.req.amo_op    = AMO_LR;  // atomic memory operation to perform
-            vif.req.size      = 2'b11;   // 2'b10 --> word operation, 2'b11 --> double word operation
-            vif.req.operand_a = addr_int;// address
-
-            do begin
-                @(posedge vif.clk);
-            end while (!vif.resp.ack);
-
-            if (verbosity > 0) begin
-                $display("%t ns %s got ack for read address 0x%8h", $time, name, addr_int);
-            end
-
-            if (check_result) begin
-                a_rd_check : assert (vif.resp.result == exp_result) else 
-                    $error("%s : data mismatch. Expected 0x%16h, got 0x%16h", name, exp_result, vif.resp.result);
-            end
-
-            #0;
-            vif.req.req    = 1'b0;
-
-        endtask
-
-        // write request
-        task wr (
-            input logic [63:0] data      = '0,
-            input logic [63:0] addr      = '0,
-            input bit          rand_data = 0,
-            input bit          rand_addr = 0
-        );
-            logic [63:0] addr_int;
             logic [63:0] data_int;
+            amo_t        op_int;
 
             if (rand_addr) begin
                 addr_int = get_rand_addr_from_cfg(cfg);
@@ -217,13 +176,25 @@ package tb_std_cache_subsystem_pkg;
             end else begin
                 data_int = data;
             end
+
+            if (rand_op) begin
+                if ($urandom_range(3) > 2) begin
+                    // increase chance for AMO_LR
+                    op_int = AMO_LR;
+                end else begin
+                    op_int = amo_t'($urandom_range(AMO_MINU, AMO_LR)); // avoid sending AMO_NONE and unsupported AMO_CAS1,AMO_CAS2
+                end
+            end else begin
+                op_int = op;
+            end
+
             if (verbosity > 0) begin
-                $display("%t ns %s sending write request for address 0x%8h with data 0x%8h", $time, name, addr_int, data_int);
+                $display("%t ns %s sending AMO request %s to address 0x%8h with data 0x%8h", $time, name, op_int.name(), addr_int, data_int);
             end
 
             #0;
             vif.req.req       = 1;        // this request is valid
-            vif.req.amo_op    = AMO_SC;   // atomic memory operation to perform
+            vif.req.amo_op    = op_int;   // atomic memory operation to perform
             vif.req.size      = 2'b11;    // 2'b10 --> word operation, 2'b11 --> double word operation
             vif.req.operand_a = addr_int; // address
             vif.req.operand_b = data_int; // address
@@ -233,7 +204,12 @@ package tb_std_cache_subsystem_pkg;
             end while (!vif.resp.ack);
 
             if (verbosity > 0) begin
-                $display("%t ns %s got ack for write to address 0x%8h", $time, name, addr_int);
+                $display("%t ns %s got ack for AMO request %s to address 0x%8h", $time, name, op.name(), addr_int);
+            end
+
+            if (check_result) begin
+                a_rd_check : assert (vif.resp.result == exp_result) else 
+                    $error("%s : data mismatch. Expected 0x%16h, got 0x%16h", name, exp_result, vif.resp.result);
             end
 
             #0;
@@ -260,40 +236,43 @@ package tb_std_cache_subsystem_pkg;
         function new (virtual amo_intf vif, string name="amo_monitor");
             this.vif  = vif;
             this.name = name;
-            verbosity = 0;
+            verbosity = 1;
         endfunction
 
         // get read requests and responses
-        local task mon_rd;
-            $display("%t ns %s monitoring read requests and responses", $time, name);
+        local task mon;
+            $display("%t ns %s monitoring AMO requests and responses", $time, name);
             forever begin
-                if (vif.req.req && (vif.req.amo_op == AMO_LR) && vif.gnt) begin // got read request
-                    amo_req  rd_req;
-                    amo_resp rd_resp;
+                if (vif.req.req && vif.gnt) begin // got read request
+                    amo_t    op;
+                    amo_req  req;
+                    amo_resp resp;
 
-                    rd_req = new();
-                    rd_req.trans_type    = AMO_RD_REQ;
-                    rd_req.addr          = vif.req.operand_a;
+                    req = new();
+                    req.op   = vif.req.amo_op;
+                    req.addr = vif.req.operand_a;
+                    req.data = vif.req.operand_b;
+                    op       = vif.req.amo_op; // remember op
 
                     if (verbosity > 0) begin
-                        $display("%t ns %s got request for read", $time, name);
+                        $display("%t ns %s got AMO request : %s", $time, name, req.print_me());
                     end
-                    req_mbox.put(rd_req);
+                    req_mbox.put(req);
 
                     // wait for result
                     do begin
                         @(posedge vif.clk);
                     end while (!vif.resp.ack);
 
-                    rd_resp            = new();
-                    rd_resp.trans_type = AMO_RD_RESP;
-                    rd_resp.data       = vif.resp.result;
+                    resp      = new();
+                    resp.op   = op;
+                    resp.data = vif.resp.result;
 
                     #0; // add zero delay here to make sure read response is repoerted after read request if it gets served immediately
                     if (verbosity > 0) begin
-                        $display("%t ns %s got read response with data 0x%8h", $time, name, rd_resp.data);
+                        $display("%t ns %s got AMO response with data 0x%8h", $time, name, resp.data);
                     end
-                    resp_mbox.put(rd_resp);
+                    resp_mbox.put(resp);
 
                 end else begin
                     @(posedge vif.clk);
@@ -301,39 +280,8 @@ package tb_std_cache_subsystem_pkg;
             end
         endtask
 
-        // get write requests
-        local task mon_wr;
-            $display("%t ns %s monitoring write requests", $time, name);
-            forever begin
-                if (vif.req.req && (vif.req.amo_op != AMO_LR) && vif.gnt) begin // got write request
-                    amo_req  wr_req;
-
-                    wr_req = new();
-                    wr_req.trans_type    = AMO_WR_REQ;
-                    wr_req.addr          = vif.req.operand_a;
-                    wr_req.data          = vif.req.operand_b;
-
-                    if (verbosity > 0) begin
-                        $display("%t ns %s got request for write with data 0x%8h", $time, name, wr_req.data);
-                    end
-                    req_mbox.put(wr_req);
-
-                    // wait for ack
-                    do begin
-                        @(posedge vif.clk);
-                    end while (!vif.resp.ack);
-
-                end else begin
-                    @(posedge vif.clk);
-                end
-            end
-        endtask
-
-      task monitor;
-            fork
-                mon_rd();
-                mon_wr();
-            join
+        task monitor;
+            mon();
         endtask
 
     endclass
@@ -854,8 +802,9 @@ package tb_std_cache_subsystem_pkg;
         cache_line_t [DCACHE_NUM_WORDS-1:0][DCACHE_SET_ASSOC-1:0] cache_status;
         logic                              [DCACHE_SET_ASSOC-1:0] lfsr;
 
-        int cache_msg_timeout = 1000;
-        int snoop_msg_timeout = 1000;
+        int cache_msg_timeout =  1000;
+        int snoop_msg_timeout =  1000;
+        int amo_msg_timeout   = 10000;
 
         function new (
             virtual dcache_sram_if sram_vif,
@@ -887,6 +836,10 @@ package tb_std_cache_subsystem_pkg;
 
         function void set_snoop_msg_timeout(int t);
             snoop_msg_timeout = t;
+        endfunction
+
+        function void set_amo_msg_timeout(int t);
+            amo_msg_timeout = t;
         endfunction
 
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1859,7 +1812,7 @@ package tb_std_cache_subsystem_pkg;
                                 w_mbx.get(w_beat);
                                 $display("%t ns %s.check_cache_msg: got W beat with last = %0d for message : %s", $time, name, w_beat.w_last, msg.print_me());
                             end
-                            a_empty_w : assert (w_mbx.num() == 0) else $error ("%S.flush_cache : W mailbox not empty", name);
+                            a_empty_w : assert (w_mbx.num() == 0) else $error ("%S.check_cache_msg : W mailbox not empty", name);
 
                             // wait for B beat
                             b_mbx.get(b_beat);
@@ -2034,10 +1987,12 @@ package tb_std_cache_subsystem_pkg;
                 fork
                     begin
                         flush_cache();
-                        if (msg.trans_type == AMO_WR_REQ) begin
-                            ax_ace_beat_t aw_beat = new();
-                            b_beat_t      b_beat  = new();
-                            w_beat_t      w_beat  = new();
+                        if (msg.op != AMO_LR) begin
+                            ax_ace_beat_t aw_beat     = new();
+                            b_beat_t      b_beat      = new();
+                            w_beat_t      w_beat      = new();
+                            r_ace_beat_t  r_beat      = new();
+                            r_ace_beat_t  r_beat_peek = new();
 
                             aw_mbx.get(aw_beat);
                             $display("%t ns %s.check_amo_msg: got AW beat for message %s", $time, name, msg.print_me());
@@ -2062,6 +2017,22 @@ package tb_std_cache_subsystem_pkg;
                             b_mbx.get(b_beat);
                             $display("%t ns %s.check_amo_msg: got B beat for message %s", $time, name, msg.print_me());
                             a_empty_b : assert (b_mbx.num() == 0) else $error ("%S.check_amo_msg : B mailbox not empty", name);
+
+                            if (msg.op != AMO_SC) begin // AMO_SC has no data response, only OK/ not OK decoded from B beat
+                                // wait for R beat
+                                while (!r_beat.r_last) begin
+                                    r_mbx.peek(r_beat_peek);
+                                    if (r_beat_peek.r_id == aw_beat.ax_id) begin
+                                        // this is our response
+                                        r_mbx.get(r_beat);
+                                        $display("%t ns %s.check_amo_msg: got R beat with last = %0d for message %s", $time, name, r_beat.r_last, msg.print_me());
+                                    end else begin
+                                        @(posedge sram_vif.clk);
+                                    end
+                                end
+                                a_empty_r : assert (r_mbx.num() == 0) else $error ("%S.check_amo_msg : R mailbox not empty", name);
+                            end
+
                         end else begin
                             ax_ace_beat_t ar_beat     = new();
                             r_ace_beat_t  r_beat      = new();
@@ -2097,7 +2068,11 @@ package tb_std_cache_subsystem_pkg;
 
                     // timeout
                     begin
-                        repeat (10000) @(posedge sram_vif.clk);
+                        automatic int cnt = 0;
+                        while (cnt < amo_msg_timeout) begin
+                            @(posedge sram_vif.clk);
+                            cnt++;
+                        end
                         timeout = 1;
                     end
 
