@@ -27,7 +27,7 @@ package tb_std_cache_subsystem_pkg;
         MAKE_INVALID          = snoop_pkg::MAKE_INVALID,
         DVM_COMPLETE          = snoop_pkg::DVM_COMPLETE,
         DVM_MESSAGE           = snoop_pkg::DVM_MESSAGE
-    } acsnoop_enum;
+    } acsnoop_enum_t;
 
 
     //--------------------------------------------------------------------------
@@ -1188,7 +1188,6 @@ package tb_std_cache_subsystem_pkg;
                 @(posedge sram_vif.clk);
                 $display("%t ns %s updating cache status from snoop", $time, name);
 
-
                 if (hit_v) begin
                     case (ac.ac_snoop)
                         snoop_pkg::READ_SHARED: begin
@@ -1206,6 +1205,12 @@ package tb_std_cache_subsystem_pkg;
                             cache_status[mem_idx_v][hit_way].shared = 1'b0;
                             cache_status[mem_idx_v][hit_way].valid = 1'b0;
                             cache_status[mem_idx_v][hit_way].dirty = 1'b0;
+                        end
+                        snoop_pkg::READ_ONCE: begin
+                            $display("Update mem [%0d][%0d] from READ_ONCE", mem_idx_v, hit_way);
+                        end
+                        default: begin
+                            $error("%s: unexpected snoop type %0d", name, ac.ac_snoop);
                         end
                     endcase
                     if (cache_status[mem_idx_v][hit_way].valid) begin
@@ -1378,14 +1383,14 @@ package tb_std_cache_subsystem_pkg;
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         local task automatic check_snoop;
             forever begin
-                ace_ac_beat_t ac;
-                bit           timeout = 0;
-                acsnoop_enum  e;
+                ace_ac_beat_t  ac;
+                bit            timeout = 0;
+                acsnoop_enum_t e;
 
                 // wait for snoop request
                 ac = new();
                 ac_mbx.get(ac);
-                e = acsnoop_enum'(ac.ac_snoop);
+                e = acsnoop_enum_t'(ac.ac_snoop);
                 $display("%t ns %s.check_snoop: Got snoop request %0s", $time, name, e.name());
                 a_empty_ac : assert (ac_mbx.num() == 0) else $error ("%S.check_snoop : AC mailbox not empty", name);
 
