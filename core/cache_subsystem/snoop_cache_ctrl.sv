@@ -152,14 +152,10 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
           end
           else begin
             // invalidate request
-            if (snoop_port_i.ac.snoop == snoop_pkg::CLEAN_INVALID) begin
-              state_d = WAIT_GNT;
-              ac_snoop_d = snoop_port_i.ac.snoop;
-              // request the cache line
-              req_o = '1;
-            end
-            // read request
-            else if (snoop_port_i.ac.snoop == snoop_pkg::READ_SHARED || snoop_port_i.ac.snoop == snoop_pkg::READ_ONCE || snoop_port_i.ac.snoop == snoop_pkg::READ_UNIQUE) begin
+            if (snoop_port_i.ac.snoop == snoop_pkg::CLEAN_INVALID ||
+                snoop_port_i.ac.snoop == snoop_pkg::READ_SHARED ||
+                snoop_port_i.ac.snoop == snoop_pkg::READ_ONCE ||
+                snoop_port_i.ac.snoop == snoop_pkg::READ_UNIQUE) begin
               state_d = WAIT_GNT;
               ac_snoop_d = snoop_port_i.ac.snoop;
               // request the cache line (unless there is another cache controller which is uploading the cache content)
@@ -198,8 +194,8 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
             cache_data_d = cl_i;
             case (ac_snoop_q)
               snoop_pkg::CLEAN_INVALID: begin
-                cr_resp_d.dataTransfer = 1'b0;
-                cr_resp_d.passDirty = 1'b0;
+                cr_resp_d.dataTransfer = dirty;
+                cr_resp_d.passDirty = dirty;
                 cr_resp_d.isShared = 1'b0;
                 state_d = INVALIDATE;
               end
@@ -262,10 +258,10 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
         miss_req_o.addr = {mem_req_q.tag, mem_req_q.index};
         miss_req_o.size = mem_req_q.size;
         if (gnt_i) begin
-          if ((hit_way_q & dirty_way_q) && ac_snoop_q == snoop_pkg::CLEAN_INVALID)
-            state_d = WRITEBACK;
-          else
-            state_d = SEND_CR_RESP;
+//          if ((hit_way_q & dirty_way_q) && ac_snoop_q == snoop_pkg::CLEAN_INVALID)
+//            state_d = WRITEBACK;
+//          else
+          state_d = SEND_CR_RESP;
         end
       end
 
@@ -295,6 +291,7 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
         end
       end
 
+/*
       WRITEBACK: begin
         // valid = invalidate = 1 signals an incoming cleaninvalid
         // we are not blocked by the miss_handler (invalidation is done here, and we use the bypass port), to avoid a deadlock
@@ -312,6 +309,7 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
         if (!cacheline_word_sel_q & bypass_valid_i)
           state_d = SEND_CR_RESP;
       end
+  */
     endcase
   end
 

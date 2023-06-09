@@ -274,7 +274,7 @@ module tb_ace_direct import ariane_pkg::*; import std_cache_pkg::*; import tb_pk
   task automatic genSnoopReq(
                              input [31:0] addr
                              );
-    // wait 2 cycle more than the wr requestor
+    // wait 3 cycle more than the wr requestor
     `WAIT_CYC(clk_i, 3)
     snoop_port_i.ac_valid  = 1'b1;
     snoop_port_i.ac.addr = addr;
@@ -416,17 +416,20 @@ module tb_ace_direct import ariane_pkg::*; import std_cache_pkg::*; import tb_pk
             begin
               case({snoop_type, dirty, shared})
                 {CLEAN_INVALID, 1'b0, 1'b0} : begin
+                  // dirty bit will be set by write request before snoop is served
                   `WAIT_SIG(clk_i, snoop_port_o.cr_valid)
                   if (snoop_port_o.cr_resp.error)
                     $error("Unexpected CR.RESP.error");
-                  if (snoop_port_o.cr_resp.dataTransfer)
-                    $error("Unexpected CR.RESP.dataTransfer");
+                  if (!snoop_port_o.cr_resp.dataTransfer)
+                    $error("Unexpected CR.RESP.dataTransfer = 0");
                   if (snoop_port_o.cr_resp.isShared)
                     $error("Unexpected CR.RESP.isShared");
-                  if (snoop_port_o.cr_resp.passDirty)
-                    $error("Unexpected CR.RESP.passDirty");
+                  if (!snoop_port_o.cr_resp.passDirty)
+                    $error("Unexpected CR.RESP.passDirty = 0");
                 end
                 {CLEAN_INVALID, 1'b0, 1'b1} : begin
+                  // dirty bit will NOT be set by write request before snoop is served since
+                  // the write will wait for CleanUnique + ReadUnique before updating
                   fork
                     begin
                       `WAIT_SIG(clk_i, snoop_port_o.cr_valid)
@@ -450,54 +453,36 @@ module tb_ace_direct import ariane_pkg::*; import std_cache_pkg::*; import tb_pk
                   join
                 end
                 {CLEAN_INVALID, 1'b1, 1'b0} : begin
-                  fork
-                    begin
-                      `WAIT_SIG(clk_i, axi_bypass_o.aw_valid)
-                      if (!isWriteBack(axi_bypass_o))
-                        $error("WriteBack expected");
-                    end
-                    begin
-                      `WAIT_SIG(clk_i, snoop_port_o.cr_valid)
-                      if (snoop_port_o.cr_resp.error)
-                        $error("Unexpected CR.RESP.error");
-                      if (snoop_port_o.cr_resp.dataTransfer)
-                        $error("Unexpected CR.RESP.dataTransfer");
-                      if (snoop_port_o.cr_resp.isShared)
-                        $error("Unexpected CR.RESP.isShared");
-                      if (snoop_port_o.cr_resp.passDirty)
-                        $error("Unexpected CR.RESP.passDirty");
-                    end
-                  join
+                  `WAIT_SIG(clk_i, snoop_port_o.cr_valid)
+                  if (snoop_port_o.cr_resp.error)
+                    $error("Unexpected CR.RESP.error");
+                  if (!snoop_port_o.cr_resp.dataTransfer)
+                    $error("Unexpected CR.RESP.dataTransfer = 0");
+                  if (snoop_port_o.cr_resp.isShared)
+                    $error("Unexpected CR.RESP.isShared");
+                  if (!snoop_port_o.cr_resp.passDirty)
+                    $error("Unexpected CR.RESP.passDirty = 0");
                 end
                 {CLEAN_INVALID, 1'b1, 1'b1} : begin
                   fork
                     begin
-                      fork
-                        begin
-                          `WAIT_SIG(clk_i, {axi_bypass_o.aw_valid & axi_bypass_i.aw_ready})
-                          if (!isWriteBack(axi_bypass_o))
-                            $error("WriteBack expected");
-                        end
-                        begin
-                          `WAIT_SIG(clk_i, {axi_data_o.ar_valid & axi_data_i.ar_ready})
-                          if (!isCleanUnique(axi_data_o))
-                            $error("CleanUnique expected");
-                          `WAIT_SIG(clk_i, {axi_data_o.ar_valid & axi_data_i.ar_ready})
-                          if (!isReadUnique(axi_data_o))
-                            $error("ReadUnique expected");
-                        end
-                      join
-                    end
-                    begin
                       `WAIT_SIG(clk_i, snoop_port_o.cr_valid)
                       if (snoop_port_o.cr_resp.error)
                         $error("Unexpected CR.RESP.error");
-                      if (snoop_port_o.cr_resp.dataTransfer)
-                        $error("Unexpected CR.RESP.dataTransfer");
+                      if (!snoop_port_o.cr_resp.dataTransfer)
+                        $error("Unexpected CR.RESP.dataTransfer = 0");
                       if (snoop_port_o.cr_resp.isShared)
                         $error("Unexpected CR.RESP.isShared");
-                      if (snoop_port_o.cr_resp.passDirty)
-                        $error("Unexpected CR.RESP.passDirty");
+                      if (!snoop_port_o.cr_resp.passDirty)
+                        $error("Unexpected CR.RESP.passDirty = 0");
+                    end
+                    begin
+                      `WAIT_SIG(clk_i, {axi_data_o.ar_valid & axi_data_i.ar_ready})
+                      if (!isCleanUnique(axi_data_o))
+                        $error("CleanUnique expected");
+                      `WAIT_SIG(clk_i, {axi_data_o.ar_valid & axi_data_i.ar_ready})
+                      if (!isReadUnique(axi_data_o))
+                        $error("ReadUnique expected");
                     end
                   join
                 end

@@ -27,7 +27,7 @@ package tb_std_cache_subsystem_pkg;
         MAKE_INVALID          = snoop_pkg::MAKE_INVALID,
         DVM_COMPLETE          = snoop_pkg::DVM_COMPLETE,
         DVM_MESSAGE           = snoop_pkg::DVM_MESSAGE
-    } acsnoop_enum;
+    } acsnoop_enum_t;
 
 
     //--------------------------------------------------------------------------
@@ -1035,18 +1035,21 @@ package tb_std_cache_subsystem_pkg;
                 $error("%s: Cache mismatch index %h tag %h way %h - shared bit: expected %d, actual %d", {name,".",origin}, idx_v, tag_v, way, cache_status[mem_idx_v][way].shared, sram_vif.vld_sram[mem_idx_v][8*way+2]);
             end
 
-            if (cache_status[mem_idx_v][way].valid && (cache_status[mem_idx_v][way].data != {sram_vif.data_sram[1][way][mem_idx_v], sram_vif.data_sram[0][way][mem_idx_v]})) begin
-                OK = 1'b0;
-                $error("%s: Cache mismatch index %h tag %h way %h - data: expected 0x%16h, actual 0x%16h", {name,".",origin}, idx_v, tag_v, way, cache_status[mem_idx_v][way].data, {sram_vif.data_sram[1][way][mem_idx_v], sram_vif.data_sram[0][way][mem_idx_v]});
-            end
 
-            // check tags for valid entries
+            // check tags and data for valid entries
             for (int w=0;w<DCACHE_SET_ASSOC; w++) begin
                 if (cache_status[mem_idx_v][w].valid) begin
+
                     if (cache_status[mem_idx_v][w].tag != sram_vif.tag_sram[w][mem_idx_v][47:0]) begin
                         OK = 1'b0;
                         $error("%s: Cache mismatch index %h tag %h way %0h - tag: expected %h, actual %h", {name,".",origin}, idx_v, tag_v, w, cache_status[mem_idx_v][w].tag, sram_vif.tag_sram[w][mem_idx_v][47:0]);
                     end
+
+                    if (cache_status[mem_idx_v][w].data != {sram_vif.data_sram[1][w][mem_idx_v], sram_vif.data_sram[0][w][mem_idx_v]}) begin
+                        OK = 1'b0;
+                        $error("%s: Cache mismatch index %h tag %h way %h - data: expected 0x%16h_%16h, actual 0x%16h_%16h", {name,".",origin}, idx_v, tag_v, way, cache_status[mem_idx_v][way].data[127:64], cache_status[mem_idx_v][way].data[63:0], sram_vif.data_sram[1][way][mem_idx_v], sram_vif.data_sram[0][way][mem_idx_v]);
+                    end
+
                 end else if (sram_vif.vld_sram[mem_idx_v][8*w+1]) begin
                     OK = 1'b0;
                     $error("%s: Cache mismatch index %h tag %h way %0h - valid: expected %h, actual %h", {name,".",origin}, idx_v, tag_v, w, cache_status[mem_idx_v][w].valid, sram_vif.vld_sram[mem_idx_v][8*w+1]);
@@ -1072,13 +1075,18 @@ package tb_std_cache_subsystem_pkg;
                 resp.cr_resp.error = 1'b1;
             end
 
-            if (isDirty(req.ac_addr) && req.ac_snoop == snoop_pkg::READ_UNIQUE) begin
+            if (isDirty(req.ac_addr) && (req.ac_snoop == snoop_pkg::READ_UNIQUE || req.ac_snoop == snoop_pkg::CLEAN_INVALID)) begin
                 resp.cr_resp.passDirty = 1'b1;
             end
 
-            if (isHit(req.ac_addr) && req.ac_snoop != snoop_pkg::CLEAN_INVALID) begin
+            if (isHit(req.ac_addr) && (req.ac_snoop != snoop_pkg::CLEAN_INVALID)) begin
                 resp.cr_resp.dataTransfer = 1'b1;
             end
+
+            if (isDirty(req.ac_addr) && (req.ac_snoop == snoop_pkg::CLEAN_INVALID)) begin
+                resp.cr_resp.dataTransfer = 1'b1;
+            end
+
             return resp;
 
         endfunction
@@ -1091,13 +1099,12 @@ package tb_std_cache_subsystem_pkg;
             input ace_cr_beat_t exp,
             input ace_cr_beat_t resp
         );
-            acsnoop_enum e;
             bit OK;
-            e = acsnoop_enum'(req.ac_snoop);
             OK = 1'b1;
 
-            if (exp.cr_resp.error && !resp.cr_resp.error) begin
-                $error("CR.resp.error expected for snoop request %s", e.name());
+            if (exp.cr_resp.error != resp.cr_resp.error) begin
+                $error("%s: CR.resp.error mismatch: expected %h, actual %h", name, exp.cr_resp.error, resp.cr_resp.error);
+
                 OK = 1'b0;
             end
 
@@ -1181,7 +1188,6 @@ package tb_std_cache_subsystem_pkg;
                 @(posedge sram_vif.clk);
                 $display("%t ns %s updating cache status from snoop", $time, name);
 
-
                 if (hit_v) begin
                     case (ac.ac_snoop)
                         snoop_pkg::READ_SHARED: begin
@@ -1199,6 +1205,12 @@ package tb_std_cache_subsystem_pkg;
                             cache_status[mem_idx_v][hit_way].shared = 1'b0;
                             cache_status[mem_idx_v][hit_way].valid = 1'b0;
                             cache_status[mem_idx_v][hit_way].dirty = 1'b0;
+                        end
+                        snoop_pkg::READ_ONCE: begin
+                            $display("Update mem [%0d][%0d] from READ_ONCE", mem_idx_v, hit_way);
+                        end
+                        default: begin
+                            $error("%s: unexpected snoop type %0d", name, ac.ac_snoop);
                         end
                     endcase
                     if (cache_status[mem_idx_v][hit_way].valid) begin
@@ -1371,24 +1383,25 @@ package tb_std_cache_subsystem_pkg;
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         local task automatic check_snoop;
             forever begin
-                ace_ac_beat_t ac;
-                bit           timeout = 0;
-                acsnoop_enum  e;
+                ace_ac_beat_t  ac;
+                bit            timeout = 0;
+                acsnoop_enum_t e;
 
                 // wait for snoop request
                 ac = new();
                 ac_mbx.get(ac);
-                e = acsnoop_enum'(ac.ac_snoop);
+                e = acsnoop_enum_t'(ac.ac_snoop);
                 $display("%t ns %s.check_snoop: Got snoop request %0s", $time, name, e.name());
                 a_empty_ac : assert (ac_mbx.num() == 0) else $error ("%S.check_snoop : AC mailbox not empty", name);
 
                 fork
                     begin
                         fork
+
+/* writeback is done by the CCU
                             begin
                                 // expect a writeback on CLEAN_INVALID
                                 if (isHit(ac.ac_addr) && isDirty(ac.ac_addr) && ac.ac_snoop == snoop_pkg::CLEAN_INVALID) begin
-                                    // writebacks use the bypass port
                                     repeat(2) begin
                                         ax_ace_beat_t aw_beat;
                                         b_beat_t      b_beat;
@@ -1410,6 +1423,7 @@ package tb_std_cache_subsystem_pkg;
                                     end
                                 end
                             end
+*/
 
                             begin
                                 bit           CheckOK;
