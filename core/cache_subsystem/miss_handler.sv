@@ -55,7 +55,6 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     input                                             amo_req_t amo_req_i,
     output                                            amo_resp_t amo_resp_o,
     output logic                                      flushing_o,
-    output logic                                      serve_amo_o,
     output logic                                      updating_cache_o,
     // Port to SRAMs, for refill and eviction
     output logic [DCACHE_SET_ASSOC-1:0]               req_o,
@@ -200,7 +199,6 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         flush_ack_o         = 1'b0;
         miss_o              = 1'b0; // to performance counter
         serve_amo_d         = serve_amo_q;
-        serve_amo_o = serve_amo_q;
         // --------------------------------
         // Flush and Miss operation
         // --------------------------------

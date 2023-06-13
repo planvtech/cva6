@@ -76,15 +76,14 @@ import std_cache_pkg::*;
     logic [3:0][$bits(miss_req_t)-1:0] miss_req;
     logic [3:0]                        miss_gnt;
     logic [3:0]                        active_serving;
-    logic                                flushing;
-  logic                                  serve_amo;
+    logic                              flushing;
 
 
     logic [3:0]                        bypass_gnt;
     logic [3:0]                        bypass_valid;
     logic [3:0][63:0]                  bypass_data;
 
-  logic                                invalidate;
+    logic                              invalidate;
 
     // -------------------------------
     // Arbiter <-> Datram,
@@ -97,46 +96,46 @@ import std_cache_pkg::*;
     cl_be_t                              be_ram;
 
     readshared_done_t readshared_done;
-    logic [3:0]                               updating_cache;
+    logic [3:0]       updating_cache;
 
     // ------------------
     // Cache Controller
     // ------------------
 
     snoop_cache_ctrl  #(
-        .ArianeCfg             ( ArianeCfg            )
+        .ArianeCfg ( ArianeCfg )
     ) i_snoop_cache_ctrl (
-        .bypass_i              ( ~enable_i            ),
-        .busy_o                ( busy            [0]  ),
+        .bypass_i             ( ~enable_i             ),
+        .busy_o               ( busy              [0] ),
         // from ACE
-        .snoop_port_i            ( snoop_port_i       ),
-        .snoop_port_o            ( snoop_port_o       ),
+        .snoop_port_i         ( snoop_port_i          ),
+        .snoop_port_o         ( snoop_port_o          ),
         // to SRAM array
-        .req_o                 ( req            [1] ),
-        .addr_o                ( addr           [1] ),
-        .gnt_i                 ( gnt            [1] ),
-        .data_i                ( rdata              ),
-        .tag_o                 ( tag            [1] ),
-        .data_o                ( wdata          [1] ),
-        .we_o                  ( we             [1] ),
-        .be_o                  ( be             [1] ),
-        .hit_way_i             ( hit_way              ),
-        .dirty_way_i           ( dirty_way            ),
-        .shared_way_i          ( shared_way           ),
+        .req_o                ( req               [1] ),
+        .addr_o               ( addr              [1] ),
+        .gnt_i                ( gnt               [1] ),
+        .data_i               ( rdata                 ),
+        .tag_o                ( tag               [1] ),
+        .data_o               ( wdata             [1] ),
+        .we_o                 ( we                [1] ),
+        .be_o                 ( be                [1] ),
+        .hit_way_i            ( hit_way               ),
+        .dirty_way_i          ( dirty_way             ),
+        .shared_way_i         ( shared_way            ),
 
-        .miss_req_o            ( miss_req        [0]  ),
-        .miss_gnt_i            ( miss_gnt        [0]  ),
-        .active_serving_i      ( active_serving  [0]  ),
-        .bypass_gnt_i          ( bypass_gnt      [0]  ),
-        .bypass_valid_i        ( bypass_valid    [0]  ),
+        .miss_req_o           ( miss_req          [0] ),
+        .miss_gnt_i           ( miss_gnt          [0] ),
+        .active_serving_i     ( active_serving    [0] ),
+        .bypass_gnt_i         ( bypass_gnt        [0] ),
+        .bypass_valid_i       ( bypass_valid      [0] ),
 
-        .mshr_addr_o           ( mshr_addr         [0] ),
-        .mshr_addr_matches_i   ( mshr_addr_matches [0] ),
-        .mshr_index_matches_i  ( mshr_index_matches[0] ),
+        .mshr_addr_o          ( mshr_addr         [0] ),
+        .mshr_addr_matches_i  ( mshr_addr_matches [0] ),
+        .mshr_index_matches_i ( mshr_index_matches[0] ),
 
-        .readshared_done_o (readshared_done),
-        .updating_cache_i (|updating_cache),
-        .flushing_i (serve_amo | flushing),
+        .readshared_done_o    ( readshared_done       ),
+        .updating_cache_i     ( |updating_cache       ),
+        .flushing_i           ( flushing              ),
         .*
     );
 
