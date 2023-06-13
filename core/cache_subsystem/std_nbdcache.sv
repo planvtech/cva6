@@ -241,7 +241,6 @@ import std_cache_pkg::*;
         .mshr_index_matches_o   ( mshr_index_matches   ),
         .active_serving_o       ( active_serving       ),
         .flushing_o (flushing),
-        .serve_amo_o (serve_amo),
         .req_o                  ( req             [0]  ),
         .addr_o                 ( addr            [0]  ),
         .data_i                 ( rdata                ),
