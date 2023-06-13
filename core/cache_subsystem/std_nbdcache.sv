@@ -63,27 +63,29 @@ import std_cache_pkg::*;
     logic        [DCACHE_SET_ASSOC-1:0]       hit_way;
     logic [DCACHE_SET_ASSOC-1:0]              dirty_way;
     logic [DCACHE_SET_ASSOC-1:0]              shared_way;
+
     // -------------------------------
     // Controller <-> Miss unit
     // -------------------------------
     logic [3:0]                        busy;
-    logic [3:0][55:0]                  mshr_addr;
-    logic [3:0]                        mshr_addr_matches;
-    logic [3:0]                        mshr_index_matches;
+
+    logic [2:0][55:0]                  mshr_addr;
+    logic [2:0]                        mshr_addr_matches;
+    logic [2:0]                        mshr_index_matches;
+
+    logic [2:0][$bits(miss_req_t)-1:0] miss_req;
+    logic [2:0]                        miss_gnt;
+
+    logic [2:0]                        active_serving;
+    logic                              flushing;
+    logic [2:0]                        bypass_gnt;
+    logic [2:0]                        bypass_valid;
+    logic [2:0][63:0]                  bypass_data;
     logic [63:0]                       critical_word;
     logic                              critical_word_valid;
 
-    logic [3:0][$bits(miss_req_t)-1:0] miss_req;
-    logic [3:0]                        miss_gnt;
-    logic [3:0]                        active_serving;
-    logic                              flushing;
-
-
-    logic [3:0]                        bypass_gnt;
-    logic [3:0]                        bypass_valid;
-    logic [3:0][63:0]                  bypass_data;
-
     logic                              invalidate;
+    logic [63:0]                       invalidate_addr;
 
     // -------------------------------
     // Arbiter <-> Datram,
@@ -122,17 +124,8 @@ import std_cache_pkg::*;
         .hit_way_i            ( hit_way               ),
         .dirty_way_i          ( dirty_way             ),
         .shared_way_i         ( shared_way            ),
-
-        .miss_req_o           ( miss_req          [0] ),
-        .miss_gnt_i           ( miss_gnt          [0] ),
-        .active_serving_i     ( active_serving    [0] ),
-        .bypass_gnt_i         ( bypass_gnt        [0] ),
-        .bypass_valid_i       ( bypass_valid      [0] ),
-
-        .mshr_addr_o          ( mshr_addr         [0] ),
-        .mshr_addr_matches_i  ( mshr_addr_matches [0] ),
-        .mshr_index_matches_i ( mshr_index_matches[0] ),
-
+        .invalidate_o         ( invalidate            ),
+        .invalidate_addr_o    ( invalidate_addr       ),
         .readshared_done_o    ( readshared_done       ),
         .updating_cache_i     ( |updating_cache       ),
         .flushing_i           ( flushing              ),
@@ -142,40 +135,40 @@ import std_cache_pkg::*;
     generate
         for (genvar i = 1; i < 4; i++) begin : master_ports
             cache_ctrl  #(
-                .ArianeCfg             ( ArianeCfg            )
+                .ArianeCfg ( ArianeCfg )
             ) i_cache_ctrl (
-                .bypass_i              ( ~enable_i            ),
-                .busy_o                ( busy            [i]  ),
+                .bypass_i              ( ~enable_i                ),
+                .busy_o                ( busy                 [i] ),
                 // from core
-                .req_port_i            ( req_ports_i     [i-1]  ),
-                .req_port_o            ( req_ports_o     [i-1]  ),
+                .req_port_i            ( req_ports_i        [i-1] ),
+                .req_port_o            ( req_ports_o        [i-1] ),
                 // to SRAM array
-                .req_o                 ( req            [i+1] ),
-                .addr_o                ( addr           [i+1] ),
-                .gnt_i                 ( gnt            [i+1] ),
-                .data_i                ( rdata                ),
-                .tag_o                 ( tag            [i+1] ),
-                .data_o                ( wdata          [i+1] ),
-                .we_o                  ( we             [i+1] ),
-                .be_o                  ( be             [i+1] ),
-                .hit_way_i             ( hit_way              ),
-                .shared_way_i          ( shared_way           ),
+                .req_o                 ( req                [i+1] ),
+                .addr_o                ( addr               [i+1] ),
+                .gnt_i                 ( gnt                [i+1] ),
+                .data_i                ( rdata                    ),
+                .tag_o                 ( tag                [i+1] ),
+                .data_o                ( wdata              [i+1] ),
+                .we_o                  ( we                 [i+1] ),
+                .be_o                  ( be                 [i+1] ),
+                .hit_way_i             ( hit_way                  ),
+                .shared_way_i          ( shared_way               ),
 
-                .miss_req_o            ( miss_req        [i]  ),
-                .miss_gnt_i            ( miss_gnt        [i]  ),
-                .active_serving_i      ( active_serving  [i]  ),
-                .critical_word_i       ( critical_word        ),
-                .critical_word_valid_i ( critical_word_valid  ),
-                .bypass_gnt_i          ( bypass_gnt      [i]  ),
-                .bypass_valid_i        ( bypass_valid    [i]  ),
-                .bypass_data_i         ( bypass_data     [i]  ),
+                .miss_req_o            ( miss_req           [i-1] ),
+                .miss_gnt_i            ( miss_gnt           [i-1] ),
+                .active_serving_i      ( active_serving     [i-1] ),
+                .critical_word_i       ( critical_word            ),
+                .critical_word_valid_i ( critical_word_valid      ),
+                .bypass_gnt_i          ( bypass_gnt         [i-1] ),
+                .bypass_valid_i        ( bypass_valid       [i-1] ),
+                .bypass_data_i         ( bypass_data        [i-1] ),
 
-                .mshr_addr_o           ( mshr_addr         [i] ),
-                .mshr_addr_matches_i   ( mshr_addr_matches [i] ),
-                .mshr_index_matches_i  ( mshr_index_matches[i] ),
+                .mshr_addr_o           ( mshr_addr          [i-1] ),
+                .mshr_addr_matches_i   ( mshr_addr_matches  [i-1] ),
+                .mshr_index_matches_i  ( mshr_index_matches [i-1] ),
 
-                .readshared_done_i (readshared_done),
-                .updating_cache_o (updating_cache[i]),
+                .readshared_done_i     ( readshared_done          ),
+                .updating_cache_o      ( updating_cache       [i] ),
                 .*
             );
         end
@@ -219,39 +212,44 @@ import std_cache_pkg::*;
     // Miss Handling Unit
     // ------------------
     miss_handler #(
-        .NR_PORTS               ( 4                    ),
-        .ArianeCfg             ( ArianeCfg            ),
-        .mst_req_t (ariane_ace::m2s_nosnoop_t),
-        .mst_resp_t (ariane_ace::s2m_nosnoop_t)
+        .NR_PORTS   ( 3                         ),
+        .ArianeCfg  ( ArianeCfg                 ),
+        .mst_req_t  ( ariane_ace::m2s_nosnoop_t ),
+        .mst_resp_t ( ariane_ace::s2m_nosnoop_t )
     ) i_miss_handler (
-        .flush_i                ( flush_i              ),
-        .busy_i                 ( |busy                ),
+        .flush_i                 ( flush_i              ),
+        .busy_i                  ( |busy                ),
         // AMOs
-        .amo_req_i              ( amo_req_i            ),
-        .amo_resp_o             ( amo_resp_o           ),
-        .miss_req_i             ( miss_req             ),
-        .miss_gnt_o             ( miss_gnt             ),
-        .bypass_gnt_o           ( bypass_gnt           ),
-        .bypass_valid_o         ( bypass_valid         ),
-        .bypass_data_o          ( bypass_data          ),
-        .critical_word_o        ( critical_word        ),
-        .critical_word_valid_o  ( critical_word_valid  ),
-        .mshr_addr_i            ( mshr_addr            ),
-        .mshr_addr_matches_o    ( mshr_addr_matches    ),
-        .mshr_index_matches_o   ( mshr_index_matches   ),
-        .active_serving_o       ( active_serving       ),
-        .flushing_o (flushing),
-        .req_o                  ( req             [0]  ),
-        .addr_o                 ( addr            [0]  ),
-        .data_i                 ( rdata                ),
-        .be_o                   ( be              [0]  ),
-        .data_o                 ( wdata           [0]  ),
-        .we_o                   ( we              [0]  ),
-        .axi_bypass_o (axi_nosnoop_bypass_o),
-        .axi_bypass_i (axi_nosnoop_bypass_i),
-        .axi_data_o (axi_nosnoop_data_o),
-        .axi_data_i (axi_nosnoop_data_i),
-        .updating_cache_o (updating_cache[0]),
+        .amo_req_i               ( amo_req_i            ),
+        .amo_resp_o              ( amo_resp_o           ),
+        // invalidate
+        .snoop_invalidate_i      ( invalidate           ),
+        .snoop_invalidate_addr_i ( invalidate_addr      ),
+        // bypass
+        .miss_req_i              ( miss_req             ),
+        .miss_gnt_o              ( miss_gnt             ),
+        .bypass_gnt_o            ( bypass_gnt           ),
+        .bypass_valid_o          ( bypass_valid         ),
+        .bypass_data_o           ( bypass_data          ),
+        .critical_word_o         ( critical_word        ),
+        .critical_word_valid_o   ( critical_word_valid  ),
+        .mshr_addr_i             ( mshr_addr            ),
+        .mshr_addr_matches_o     ( mshr_addr_matches    ),
+        .mshr_index_matches_o    ( mshr_index_matches   ),
+        //
+        .active_serving_o        ( active_serving       ),
+        .flushing_o              ( flushing             ),
+        .req_o                   ( req              [0] ),
+        .addr_o                  ( addr             [0] ),
+        .data_i                  ( rdata                ),
+        .be_o                    ( be               [0] ),
+        .data_o                  ( wdata            [0] ),
+        .we_o                    ( we               [0] ),
+        .axi_bypass_o            ( axi_nosnoop_bypass_o ),
+        .axi_bypass_i            ( axi_nosnoop_bypass_i ),
+        .axi_data_o              ( axi_nosnoop_data_o   ),
+        .axi_data_i              ( axi_nosnoop_data_i   ),
+        .updating_cache_o        ( updating_cache   [0] ),
         .*
     );
 

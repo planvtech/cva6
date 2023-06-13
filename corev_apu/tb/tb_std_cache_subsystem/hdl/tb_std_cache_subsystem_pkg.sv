@@ -1803,7 +1803,7 @@ package tb_std_cache_subsystem_pkg;
                             end else begin
                                 ax_ace_beat_t aw_beat = new();
                                 // wait for grant before checking AW, a snoop transaction may be active
-                                while (!gnt_vif.bypass_gnt[msg.port_idx + 1]) begin
+                                while (!gnt_vif.bypass_gnt[msg.port_idx]) begin
                                     @(posedge sram_vif.clk);
                                 end
                                 aw_mbx.get(aw_beat);

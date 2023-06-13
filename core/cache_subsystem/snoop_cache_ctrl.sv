@@ -13,42 +13,33 @@
 module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
     parameter ariane_cfg_t ArianeCfg = ArianeDefaultConfig // contains cacheable regions
 ) (
-   input  logic                               clk_i, // Clock
-   input  logic                               rst_ni, // Asynchronous reset active low
-   input  logic                               flush_i,
-   input  logic                               bypass_i, // enable cache
-   output logic                               busy_o,
-    // Snoop interface
-   input  ariane_ace::snoop_req_t             snoop_port_i,
-   output ariane_ace::snoop_resp_t            snoop_port_o,
-    // SRAM interface
-   output logic        [DCACHE_SET_ASSOC-1:0] req_o, // req is valid
-   output logic      [DCACHE_INDEX_WIDTH-1:0] addr_o, // address into cache array
-   input  logic                               gnt_i,
-   output cache_line_t                        data_o,
-   output cl_be_t                             be_o,
-   output logic        [DCACHE_TAG_WIDTH-1:0] tag_o, //valid one cycle later
-   input  cache_line_t [DCACHE_SET_ASSOC-1:0] data_i,
-   output logic                               we_o,
-   input  logic        [DCACHE_SET_ASSOC-1:0] hit_way_i,
-   input  logic        [DCACHE_SET_ASSOC-1:0] dirty_way_i,
-   input  logic        [DCACHE_SET_ASSOC-1:0] shared_way_i,
-    // Miss handling
-   output miss_req_t                          miss_req_o,
-    // return
-   input  logic                               miss_gnt_i,
-   input  logic                               active_serving_i, // the miss unit is currently active for this unit, serving the miss
-   input  logic                               flushing_i,
-   // bypass ports
-   input  logic                               bypass_gnt_i,
-   input  logic                               bypass_valid_i,
-   //
-   input  logic                               updating_cache_i,
-   output readshared_done_t                   readshared_done_o,
-    // check MSHR for aliasing
-   output logic [55:0]                        mshr_addr_o,
-   input  logic                               mshr_addr_matches_i,
-   input  logic                               mshr_index_matches_i
+  input  logic                               clk_i, // Clock
+  input  logic                               rst_ni, // Asynchronous reset active low
+  input  logic                               flush_i,
+  input  logic                               bypass_i, // enable cache
+  output logic                               busy_o,
+   // Snoop interface
+  input  ariane_ace::snoop_req_t             snoop_port_i,
+  output ariane_ace::snoop_resp_t            snoop_port_o,
+   // SRAM interface
+  output logic        [DCACHE_SET_ASSOC-1:0] req_o, // req is valid
+  output logic      [DCACHE_INDEX_WIDTH-1:0] addr_o, // address into cache array
+  input  logic                               gnt_i,
+  output cache_line_t                        data_o,
+  output cl_be_t                             be_o,
+  output logic        [DCACHE_TAG_WIDTH-1:0] tag_o, //valid one cycle later
+  input  cache_line_t [DCACHE_SET_ASSOC-1:0] data_i,
+  output logic                               we_o,
+  input  logic        [DCACHE_SET_ASSOC-1:0] hit_way_i,
+  input  logic        [DCACHE_SET_ASSOC-1:0] dirty_way_i,
+  input  logic        [DCACHE_SET_ASSOC-1:0] shared_way_i,
+  // to/from miss handler
+  output logic                               invalidate_o,
+  output logic [63:0]                        invalidate_addr_o,
+  input  logic                               flushing_i,
+  //
+  input  logic                               updating_cache_i,
+  output readshared_done_t                   readshared_done_o
 );
 
   typedef enum logic [2:0] {
@@ -123,15 +114,15 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
     snoop_port_o.cr_resp = '0;
     snoop_port_o.cd = '0;
 
-    miss_req_o = '0;
-    mshr_addr_o = '0;
-
     req_o = '0;
     we_o = '0;
     be_o = '0;
     data_o = '0;
 
     readshared_done_o = '0;
+
+    invalidate_o      = 1'b0;
+    invalidate_addr_o = {mem_req_q.tag, mem_req_q.index};
 
     case (state_q)
 
@@ -247,14 +238,9 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
         data_o.dirty = 1'b0;
         data_o.valid = 1'b0;
         data_o.shared = 1'b0;
-        // valid = 0, invalidate = 1 signals an incoming ReadUnique to the miss_handler
+        // signal invalidate to the miss_handler
         // we are not blocked by the miss_handler here
-
-        miss_req_o.valid = 1'b0;
-        miss_req_o.invalidate = 1'b1;
-        miss_req_o.addr = {mem_req_q.tag, mem_req_q.index};
-        miss_req_o.size = mem_req_q.size;
-
+        invalidate_o = 1'b1;
         if (gnt_i) begin
           state_d = SEND_CR_RESP;
         end
