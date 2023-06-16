@@ -42,6 +42,12 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
   output readshared_done_t                   readshared_done_o
 );
 
+  // pragma translate_off
+  initial assert ((DCACHE_LINE_WIDTH == 128) && ($bits(snoop_port_o.cd.data) == 64)) else
+    $error("Expected DCACHE_LINE_WIDTH == 128 (got %0d) and AXI_DATA_WITH == 64 (got %0d)", DCACHE_LINE_WIDTH, $bits(snoop_port_o.cd.data));
+  // pragma translate_on
+
+
   typedef enum logic [2:0] {
     IDLE, // 0
     SEND_REQ, // 1
