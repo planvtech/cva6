@@ -458,7 +458,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
               req_fsm_miss_type   = ariane_ace::CLEAN_UNIQUE;
 
               if (snoop_invalidate_i & !colliding_clean_q)
-                colliding_clean_d = snoop_invalidate_i & (snoop_invalidate_addr_i[63:DCACHE_BYTE_OFFSET]==mshr_q.addr[55:DCACHE_BYTE_OFFSET]);
+                colliding_clean_d = (snoop_invalidate_addr_i[63:DCACHE_BYTE_OFFSET] == mshr_q.addr[55:DCACHE_BYTE_OFFSET]);
 
               if (valid_miss_fsm) begin
                 // if the cacheline has just been invalidated, request it again
