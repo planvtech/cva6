@@ -2137,14 +2137,17 @@ package tb_std_cache_subsystem_pkg;
         virtual dcache_sram_if                                                 dc_sram_vif [NB_CORES];
         virtual sram_intf #(DCACHE_SET_ASSOC, SRAM_DATA_WIDTH, SRAM_NUM_WORDS) sram_vif    [NB_CORES];
 
-        string name;
+        string       name;
+        ariane_cfg_t ArianeCfg;
 
         function new (
             virtual sram_intf #(DCACHE_SET_ASSOC, SRAM_DATA_WIDTH, SRAM_NUM_WORDS) sram_vif    [NB_CORES],
             virtual dcache_sram_if                                                 dc_sram_vif [NB_CORES],
+            ariane_cfg_t                                                           cfg,
             string                                                                 name="std_dcache_checker"
         );
-            this.name = name;
+            this.name      = name;
+            this.ArianeCfg = cfg;
             for (int c = 0; c < NB_CORES; c++) begin
                 this.sram_vif[c]    = sram_vif[c];
                 this.dc_sram_vif[c] = dc_sram_vif[c];
@@ -2224,7 +2227,7 @@ package tb_std_cache_subsystem_pkg;
                                         if (!any_dirty) begin
                                             logic [63:0] addr;
                                             addr                  = {cc_tag, index};
-                                            sram_vif[cc].addr[cw] = (addr - (culsans_pkg::DRAMBase >> DCACHE_BYTE_OFFSET)) << 1;
+                                            sram_vif[cc].addr[cw] = (addr - (ArianeCfg.ExecuteRegionAddrBase[3] >> DCACHE_BYTE_OFFSET)) << 1;
                                             #0
                                             a_mem_data : assert (cc_data == sram_vif[cc].data[cw]) else
                                                 $error("%s: Cache vs Memory data mismatch for index %h, tag %h - core %0d, way %0d = 0x%16h_%16h, Memory[0x%16h] = 0x%16h_%16h", name, index, cc_tag, cc, cw, cc_data[127:64], cc_data[63:0], sram_vif[cc].addr[cw], sram_vif[cc].data[cw][1], sram_vif[cc].data[cw][0]);
