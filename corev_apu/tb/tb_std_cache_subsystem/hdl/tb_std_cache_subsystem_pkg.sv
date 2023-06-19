@@ -2196,6 +2196,10 @@ package tb_std_cache_subsystem_pkg;
                                                         any_dirty = any_dirty | oc_dirty;
                                                         $display("%t ns %s.monitor: Cache match for index 0x%3h, tag 0x%16h between way %0d in core %0d and way %0d in core %0d",$time, name, index, cc_tag, cw, cc, ow, oc);
 
+                                                        // check that data matches
+                                                        a_data : assert (cc_data == oc_data) else
+                                                            $error("%s: Cache data mismatch for index %h, tag %h - core %0d, way %0d = 0x%16h_%16h, core %0d, way %0d = 0x%16h_%16h", name, index, cc_tag, cc, cw, cc_data[127:64], cc_data[63:0], oc, ow, oc_data[127:64], oc_data[63:0]);
+
                                                         // If data is present in both caches they should be marked shared.
                                                         // This will also implicitly check that a unique data is not present in
                                                         // any other chache.
@@ -2208,14 +2212,8 @@ package tb_std_cache_subsystem_pkg;
                                                         if (cc_dirty) begin
                                                             a_oc_clean : assert (!oc_dirty) else
                                                                 $error("%s.monitor: Expected dirty = 0 for index 0x%3h, tag 0x%16h, way %0d, core %0d, got 1", name, index, oc_tag, ow, oc);
-                                                        end else if (oc_dirty) begin
-                                                            a_cc_clean : assert (!cc_dirty) else
-                                                                $error("%s.monitor: Expected dirty = 0 for index 0x%3h, tag 0x%16h, way %0d, core %0d, got 1", name, index, cc_tag, cw, cc);
-                                                        end else begin
-                                                            // if neither entry is dirty then the data should match
-                                                            a_data : assert (cc_data == oc_data) else
-                                                                $error("%s: Cache data mismatch for index %h, tag %h - core %0d, way %0d = 0x%16h_%16h, core %0d, way %0d = 0x%16h_%16h", name, index, cc_tag, cc, cw, cc_data[127:64], cc_data[63:0], oc, ow, oc_data[127:64], oc_data[63:0]);
                                                         end
+
 
                                                     end
                                                 end
