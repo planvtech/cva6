@@ -20,11 +20,7 @@ module ariane_testharness #(
   parameter int unsigned AXI_USER_EN       = ariane_pkg::AXI_USER_EN,
   parameter int unsigned AXI_ADDRESS_WIDTH = 64,
   parameter int unsigned AXI_DATA_WIDTH    = 64,
-`ifdef DROMAJO
-  parameter bit          InclSimDTM        = 1'b0,
-`else
   parameter bit          InclSimDTM        = 1'b1,
-`endif
   parameter int unsigned NUM_WORDS         = 2**25,         // memory size
   parameter bit          StallRandomOutput = 1'b0,
   parameter bit          StallRandomInput  = 1'b0
@@ -46,6 +42,7 @@ module ariane_testharness #(
   int          jtag_enable;
   logic        init_done;
   logic [31:0] jtag_exit, dmi_exit;
+  logic [31:0] rvfi_exit;
 
   logic        jtag_TCK;
   logic        jtag_TMS;
@@ -116,7 +113,11 @@ module ariane_testharness #(
   assign debug_req_valid     = (jtag_enable[0]) ? jtag_req_valid     : dmi_req_valid;
   assign debug_resp_ready    = (jtag_enable[0]) ? jtag_resp_ready    : dmi_resp_ready;
   assign debug_req           = (jtag_enable[0]) ? jtag_dmi_req       : dmi_req;
-  assign exit_o              = (jtag_enable[0]) ? jtag_exit          : dmi_exit;
+  if (ariane_pkg::RVFI) begin
+    assign exit_o              = (jtag_enable[0]) ? jtag_exit          : rvfi_exit;
+  end else begin
+    assign exit_o              = (jtag_enable[0]) ? jtag_exit          : dmi_exit;
+  end
   assign jtag_resp_valid     = (jtag_enable[0]) ? debug_resp_valid   : 1'b0;
   assign dmi_resp_valid      = (jtag_enable[0]) ? 1'b0               : debug_resp_valid;
 
@@ -203,8 +204,8 @@ module ariane_testharness #(
     end
   end
 
-  ariane_axi_soc::req_t    dm_axi_m_req;
-  ariane_axi_soc::resp_t   dm_axi_m_resp;
+  ariane_axi::req_t    dm_axi_m_req;
+  ariane_axi::resp_t   dm_axi_m_resp;
 
   logic                dm_slave_req;
   logic                dm_slave_we;
@@ -284,7 +285,11 @@ module ariane_testharness #(
 
   axi_adapter #(
     .DATA_WIDTH            ( AXI_DATA_WIDTH            ),
-    .AXI_ID_WIDTH          ( ariane_soc::IdWidth       )
+    .AXI_ADDR_WIDTH        ( ariane_axi_soc::AddrWidth ),
+    .AXI_DATA_WIDTH        ( ariane_axi_soc::DataWidth ),
+    .AXI_ID_WIDTH          ( ariane_soc::IdWidth       ),
+    .axi_req_t             ( ariane_axi::req_t         ),
+    .axi_rsp_t             ( ariane_axi::resp_t        )
   ) i_dm_axi_master (
     .clk_i                 ( clk_i                     ),
     .rst_ni                ( rst_ni                    ),
@@ -334,21 +339,12 @@ module ariane_testharness #(
     .data_i ( rom_rdata               )
   );
 
-`ifdef DROMAJO
-  dromajo_bootrom i_bootrom (
-    .clk_i      ( clk_i     ),
-    .req_i      ( rom_req   ),
-    .addr_i     ( rom_addr  ),
-    .rdata_o    ( rom_rdata )
-  );
-`else
   bootrom i_bootrom (
     .clk_i      ( clk_i     ),
     .req_i      ( rom_req   ),
     .addr_i     ( rom_addr  ),
     .rdata_o    ( rom_rdata )
   );
-`endif
 
   // ------------------------------
   // GPIO
@@ -457,9 +453,6 @@ module ariane_testharness #(
 `else
     .SIM_INIT   ( "zeros"        ),
 `endif
-`ifdef DROMAJO
-    .DROMAJO_RAM (1),
-`endif
     .NUM_WORDS  ( NUM_WORDS      )
   ) i_sram (
     .clk_i      ( clk_i                                                                       ),
@@ -494,18 +487,18 @@ module ariane_testharness #(
   };
 
   localparam axi_pkg::xbar_cfg_t AXI_XBAR_CFG = '{
-    NoSlvPorts: ariane_soc::NrSlaves,
-    NoMstPorts: ariane_soc::NB_PERIPHERALS,
-    MaxMstTrans: 1, // Probably requires update
-    MaxSlvTrans: 1, // Probably requires update
+    NoSlvPorts: unsigned'(ariane_soc::NrSlaves),
+    NoMstPorts: unsigned'(ariane_soc::NB_PERIPHERALS),
+    MaxMstTrans: unsigned'(1), // Probably requires update
+    MaxSlvTrans: unsigned'(1), // Probably requires update
     FallThrough: 1'b0,
     LatencyMode: axi_pkg::NO_LATENCY,
-    AxiIdWidthSlvPorts: ariane_soc::IdWidth,
-    AxiIdUsedSlvPorts: ariane_soc::IdWidth,
+    AxiIdWidthSlvPorts: unsigned'(ariane_soc::IdWidth),
+    AxiIdUsedSlvPorts: unsigned'(ariane_soc::IdWidth),
     UniqueIds: 1'b0,
-    AxiAddrWidth: AXI_ADDRESS_WIDTH,
-    AxiDataWidth: AXI_DATA_WIDTH,
-    NoAddrRules: ariane_soc::NB_PERIPHERALS
+    AxiAddrWidth: unsigned'(AXI_ADDRESS_WIDTH),
+    AxiDataWidth: unsigned'(AXI_DATA_WIDTH),
+    NoAddrRules: unsigned'(ariane_soc::NB_PERIPHERALS)
   };
 
   axi_xbar_intf #(
@@ -563,6 +556,7 @@ module ariane_testharness #(
     .AxiAddrWidth ( AXI_ADDRESS_WIDTH        ),
     .AxiDataWidth ( AXI_DATA_WIDTH           ),
     .AxiIdWidth   ( ariane_soc::IdWidthSlave ),
+    .AxiUserWidth ( AXI_USER_WIDTH           ),
 `ifndef VERILATOR
   // disable UART when using Spike, as we need to rely on the mockuart
   `ifdef SPIKE_TANDEM
@@ -608,9 +602,9 @@ module ariane_testharness #(
   // ---------------
   // Core
   // ---------------
-  ariane_axi_soc::req_t    axi_ariane_req;
-  ariane_axi_soc::resp_t   axi_ariane_resp;
-  ariane_rvfi_pkg::rvfi_port_t rvfi;
+  ariane_axi::req_t    axi_ariane_req;
+  ariane_axi::resp_t   axi_ariane_resp;
+  ariane_pkg::rvfi_port_t  rvfi;
 
   ariane #(
     .ArianeCfg  ( ariane_soc::ArianeSocCfg )
@@ -622,7 +616,7 @@ module ariane_testharness #(
     .irq_i                ( irqs                ),
     .ipi_i                ( ipi                 ),
     .time_irq_i           ( timer_irq           ),
-`ifdef RVFI_TRACE
+`ifdef RVFI_PORT
     .rvfi_o               ( rvfi                ),
 `endif
 // Disable Debug when simulating with Spike
@@ -662,7 +656,8 @@ module ariane_testharness #(
   ) rvfi_tracer_i (
     .clk_i(clk_i),
     .rst_ni(rst_ni),
-    .rvfi_i(rvfi)
+    .rvfi_i(rvfi),
+    .end_of_test_o(rvfi_exit)
   );
 
 `ifdef AXI_SVA

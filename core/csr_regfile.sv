@@ -17,7 +17,8 @@ module csr_regfile import ariane_pkg::*; #(
     parameter logic [63:0] DmBaseAddress   = 64'h0, // debug module base address
     parameter int          AsidWidth       = 1,
     parameter int unsigned NrCommitPorts   = 2,
-    parameter int unsigned NrPMPEntries    = 8
+    parameter int unsigned NrPMPEntries    = 8,
+    parameter int unsigned MHPMCounterNum  = 6
 ) (
     input  logic                  clk_i,                      // Clock
     input  logic                  rst_ni,                     // Asynchronous reset active low
@@ -79,13 +80,14 @@ module csr_regfile import ariane_pkg::*; #(
     output logic                  icache_en_o,                // L1 ICache Enable
     output logic                  dcache_en_o,                // L1 DCache Enable
     // Performance Counter
-    output logic  [4:0]           perf_addr_o,                // read/write address to performance counter module (up to 29 aux counters possible in riscv encoding.h)
+    output logic [11:0]           perf_addr_o,                // read/write address to performance counter module
     output logic[riscv::XLEN-1:0] perf_data_o,                // write data to performance counter module
     input  logic[riscv::XLEN-1:0] perf_data_i,                // read data from performance counter module
     output logic                  perf_we_o,
     // PMPs
     output riscv::pmpcfg_t [15:0] pmpcfg_o,   // PMP configuration containing pmpcfg for max 16 PMPs
-    output logic [15:0][riscv::PLEN-3:0] pmpaddr_o            // PMP addresses
+    output logic [15:0][riscv::PLEN-3:0] pmpaddr_o,           // PMP addresses
+    output logic [31:0] mcountinhibit_o
 );
     // internal signal to keep track of access exceptions
     logic        read_access_exception, update_access_exception, privilege_violation;
@@ -100,7 +102,7 @@ module csr_regfile import ariane_pkg::*; #(
     logic  dret;  // return from debug mode
     // CSR write causes us to mark the FPU state as dirty
     logic  dirty_fp_state_csr;
-    riscv::status_rv_t    mstatus_q,  mstatus_d;
+    riscv::mstatus_rv_t    mstatus_q,  mstatus_d;
     riscv::xlen_t         mstatus_extended;
     riscv::satp_t         satp_q, satp_d;
     riscv::dcsr_t         dcsr_q,     dcsr_d;
@@ -141,7 +143,7 @@ module csr_regfile import ariane_pkg::*; #(
 
     riscv::pmpcfg_t [15:0]    pmpcfg_q,  pmpcfg_d;
     logic [15:0][riscv::PLEN-3:0]        pmpaddr_q,  pmpaddr_d;
-
+    logic [MHPMCounterNum+3-1:0] mcountinhibit_d,mcountinhibit_q;
 
     assign pmpcfg_o = pmpcfg_q[15:0];
     assign pmpaddr_o = pmpaddr_q;
@@ -157,13 +159,13 @@ module csr_regfile import ariane_pkg::*; #(
     // ----------------
     assign mstatus_extended = riscv::IS_XLEN64 ? mstatus_q[riscv::XLEN-1:0] :
                               {mstatus_q.sd, mstatus_q.wpri3[7:0], mstatus_q[22:0]};
-
+	
     always_comb begin : csr_read_process
         // a read access exception can only occur if we attempt to read a CSR which does not exist
         read_access_exception = 1'b0;
         csr_rdata = '0;
-        perf_addr_o = csr_addr.address[4:0];
-
+        perf_addr_o = csr_addr.address[11:0];
+		
         if (csr_read) begin
             unique case (csr_addr.address)
                 riscv::CSR_FFLAGS: begin
@@ -238,10 +240,11 @@ module csr_regfile import ariane_pkg::*; #(
                 riscv::CSR_MCAUSE:             csr_rdata = mcause_q;
                 riscv::CSR_MTVAL:              csr_rdata = mtval_q;
                 riscv::CSR_MIP:                csr_rdata = mip_q;
-                riscv::CSR_MVENDORID:          csr_rdata = '0; // not implemented
+                riscv::CSR_MVENDORID:          csr_rdata = OPENHWGROUP_MVENDORID;
                 riscv::CSR_MARCHID:            csr_rdata = ARIANE_MARCHID;
                 riscv::CSR_MIMPID:             csr_rdata = '0; // not implemented
                 riscv::CSR_MHARTID:            csr_rdata = hart_id_i;
+                riscv::CSR_MCOUNTINHIBIT:      csr_rdata = mcountinhibit_q;
                 // Counters and Timers
                 riscv::CSR_MCYCLE:             csr_rdata = cycle_q[riscv::XLEN-1:0];
                 riscv::CSR_MCYCLEH:            if (riscv::XLEN == 32) csr_rdata = cycle_q[63:32]; else read_access_exception = 1'b1;
@@ -251,20 +254,51 @@ module csr_regfile import ariane_pkg::*; #(
                 riscv::CSR_CYCLEH:             if (riscv::XLEN == 32) csr_rdata = cycle_q[63:32]; else read_access_exception = 1'b1;
                 riscv::CSR_INSTRET:            csr_rdata = instret_q[riscv::XLEN-1:0];
                 riscv::CSR_INSTRETH:           if (riscv::XLEN == 32) csr_rdata = instret_q[63:32]; else read_access_exception = 1'b1;
-                riscv::CSR_ML1_ICACHE_MISS,
-                riscv::CSR_ML1_DCACHE_MISS,
-                riscv::CSR_MITLB_MISS,
-                riscv::CSR_MDTLB_MISS,
-                riscv::CSR_MLOAD,
-                riscv::CSR_MSTORE,
-                riscv::CSR_MEXCEPTION,
-                riscv::CSR_MEXCEPTION_RET,
-                riscv::CSR_MBRANCH_JUMP,
-                riscv::CSR_MCALL,
-                riscv::CSR_MRET,
-                riscv::CSR_MMIS_PREDICT,
-                riscv::CSR_MSB_FULL,
-                riscv::CSR_MIF_EMPTY,
+                //Event Selector
+                riscv::CSR_MHPM_EVENT_3,
+                riscv::CSR_MHPM_EVENT_4,
+                riscv::CSR_MHPM_EVENT_5,
+                riscv::CSR_MHPM_EVENT_6,
+                riscv::CSR_MHPM_EVENT_7,
+                riscv::CSR_MHPM_EVENT_8,
+                riscv::CSR_MHPM_EVENT_9,
+                riscv::CSR_MHPM_EVENT_10,
+                riscv::CSR_MHPM_EVENT_11,
+                riscv::CSR_MHPM_EVENT_12,
+                riscv::CSR_MHPM_EVENT_13,
+                riscv::CSR_MHPM_EVENT_14,
+                riscv::CSR_MHPM_EVENT_15,
+                riscv::CSR_MHPM_EVENT_16,
+                riscv::CSR_MHPM_EVENT_17,
+                riscv::CSR_MHPM_EVENT_18,
+                riscv::CSR_MHPM_EVENT_19,
+                riscv::CSR_MHPM_EVENT_20,
+                riscv::CSR_MHPM_EVENT_21,
+                riscv::CSR_MHPM_EVENT_22,
+                riscv::CSR_MHPM_EVENT_23,
+                riscv::CSR_MHPM_EVENT_24,
+                riscv::CSR_MHPM_EVENT_25,
+                riscv::CSR_MHPM_EVENT_26,
+                riscv::CSR_MHPM_EVENT_27,
+                riscv::CSR_MHPM_EVENT_28,
+                riscv::CSR_MHPM_EVENT_29,
+                riscv::CSR_MHPM_EVENT_30,
+                riscv::CSR_MHPM_EVENT_31 :       csr_rdata   = perf_data_i;
+
+                riscv::CSR_MHPM_COUNTER_3,
+                riscv::CSR_MHPM_COUNTER_4,
+                riscv::CSR_MHPM_COUNTER_5,
+                riscv::CSR_MHPM_COUNTER_6,
+                riscv::CSR_MHPM_COUNTER_7,
+                riscv::CSR_MHPM_COUNTER_8,    
+                riscv::CSR_MHPM_COUNTER_9,
+                riscv::CSR_MHPM_COUNTER_10,
+                riscv::CSR_MHPM_COUNTER_11,
+                riscv::CSR_MHPM_COUNTER_12,
+                riscv::CSR_MHPM_COUNTER_13,
+                riscv::CSR_MHPM_COUNTER_14,
+                riscv::CSR_MHPM_COUNTER_15,
+                riscv::CSR_MHPM_COUNTER_16,
                 riscv::CSR_MHPM_COUNTER_17,
                 riscv::CSR_MHPM_COUNTER_18,
                 riscv::CSR_MHPM_COUNTER_19,
@@ -279,7 +313,99 @@ module csr_regfile import ariane_pkg::*; #(
                 riscv::CSR_MHPM_COUNTER_28,
                 riscv::CSR_MHPM_COUNTER_29,
                 riscv::CSR_MHPM_COUNTER_30,
-                riscv::CSR_MHPM_COUNTER_31:           csr_rdata   = perf_data_i;
+                riscv::CSR_MHPM_COUNTER_31 :     csr_rdata   = perf_data_i;   
+
+                riscv::CSR_MHPM_COUNTER_3H,
+                riscv::CSR_MHPM_COUNTER_4H,
+                riscv::CSR_MHPM_COUNTER_5H,
+                riscv::CSR_MHPM_COUNTER_6H,
+                riscv::CSR_MHPM_COUNTER_7H,
+                riscv::CSR_MHPM_COUNTER_8H,
+                riscv::CSR_MHPM_COUNTER_9H,
+                riscv::CSR_MHPM_COUNTER_10H,
+                riscv::CSR_MHPM_COUNTER_11H,
+                riscv::CSR_MHPM_COUNTER_12H,
+                riscv::CSR_MHPM_COUNTER_13H,
+                riscv::CSR_MHPM_COUNTER_14H,
+                riscv::CSR_MHPM_COUNTER_15H,
+                riscv::CSR_MHPM_COUNTER_16H,
+                riscv::CSR_MHPM_COUNTER_17H,
+                riscv::CSR_MHPM_COUNTER_18H,
+                riscv::CSR_MHPM_COUNTER_19H,
+                riscv::CSR_MHPM_COUNTER_20H,
+                riscv::CSR_MHPM_COUNTER_21H,
+                riscv::CSR_MHPM_COUNTER_22H,
+                riscv::CSR_MHPM_COUNTER_23H,
+                riscv::CSR_MHPM_COUNTER_24H,
+                riscv::CSR_MHPM_COUNTER_25H,
+                riscv::CSR_MHPM_COUNTER_26H,
+                riscv::CSR_MHPM_COUNTER_27H,
+                riscv::CSR_MHPM_COUNTER_28H,
+                riscv::CSR_MHPM_COUNTER_29H,
+                riscv::CSR_MHPM_COUNTER_30H,
+                riscv::CSR_MHPM_COUNTER_31H :     if (riscv::XLEN == 32) csr_rdata = perf_data_i; else read_access_exception = 1'b1;
+
+                // Performance counters (User Mode - R/O Shadows)
+                riscv::CSR_HPM_COUNTER_3,
+                riscv::CSR_HPM_COUNTER_4,
+                riscv::CSR_HPM_COUNTER_5,
+                riscv::CSR_HPM_COUNTER_6,
+                riscv::CSR_HPM_COUNTER_7,
+                riscv::CSR_HPM_COUNTER_8,    
+                riscv::CSR_HPM_COUNTER_9,
+                riscv::CSR_HPM_COUNTER_10,
+                riscv::CSR_HPM_COUNTER_11,
+                riscv::CSR_HPM_COUNTER_12,
+                riscv::CSR_HPM_COUNTER_13,
+                riscv::CSR_HPM_COUNTER_14,
+                riscv::CSR_HPM_COUNTER_15,
+                riscv::CSR_HPM_COUNTER_16,
+                riscv::CSR_HPM_COUNTER_17,
+                riscv::CSR_HPM_COUNTER_18,
+                riscv::CSR_HPM_COUNTER_19,
+                riscv::CSR_HPM_COUNTER_20,
+                riscv::CSR_HPM_COUNTER_21,
+                riscv::CSR_HPM_COUNTER_22,
+                riscv::CSR_HPM_COUNTER_23,
+                riscv::CSR_HPM_COUNTER_24,
+                riscv::CSR_HPM_COUNTER_25,
+                riscv::CSR_HPM_COUNTER_26,
+                riscv::CSR_HPM_COUNTER_27,
+                riscv::CSR_HPM_COUNTER_28,
+                riscv::CSR_HPM_COUNTER_29,
+                riscv::CSR_HPM_COUNTER_30,
+                riscv::CSR_HPM_COUNTER_31 :     csr_rdata   = perf_data_i;
+
+                riscv::CSR_HPM_COUNTER_3H,
+                riscv::CSR_HPM_COUNTER_4H,
+                riscv::CSR_HPM_COUNTER_5H,
+                riscv::CSR_HPM_COUNTER_6H,
+                riscv::CSR_HPM_COUNTER_7H,
+                riscv::CSR_HPM_COUNTER_8H,
+                riscv::CSR_HPM_COUNTER_9H,
+                riscv::CSR_HPM_COUNTER_10H,
+                riscv::CSR_HPM_COUNTER_11H,
+                riscv::CSR_HPM_COUNTER_12H,
+                riscv::CSR_HPM_COUNTER_13H,
+                riscv::CSR_HPM_COUNTER_14H,
+                riscv::CSR_HPM_COUNTER_15H,
+                riscv::CSR_HPM_COUNTER_16H,
+                riscv::CSR_HPM_COUNTER_17H,
+                riscv::CSR_HPM_COUNTER_18H,
+                riscv::CSR_HPM_COUNTER_19H,
+                riscv::CSR_HPM_COUNTER_20H,
+                riscv::CSR_HPM_COUNTER_21H,
+                riscv::CSR_HPM_COUNTER_22H,
+                riscv::CSR_HPM_COUNTER_23H,
+                riscv::CSR_HPM_COUNTER_24H,
+                riscv::CSR_HPM_COUNTER_25H,
+                riscv::CSR_HPM_COUNTER_26H,
+                riscv::CSR_HPM_COUNTER_27H,
+                riscv::CSR_HPM_COUNTER_28H,
+                riscv::CSR_HPM_COUNTER_29H,
+                riscv::CSR_HPM_COUNTER_30H,
+                riscv::CSR_HPM_COUNTER_31H :     if (riscv::XLEN == 32) csr_rdata = perf_data_i; else read_access_exception = 1'b1;
+
                 // custom (non RISC-V) cache control
                 riscv::CSR_DCACHE:           csr_rdata = dcache_q;
                 riscv::CSR_ICACHE:           csr_rdata = icache_q;
@@ -332,6 +458,8 @@ module csr_regfile import ariane_pkg::*; #(
         satp = satp_q;
         instret = instret_q;
 
+        mcountinhibit_d         = mcountinhibit_q;
+
         // --------------------
         // Counters
         // --------------------
@@ -340,11 +468,11 @@ module csr_regfile import ariane_pkg::*; #(
         if (!debug_mode_q) begin
             // increase instruction retired counter
             for (int i = 0; i < NrCommitPorts; i++) begin
-                if (commit_ack_i[i] && !ex_i.valid) instret++;
+                if (commit_ack_i[i] && !ex_i.valid && !mcountinhibit_q[2]) instret++;
             end
             instret_d = instret;
             // increment the cycle count
-            if (ENABLE_CYCLE_COUNT) cycle_d = cycle_q + 1'b1;
+            if (ENABLE_CYCLE_COUNT && !mcountinhibit_q[0]) cycle_d = cycle_q + 1'b1;
             else cycle_d = instret;
         end
 
@@ -521,8 +649,10 @@ module csr_regfile import ariane_pkg::*; #(
                     if (!FP_PRESENT) begin
                         mstatus_d.fs = riscv::Off;
                     end
-                    mstatus_d.upie = 1'b0;
-                    mstatus_d.uie  = 1'b0;
+                    mstatus_d.wpri3 = 8'b0;
+                    mstatus_d.wpri1 = 1'b0;
+                    mstatus_d.wpri2 = 1'b0;
+                    mstatus_d.wpri0  = 1'b0;
                     // this register has side-effects on other registers, flush the pipeline
                     flush_o        = 1'b1;
                 end
@@ -567,25 +697,57 @@ module csr_regfile import ariane_pkg::*; #(
                     mask = riscv::MIP_SSIP | riscv::MIP_STIP | riscv::MIP_SEIP;
                     mip_d = (mip_q & ~mask) | (csr_wdata & mask);
                 end
+                riscv::CSR_MCOUNTINHIBIT:      mcountinhibit_d = {csr_wdata[MHPMCounterNum+2:2], 1'b0, csr_wdata[0]};
                 // performance counters
                 riscv::CSR_MCYCLE:             cycle_d[riscv::XLEN-1:0] = csr_wdata;
                 riscv::CSR_MCYCLEH:            if (riscv::XLEN == 32) cycle_d[63:32] = csr_wdata; else update_access_exception = 1'b1;
-                riscv::CSR_MINSTRET:           instret[riscv::XLEN-1:0] = csr_wdata;
-                riscv::CSR_MINSTRETH:          if (riscv::XLEN == 32) instret[63:32] = csr_wdata; else update_access_exception = 1'b1;
-                riscv::CSR_ML1_ICACHE_MISS,
-                riscv::CSR_ML1_DCACHE_MISS,
-                riscv::CSR_MITLB_MISS,
-                riscv::CSR_MDTLB_MISS,
-                riscv::CSR_MLOAD,
-                riscv::CSR_MSTORE,
-                riscv::CSR_MEXCEPTION,
-                riscv::CSR_MEXCEPTION_RET,
-                riscv::CSR_MBRANCH_JUMP,
-                riscv::CSR_MCALL,
-                riscv::CSR_MRET,
-                riscv::CSR_MMIS_PREDICT,
-                riscv::CSR_MSB_FULL,
-                riscv::CSR_MIF_EMPTY,
+                riscv::CSR_MINSTRET:           instret_d[riscv::XLEN-1:0] = csr_wdata;
+                riscv::CSR_MINSTRETH:          if (riscv::XLEN == 32) instret_d[63:32] = csr_wdata; else update_access_exception = 1'b1;
+                //Event Selector
+                riscv::CSR_MHPM_EVENT_3,
+                riscv::CSR_MHPM_EVENT_4,
+                riscv::CSR_MHPM_EVENT_5,
+                riscv::CSR_MHPM_EVENT_6,
+                riscv::CSR_MHPM_EVENT_7,
+                riscv::CSR_MHPM_EVENT_8,
+                riscv::CSR_MHPM_EVENT_9,
+                riscv::CSR_MHPM_EVENT_10,
+                riscv::CSR_MHPM_EVENT_11,
+                riscv::CSR_MHPM_EVENT_12,
+                riscv::CSR_MHPM_EVENT_13,
+                riscv::CSR_MHPM_EVENT_14,
+                riscv::CSR_MHPM_EVENT_15,
+                riscv::CSR_MHPM_EVENT_16,
+                riscv::CSR_MHPM_EVENT_17,
+                riscv::CSR_MHPM_EVENT_18,
+                riscv::CSR_MHPM_EVENT_19,
+                riscv::CSR_MHPM_EVENT_20,
+                riscv::CSR_MHPM_EVENT_21,
+                riscv::CSR_MHPM_EVENT_22,
+                riscv::CSR_MHPM_EVENT_23,
+                riscv::CSR_MHPM_EVENT_24,
+                riscv::CSR_MHPM_EVENT_25,
+                riscv::CSR_MHPM_EVENT_26,
+                riscv::CSR_MHPM_EVENT_27,
+                riscv::CSR_MHPM_EVENT_28,
+                riscv::CSR_MHPM_EVENT_29,
+                riscv::CSR_MHPM_EVENT_30,
+                riscv::CSR_MHPM_EVENT_31 :     begin perf_we_o = 1'b1; perf_data_o = csr_wdata;end
+
+                riscv::CSR_MHPM_COUNTER_3,
+                riscv::CSR_MHPM_COUNTER_4,
+                riscv::CSR_MHPM_COUNTER_5,
+                riscv::CSR_MHPM_COUNTER_6,
+                riscv::CSR_MHPM_COUNTER_7,
+                riscv::CSR_MHPM_COUNTER_8,
+                riscv::CSR_MHPM_COUNTER_9,
+                riscv::CSR_MHPM_COUNTER_10,
+                riscv::CSR_MHPM_COUNTER_11,
+                riscv::CSR_MHPM_COUNTER_12,
+                riscv::CSR_MHPM_COUNTER_13,
+                riscv::CSR_MHPM_COUNTER_14,
+                riscv::CSR_MHPM_COUNTER_15,
+                riscv::CSR_MHPM_COUNTER_16,
                 riscv::CSR_MHPM_COUNTER_17,
                 riscv::CSR_MHPM_COUNTER_18,
                 riscv::CSR_MHPM_COUNTER_19,
@@ -600,10 +762,37 @@ module csr_regfile import ariane_pkg::*; #(
                 riscv::CSR_MHPM_COUNTER_28,
                 riscv::CSR_MHPM_COUNTER_29,
                 riscv::CSR_MHPM_COUNTER_30,
-                riscv::CSR_MHPM_COUNTER_31: begin
-                                        perf_data_o = csr_wdata;
-                                        perf_we_o   = 1'b1;
-                end
+                riscv::CSR_MHPM_COUNTER_31 :  begin perf_we_o = 1'b1; perf_data_o = csr_wdata;end
+
+                riscv::CSR_MHPM_COUNTER_3H,
+                riscv::CSR_MHPM_COUNTER_4H,
+                riscv::CSR_MHPM_COUNTER_5H,
+                riscv::CSR_MHPM_COUNTER_6H,
+                riscv::CSR_MHPM_COUNTER_7H,
+                riscv::CSR_MHPM_COUNTER_8H,
+                riscv::CSR_MHPM_COUNTER_9H,
+                riscv::CSR_MHPM_COUNTER_10H,
+                riscv::CSR_MHPM_COUNTER_11H,
+                riscv::CSR_MHPM_COUNTER_12H,
+                riscv::CSR_MHPM_COUNTER_13H,
+                riscv::CSR_MHPM_COUNTER_14H,
+                riscv::CSR_MHPM_COUNTER_15H,
+                riscv::CSR_MHPM_COUNTER_16H,
+                riscv::CSR_MHPM_COUNTER_17H,
+                riscv::CSR_MHPM_COUNTER_18H,
+                riscv::CSR_MHPM_COUNTER_19H,
+                riscv::CSR_MHPM_COUNTER_20H,
+                riscv::CSR_MHPM_COUNTER_21H,
+                riscv::CSR_MHPM_COUNTER_22H,
+                riscv::CSR_MHPM_COUNTER_23H,
+                riscv::CSR_MHPM_COUNTER_24H,
+                riscv::CSR_MHPM_COUNTER_25H,
+                riscv::CSR_MHPM_COUNTER_26H,
+                riscv::CSR_MHPM_COUNTER_27H,
+                riscv::CSR_MHPM_COUNTER_28H,
+                riscv::CSR_MHPM_COUNTER_29H,
+                riscv::CSR_MHPM_COUNTER_30H,
+                riscv::CSR_MHPM_COUNTER_31H :  begin perf_we_o = 1'b1; if (riscv::XLEN == 32) perf_data_o = csr_wdata;else update_access_exception = 1'b1;end
 
                 riscv::CSR_DCACHE:             dcache_d    = {{riscv::XLEN-1{1'b0}}, csr_wdata[0]}; // enable bit
                 riscv::CSR_ICACHE:             icache_d    = {{riscv::XLEN-1{1'b0}}, csr_wdata[0]}; // enable bit
@@ -615,12 +804,16 @@ module csr_regfile import ariane_pkg::*; #(
                 riscv::CSR_PMPCFG1: begin
                     if (riscv::XLEN == 32) begin
                         for (int i = 0; i < 4; i++) if (!pmpcfg_q[i+4].locked) pmpcfg_d[i+4]  = csr_wdata[i*8+:8];
+                    end else begin
+                      update_access_exception = 1'b1;
                     end
                 end
                 riscv::CSR_PMPCFG2:    for (int i = 0; i < (riscv::XLEN/8); i++) if (!pmpcfg_q[i+8].locked) pmpcfg_d[i+8]  = csr_wdata[i*8+:8];
                 riscv::CSR_PMPCFG3: begin
                     if (riscv::XLEN == 32) begin
                         for (int i = 0; i < 4; i++) if (!pmpcfg_q[i+12].locked) pmpcfg_d[i+12]  = csr_wdata[i*8+:8];
+                    end else begin
+                      update_access_exception = 1'b1;
                     end
                 end
                 riscv::CSR_PMPADDR0,
@@ -775,7 +968,7 @@ module csr_regfile import ariane_pkg::*; #(
                 endcase
                 // save PC of next this instruction e.g.: the next one to be executed
                 dpc_d = {{riscv::XLEN-riscv::VLEN{pc_i[riscv::VLEN-1]}},pc_i};
-                dcsr_d.cause = dm::CauseBreakpoint;
+                dcsr_d.cause = ariane_dm_pkg::CauseBreakpoint;
             end
 
             // we've got a debug request
@@ -788,7 +981,7 @@ module csr_regfile import ariane_pkg::*; #(
                 // jump to the base address
                 set_debug_pc_o = 1'b1;
                 // save the cause as external debug request
-                dcsr_d.cause = dm::CauseRequest;
+                dcsr_d.cause = ariane_dm_pkg::CauseRequest;
             end
 
             // single step enable and we just retired an instruction
@@ -810,7 +1003,7 @@ module csr_regfile import ariane_pkg::*; #(
                 end
                 debug_mode_d = 1'b1;
                 set_debug_pc_o = 1'b1;
-                dcsr_d.cause = dm::CauseSingleStep;
+                dcsr_d.cause = ariane_dm_pkg::CauseSingleStep;
             end
         end
         // go in halt-state again when we encounter an exception
@@ -1007,7 +1200,7 @@ module csr_regfile import ariane_pkg::*; #(
 
         // if we are in debug mode jump to a specific address
         if (debug_mode_q) begin
-            trap_vector_base_o = DmBaseAddress[riscv::VLEN-1:0] + dm::ExceptionAddress[riscv::VLEN-1:0];
+            trap_vector_base_o = DmBaseAddress[riscv::VLEN-1:0] + ariane_dm_pkg::ExceptionAddress[riscv::VLEN-1:0];
         end
 
         // check if we are in vectored mode, if yes then do BASE + 4 * cause we
@@ -1083,6 +1276,7 @@ module csr_regfile import ariane_pkg::*; #(
     assign mprv             = (debug_mode_q && !dcsr_q.mprven) ? 1'b0 : mstatus_q.mprv;
     assign debug_mode_o     = debug_mode_q;
     assign single_step_o    = dcsr_q.step;
+    assign mcountinhibit_o  = {{29-MHPMCounterNum{1'b0}}, mcountinhibit_q};
 
     // sequential process
     always_ff @(posedge clk_i or negedge rst_ni) begin
@@ -1091,11 +1285,7 @@ module csr_regfile import ariane_pkg::*; #(
             // floating-point registers
             fcsr_q                 <= '0;
             // debug signals
-`ifdef DROMAJO
-            debug_mode_q           <= 1'b1;
-`else
             debug_mode_q           <= 1'b0;
-`endif
             dcsr_q                 <= '0;
             dcsr_q.prv             <= riscv::PRIV_LVL_M;
             dcsr_q.xdebugver       <= 4'h4;
@@ -1118,6 +1308,7 @@ module csr_regfile import ariane_pkg::*; #(
             mtval_q                <= {riscv::XLEN{1'b0}};
             dcache_q               <= {{riscv::XLEN-1{1'b0}}, 1'b1};
             icache_q               <= {{riscv::XLEN-1{1'b0}}, 1'b1};
+            mcountinhibit_q        <= '0;
             // supervisor mode registers
             sepc_q                 <= {riscv::XLEN{1'b0}};
             scause_q               <= {riscv::XLEN{1'b0}};
@@ -1161,6 +1352,7 @@ module csr_regfile import ariane_pkg::*; #(
             mtval_q                <= mtval_d;
             dcache_q               <= dcache_d;
             icache_q               <= icache_d;
+            mcountinhibit_q        <= mcountinhibit_d;
             // supervisor mode registers
             sepc_q                 <= sepc_d;
             scause_q               <= scause_d;
@@ -1198,11 +1390,9 @@ module csr_regfile import ariane_pkg::*; #(
     // Assertions
     //-------------
     //pragma translate_off
-    `ifndef VERILATOR
-        // check that eret and ex are never valid together
-        assert property (
-          @(posedge clk_i) !(eret_o && ex_i.valid))
+    // check that eret and ex are never valid together
+    assert property (
+        @(posedge clk_i) disable iff (!rst_ni !== '0) !(eret_o && ex_i.valid))
         else begin $error("eret and exception should never be valid at the same time"); $stop(); end
-    `endif
     //pragma translate_on
 endmodule

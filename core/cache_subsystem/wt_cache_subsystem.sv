@@ -14,13 +14,19 @@
 //              coherent memory system.
 //
 //              Define PITON_ARIANE if you want to use this cache.
-//              Define WT_DCACHE if you want to use this cache
+//              Define DCACHE_TYPE if you want to use this cache
 //              with a standard 64 bit AXI interface instead of the OpenPiton
 //              L1.5 interface.
 
 
 module wt_cache_subsystem import ariane_pkg::*; import wt_cache_pkg::*; #(
-  parameter ariane_pkg::ariane_cfg_t ArianeCfg       = ariane_pkg::ArianeDefaultConfig  // contains cacheable regions
+  parameter ariane_pkg::ariane_cfg_t ArianeCfg       = ariane_pkg::ArianeDefaultConfig,  // contains cacheable regions
+  parameter int unsigned NumPorts     = 3,
+  parameter int unsigned AxiAddrWidth = 0,
+  parameter int unsigned AxiDataWidth = 0,
+  parameter int unsigned AxiIdWidth   = 0,
+  parameter type axi_req_t = ariane_axi::req_t,
+  parameter type axi_rsp_t = ariane_axi::resp_t
 ) (
   input logic                            clk_i,
   input logic                            rst_ni,
@@ -40,6 +46,8 @@ module wt_cache_subsystem import ariane_pkg::*; import wt_cache_pkg::*; #(
   input  logic                           dcache_flush_i,         // high until acknowledged
   output logic                           dcache_flush_ack_o,     // send a single cycle acknowledge signal when the cache is flushed
   output logic                           dcache_miss_o,          // we missed on a ld/st
+  // For Performance Counter
+  output logic [NumPorts-1:0][DCACHE_SET_ASSOC-1:0]    miss_vld_bits_o,
   // AMO interface
   input amo_req_t                        dcache_amo_req_i,
   output amo_resp_t                      dcache_amo_resp_o,
@@ -55,8 +63,8 @@ module wt_cache_subsystem import ariane_pkg::*; import wt_cache_pkg::*; #(
   input  l15_rtrn_t                      l15_rtrn_i
 `else
   // memory side
-  output ariane_axi::req_t               axi_req_o,
-  input  ariane_axi::resp_t              axi_resp_i
+  output axi_req_t                       axi_req_o,
+  input  axi_rsp_t                       axi_resp_i
 `endif
   // TODO: interrupt interface
 );
@@ -97,6 +105,7 @@ module wt_cache_subsystem import ariane_pkg::*; import wt_cache_pkg::*; #(
   // they have equal prio and are RR arbited
   // Port 2 is write only and goes into the merging write buffer
   wt_dcache #(
+    .AxiDataWidth    ( AxiDataWidth  ),
     // use ID 1 for dcache reads and amos. note that the writebuffer
     // uses all IDs up to DCACHE_MAX_TX-1 for write transactions.
     .RdAmoTxId       ( 1             ),
@@ -114,6 +123,7 @@ module wt_cache_subsystem import ariane_pkg::*; import wt_cache_pkg::*; #(
     .amo_resp_o      ( dcache_amo_resp_o       ),
     .req_ports_i     ( dcache_req_ports_i      ),
     .req_ports_o     ( dcache_req_ports_o      ),
+    .miss_vld_bits_o ( miss_vld_bits_o         ),
     .mem_rtrn_vld_i  ( adapter_dcache_rtrn_vld ),
     .mem_rtrn_i      ( adapter_dcache          ),
     .mem_data_req_o  ( dcache_adapter_data_req ),
@@ -147,7 +157,13 @@ module wt_cache_subsystem import ariane_pkg::*; import wt_cache_pkg::*; #(
     .l15_rtrn_i         ( l15_rtrn_i              )
   );
 `else
-  wt_axi_adapter i_adapter (
+  wt_axi_adapter #(
+    .AxiAddrWidth       ( AxiAddrWidth ),
+    .AxiDataWidth       ( AxiDataWidth ),
+    .AxiIdWidth         ( AxiIdWidth ),
+    .axi_req_t          ( axi_req_t ),
+    .axi_rsp_t          ( axi_rsp_t )
+  ) i_adapter (
     .clk_i              ( clk_i                   ),
     .rst_ni             ( rst_ni                  ),
     .icache_data_req_i  ( icache_adapter_data_req ),
@@ -176,10 +192,12 @@ module wt_cache_subsystem import ariane_pkg::*; import wt_cache_pkg::*; #(
   else $warning(1,"[l1 dcache] reading invalid instructions: vaddr=%08X, data=%08X",
     icache_dreq_o.vaddr, icache_dreq_o.data);
 
-  a_invalid_write_data: assert property (
-    @(posedge clk_i) disable iff (!rst_ni) dcache_req_ports_i[2].data_req |-> |dcache_req_ports_i[2].data_be |-> (|dcache_req_ports_i[2].data_wdata) !== 1'hX)
-  else $warning(1,"[l1 dcache] writing invalid data: paddr=%016X, be=%02X, data=%016X",
-    {dcache_req_ports_i[2].address_tag, dcache_req_ports_i[2].address_index}, dcache_req_ports_i[2].data_be, dcache_req_ports_i[2].data_wdata);
+  for (genvar j=0; j<riscv::XLEN/8; j++) begin : gen_invalid_write_assertion
+    a_invalid_write_data: assert property (
+      @(posedge clk_i) disable iff (!rst_ni) dcache_req_ports_i[2].data_req |-> dcache_req_ports_i[2].data_be[j] |-> (|dcache_req_ports_i[2].data_wdata[j*8+:8] !== 1'hX))
+    else $warning(1,"[l1 dcache] writing invalid data: paddr=%016X, be=%02X, data=%016X, databe=%016X",
+      {dcache_req_ports_i[2].address_tag, dcache_req_ports_i[2].address_index}, dcache_req_ports_i[2].data_be, dcache_req_ports_i[2].data_wdata, dcache_req_ports_i[2].data_be & dcache_req_ports_i[2].data_wdata);
+  end
 
 
   for (genvar j=0; j<2; j++) begin : gen_assertion

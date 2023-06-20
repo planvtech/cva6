@@ -32,7 +32,6 @@ package ariane_pkg;
     // within Ariane add a field here and assign a default value to the config. Please make
     // sure to add a propper parameter check to the `check_cfg` function.
     localparam NrMaxRules = 16;
-
     typedef struct packed {
       int                               RASDepth;
       int                               BTBEntries;
@@ -51,7 +50,7 @@ package ariane_pkg;
       logic [NrMaxRules-1:0][63:0]      SharedRegionAddrBase;  // base which needs to match
       logic [NrMaxRules-1:0][63:0]      SharedRegionLength;    // bit mask which bits to consider when matching the rule
       // cache config
-      bit                               Axi64BitCompliant;     // set to 1 when using in conjunction with 64bit AXI bus adapter
+      bit                               AxiCompliant;          // set to 1 when using in conjunction with 64bit AXI bus adapter
       bit                               SwapEndianess;         // set to 1 to swap endianess inside L1.5 openpiton adapter
       //
       logic [63:0]                      DmBaseAddress;         // offset of the debug module
@@ -59,31 +58,31 @@ package ariane_pkg;
     } ariane_cfg_t;
 
     localparam ariane_cfg_t ArianeDefaultConfig = '{
-      RASDepth: 2,
-      BTBEntries: 32,
-      BHTEntries: 128,
+      RASDepth:   int'(cva6_config_pkg::CVA6ConfigRASDepth),
+      BTBEntries: int'(cva6_config_pkg::CVA6ConfigBTBEntries),
+      BHTEntries: int'(cva6_config_pkg::CVA6ConfigBHTEntries),
       // idempotent region
-      NrNonIdempotentRules: 2,
-      NonIdempotentAddrBase: {64'b0, 64'b0},
-      NonIdempotentLength:   {64'b0, 64'b0},
-      NrExecuteRegionRules: 3,
+      NrNonIdempotentRules:  unsigned'(2),
+      NonIdempotentAddrBase: 1024'({64'b0, 64'b0}),
+      NonIdempotentLength:   1024'({64'b0, 64'b0}),
+      NrExecuteRegionRules:  unsigned'(3),
       //                      DRAM,          Boot ROM,   Debug Module
-      ExecuteRegionAddrBase: {64'h8000_0000, 64'h1_0000, 64'h0},
-      ExecuteRegionLength:   {64'h40000000,  64'h10000,  64'h1000},
+      ExecuteRegionAddrBase: 1024'({64'h8000_0000, 64'h1_0000, 64'h0}),
+      ExecuteRegionLength:   1024'({64'h40000000,  64'h10000,  64'h1000}),
       // cached region
-      NrCachedRegionRules:    1,
-      CachedRegionAddrBase:  {64'h8000_0000},
-      CachedRegionLength:    {64'h40000000},
+      NrCachedRegionRules:   unsigned'(1),
+      CachedRegionAddrBase:  1024'({64'h8000_0000}),
+      CachedRegionLength:    1024'({64'h40000000}),
       // shared region
-      NrSharedRegionRules:    1,
-      SharedRegionAddrBase:  {64'h8000_0000},
-      SharedRegionLength:    {64'h40000000},
+      NrSharedRegionRules:   unsigned'(1),
+      SharedRegionAddrBase:  1024'({64'h8000_0000}),
+      SharedRegionLength:    1024'({64'h40000000}),
       //  cache config
-      Axi64BitCompliant:      1'b1,
+      AxiCompliant:           1'b1,
       SwapEndianess:          1'b0,
       // debug
       DmBaseAddress:          64'h0,
-      NrPMPEntries:           8
+      NrPMPEntries:           unsigned'(cva6_config_pkg::CVA6ConfigNrPMPEntries)
     };
 
     // Function being called to check parameters
@@ -103,6 +102,7 @@ package ariane_pkg;
 
     function automatic logic range_check(logic[63:0] base, logic[63:0] len, logic[63:0] address);
       // if len is a power of two, and base is properly aligned, this check could be simplified
+      // Extend base by one bit to prevent an overflow.
       return (address >= base) && (address < (65'(base)+len));
     endfunction : range_check
 
@@ -144,33 +144,31 @@ package ariane_pkg;
   endfunction : is_inside_shareable_regions
 
     // TODO: Slowly move those parameters to the new system.
-    localparam NR_SB_ENTRIES = 8; // number of scoreboard entries
+    localparam NR_SB_ENTRIES = cva6_config_pkg::CVA6ConfigNrScoreboardEntries; // number of scoreboard entries
     localparam TRANS_ID_BITS = $clog2(NR_SB_ENTRIES); // depending on the number of scoreboard entries we need that many bits
                                                       // to uniquely identify the entry in the scoreboard
     localparam ASID_WIDTH    = (riscv::XLEN == 64) ? 16 : 1;
     localparam BITS_SATURATION_COUNTER = 2;
-    localparam NR_COMMIT_PORTS = 2;
+    localparam NR_COMMIT_PORTS = cva6_config_pkg::CVA6ConfigNrCommitPorts;
 
     localparam ENABLE_RENAME = cva6_config_pkg::CVA6ConfigRenameEn;
 
     localparam ISSUE_WIDTH = 1;
-    // amount of pipeline registers inserted for load/store return path
-    // this can be tuned to trade-off IPC vs. cycle time
-    localparam int unsigned NR_LOAD_PIPE_REGS = 1;
-    localparam int unsigned NR_STORE_PIPE_REGS = 0;
 
     // depth of store-buffers, this needs to be a power of two
     localparam int unsigned DEPTH_SPEC   = 4;
 
-`ifdef WT_DCACHE
-    // in this case we can use a small commit queue since we have a write buffer in the dcache
+    localparam int unsigned DCACHE_TYPE = int'(cva6_config_pkg::CVA6ConfigDcacheType);
+    // if DCACHE_TYPE = cva6_config_pkg::WT
+    // we can use a small commit queue since we have a write buffer in the dcache
     // we could in principle do without the commit queue in this case, but the timing degrades if we do that due
     // to longer paths into the commit stage
-    localparam int unsigned DEPTH_COMMIT = 4;
-`else
+    // if DCACHE_TYPE = cva6_config_pkg::WB
     // allocate more space for the commit buffer to be on the save side, this needs to be a power of two
-    localparam int unsigned DEPTH_COMMIT = 8;
-`endif
+    localparam int unsigned DEPTH_COMMIT = (DCACHE_TYPE == int'(cva6_config_pkg::WT)) ? 4 : 8;
+
+    localparam bit FPGA_EN = cva6_config_pkg::CVA6ConfigFPGAEn; // Is FPGA optimization of CV32A6
+
     localparam bit RVC = cva6_config_pkg::CVA6ConfigCExtEn; // Is C extension configuration
 
 `ifdef PITON_ARIANE
@@ -221,36 +219,41 @@ package ariane_pkg;
     // ^^^^ until here ^^^^
     // ---------------------
 
+    localparam riscv::xlen_t OPENHWGROUP_MVENDORID = {{riscv::XLEN-32{1'b0}}, 32'h0602};
     localparam riscv::xlen_t ARIANE_MARCHID = {{riscv::XLEN-32{1'b0}}, 32'd3};
 
-    localparam riscv::xlen_t ISA_CODE = (RVA <<  0)  // A - Atomic Instructions extension
-                                     | (RVC <<  2)  // C - Compressed extension
-                                     | (RVD <<  3)  // D - Double precsision floating-point extension
-                                     | (RVF <<  5)  // F - Single precsision floating-point extension
-                                     | (1   <<  8)  // I - RV32I/64I/128I base ISA
-                                     | (1   << 12)  // M - Integer Multiply/Divide extension
-                                     | (0   << 13)  // N - User level interrupts supported
-                                     | (1   << 18)  // S - Supervisor mode implemented
-                                     | (1   << 20)  // U - User mode implemented
-                                     | (NSX << 23)  // X - Non-standard extensions present
-                                     | ((riscv::XLEN == 64 ? 2 : 1) << riscv::XLEN-2);  // MXL
+    localparam riscv::xlen_t ISA_CODE = (riscv::XLEN'(RVA) <<  0)                         // A - Atomic Instructions extension
+                                      | (riscv::XLEN'(RVC) <<  2)                         // C - Compressed extension
+                                      | (riscv::XLEN'(RVD) <<  3)                         // D - Double precsision floating-point extension
+                                      | (riscv::XLEN'(RVF) <<  5)                         // F - Single precsision floating-point extension
+                                      | (riscv::XLEN'(1  ) <<  8)                         // I - RV32I/64I/128I base ISA
+                                      | (riscv::XLEN'(1  ) << 12)                         // M - Integer Multiply/Divide extension
+                                      | (riscv::XLEN'(0  ) << 13)                         // N - User level interrupts supported
+                                      | (riscv::XLEN'(1  ) << 18)                         // S - Supervisor mode implemented
+                                      | (riscv::XLEN'(1  ) << 20)                         // U - User mode implemented
+                                      | (riscv::XLEN'(NSX) << 23)                         // X - Non-standard extensions present
+                                      | ((riscv::XLEN == 64 ? 2 : 1) << riscv::XLEN-2);  // MXL
 
     // 32 registers + 1 bit for re-naming = 6
     localparam REG_ADDR_SIZE = 6;
-    localparam NR_WB_PORTS = 5;
+
+    localparam bit CVXIF_PRESENT = cva6_config_pkg::CVA6ConfigCvxifEn;
+
+    // when cvx interface is present, use an additional writeback port
+    localparam NR_WB_PORTS = CVXIF_PRESENT ? 5 : 4;
 
     // Read ports for general purpose register files
     localparam NR_RGPR_PORTS = 2;
     typedef logic [(NR_RGPR_PORTS == 3 ? riscv::XLEN : FLEN)-1:0] rs3_len_t;
 
     // static debug hartinfo
-    localparam dm::hartinfo_t DebugHartInfo = '{
+    localparam ariane_dm_pkg::hartinfo_t DebugHartInfo = '{
                                                 zero1:        '0,
                                                 nscratch:      2, // Debug module needs at least two scratch regs
                                                 zero0:        '0,
                                                 dataaccess: 1'b1, // data registers are memory mapped in the debugger
-                                                datasize: dm::DataCount,
-                                                dataaddr: dm::DataAddr
+                                                datasize: ariane_dm_pkg::DataCount,
+                                                dataaddr: ariane_dm_pkg::DataAddr
                                               };
 
     // enables a commit log which matches spikes commit log format for easier trace comparison
@@ -295,16 +298,18 @@ package ariane_pkg;
                                                     | riscv::SSTATUS_SUM
                                                     | riscv::SSTATUS_MXR;
     // ---------------
-    // User bits
+    // AXI
     // ---------------
 
-    localparam FETCH_USER_WIDTH = (cva6_config_pkg::CVA6ConfigFetchUserEn == 0) ? 1: cva6_config_pkg::CVA6ConfigFetchUserWidth;  // Possible cases: between 1 and 64
-    localparam DATA_USER_WIDTH = (cva6_config_pkg::CVA6ConfigDataUserEn == 0) ? 1: cva6_config_pkg::CVA6ConfigDataUserWidth;    // Possible cases: between 1 and 64
-    localparam AXI_USER_WIDTH = DATA_USER_WIDTH > FETCH_USER_WIDTH ? DATA_USER_WIDTH : FETCH_USER_WIDTH;
+    localparam AXI_ID_WIDTH = cva6_config_pkg::CVA6ConfigAxiIdWidth;
+    localparam AXI_ADDR_WIDTH = cva6_config_pkg::CVA6ConfigAxiAddrWidth;
+    localparam AXI_DATA_WIDTH = cva6_config_pkg::CVA6ConfigAxiDataWidth;
+    localparam FETCH_USER_WIDTH = cva6_config_pkg::CVA6ConfigFetchUserWidth;
+    localparam DATA_USER_WIDTH = cva6_config_pkg::CVA6ConfigDataUserWidth;
+    localparam AXI_USER_EN = cva6_config_pkg::CVA6ConfigDataUserEn | cva6_config_pkg::CVA6ConfigFetchUserEn;
+    localparam AXI_USER_WIDTH = cva6_config_pkg::CVA6ConfigDataUserWidth;
     localparam DATA_USER_EN = cva6_config_pkg::CVA6ConfigDataUserEn;
     localparam FETCH_USER_EN = cva6_config_pkg::CVA6ConfigFetchUserEn;
-    localparam AXI_USER_EN = cva6_config_pkg::CVA6ConfigDataUserEn | cva6_config_pkg::CVA6ConfigFetchUserEn;
-
 
     // ---------------
     // Fetch Stage
@@ -320,7 +325,7 @@ package ariane_pkg;
     // ---------------
     // Enable BITMANIP
     // ---------------
-    localparam bit BITMANIP = 1'b1;
+    localparam bit BITMANIP = cva6_config_pkg::CVA6ConfigBExtEn;
 
     // Only use struct when signals have same direction
     // exception
@@ -387,6 +392,11 @@ package ariane_pkg;
         logic       taken;
     } bht_prediction_t;
 
+    typedef struct packed {
+        logic       valid;
+        logic [1:0] saturation_counter;
+    } bht_t;
+
     typedef enum logic[3:0] {
         NONE,      // 0
         LOAD,      // 1
@@ -446,35 +456,49 @@ package ariane_pkg;
     `define CONFIG_L1D_SIZE 32*1024
 `endif
 
+`ifndef L15_THREADID_WIDTH
+    `define L15_THREADID_WIDTH 3
+`endif
+
     // I$
     localparam int unsigned ICACHE_LINE_WIDTH  = `CONFIG_L1I_CACHELINE_WIDTH;
     localparam int unsigned ICACHE_SET_ASSOC   = `CONFIG_L1I_ASSOCIATIVITY;
     localparam int unsigned ICACHE_INDEX_WIDTH = $clog2(`CONFIG_L1I_SIZE / ICACHE_SET_ASSOC);
     localparam int unsigned ICACHE_TAG_WIDTH   = riscv::PLEN - ICACHE_INDEX_WIDTH;
+    localparam int unsigned ICACHE_USER_LINE_WIDTH  = (AXI_USER_WIDTH == 1) ? 4 : 128; // in bit
     // D$
     localparam int unsigned DCACHE_LINE_WIDTH  = `CONFIG_L1D_CACHELINE_WIDTH;
     localparam int unsigned DCACHE_SET_ASSOC   = `CONFIG_L1D_ASSOCIATIVITY;
     localparam int unsigned DCACHE_INDEX_WIDTH = $clog2(`CONFIG_L1D_SIZE / DCACHE_SET_ASSOC);
     localparam int unsigned DCACHE_TAG_WIDTH   = riscv::PLEN - DCACHE_INDEX_WIDTH;
-`else
-    // I$
-    localparam int unsigned CONFIG_L1I_SIZE    = 16*1024;
-    localparam int unsigned ICACHE_SET_ASSOC   = 4; // Must be between 4 to 64
-    localparam int unsigned ICACHE_INDEX_WIDTH = $clog2(CONFIG_L1I_SIZE / ICACHE_SET_ASSOC);  // in bit, contains also offset width
-    localparam int unsigned ICACHE_TAG_WIDTH   = riscv::PLEN-ICACHE_INDEX_WIDTH;  // in bit
-    localparam int unsigned ICACHE_LINE_WIDTH  = 128; // in bit
-    localparam int unsigned ICACHE_USER_LINE_WIDTH  = (AXI_USER_WIDTH == 1) ? 4 : 128; // in bit
-    // D$
-    localparam int unsigned CONFIG_L1D_SIZE    = 32*1024;
-    localparam int unsigned DCACHE_SET_ASSOC   = 8; // Must be between 4 to 64
-    localparam int unsigned DCACHE_INDEX_WIDTH = $clog2(CONFIG_L1D_SIZE / DCACHE_SET_ASSOC);  // in bit, contains also offset width
-    localparam int unsigned DCACHE_TAG_WIDTH   = riscv::PLEN-DCACHE_INDEX_WIDTH;  // in bit
-    localparam int unsigned DCACHE_LINE_WIDTH  = 128; // in bit
     localparam int unsigned DCACHE_USER_LINE_WIDTH  = (AXI_USER_WIDTH == 1) ? 4 : 128; // in bit
     localparam int unsigned DCACHE_USER_WIDTH  = DATA_USER_WIDTH;
+
+    localparam int unsigned MEM_TID_WIDTH      = `L15_THREADID_WIDTH;
+`else
+    // I$
+    localparam int unsigned CONFIG_L1I_SIZE    = cva6_config_pkg::CVA6ConfigIcacheByteSize; // in byte
+    localparam int unsigned ICACHE_SET_ASSOC   = cva6_config_pkg::CVA6ConfigIcacheSetAssoc; // number of ways
+    localparam int unsigned ICACHE_INDEX_WIDTH = $clog2(CONFIG_L1I_SIZE / ICACHE_SET_ASSOC);  // in bit, contains also offset width
+    localparam int unsigned ICACHE_TAG_WIDTH   = riscv::PLEN-ICACHE_INDEX_WIDTH;  // in bit
+    localparam int unsigned ICACHE_LINE_WIDTH  = cva6_config_pkg::CVA6ConfigIcacheLineWidth; // in bit
+    localparam int unsigned ICACHE_USER_LINE_WIDTH  = (AXI_USER_WIDTH == 1) ? 4 : cva6_config_pkg::CVA6ConfigIcacheLineWidth; // in bit
+    // D$
+    localparam int unsigned CONFIG_L1D_SIZE    = cva6_config_pkg::CVA6ConfigDcacheByteSize; // in byte
+    localparam int unsigned DCACHE_SET_ASSOC   = cva6_config_pkg::CVA6ConfigDcacheSetAssoc; // number of ways
+    localparam int unsigned DCACHE_INDEX_WIDTH = $clog2(CONFIG_L1D_SIZE / DCACHE_SET_ASSOC);  // in bit, contains also offset width
+    localparam int unsigned DCACHE_TAG_WIDTH   = riscv::PLEN-DCACHE_INDEX_WIDTH;  // in bit
+    localparam int unsigned DCACHE_LINE_WIDTH  = cva6_config_pkg::CVA6ConfigDcacheLineWidth; // in bit
+    localparam int unsigned DCACHE_USER_LINE_WIDTH  = (AXI_USER_WIDTH == 1) ? 4 : cva6_config_pkg::CVA6ConfigDcacheLineWidth; // in bit
+    localparam int unsigned DCACHE_USER_WIDTH  = DATA_USER_WIDTH;
+
+    localparam int unsigned MEM_TID_WIDTH      = cva6_config_pkg::CVA6ConfigMemTidWidth;
 `endif
 
-    localparam bit CVXIF_PRESENT = cva6_config_pkg::CVA6ConfigCvxifEn;
+    localparam int unsigned DCACHE_TID_WIDTH   = cva6_config_pkg::CVA6ConfigDcacheIdWidth;
+
+    localparam int unsigned WT_DCACHE_WBUF_DEPTH   = cva6_config_pkg::CVA6ConfigWtDcacheWbufDepth;
+
     // ---------------
     // EX Stage
     // ---------------
@@ -543,7 +567,7 @@ package ariane_pkg;
 
     typedef struct packed {
         fu_t                      fu;
-        fu_op                     operator;
+        fu_op                     operation;
         riscv::xlen_t             operand_a;
         riscv::xlen_t             operand_b;
         riscv::xlen_t             imm;
@@ -639,7 +663,7 @@ package ariane_pkg;
         riscv::xlen_t                   data;
         logic [(riscv::XLEN/8)-1:0]     be;
         fu_t                            fu;
-        fu_op                           operator;
+        fu_op                           operation;
         logic [TRANS_ID_BITS-1:0]       trans_id;
     } lsu_ctrl_t;
 
@@ -657,6 +681,10 @@ package ariane_pkg;
     // ---------------
     // ID/EX/WB Stage
     // ---------------
+
+    localparam RVFI = cva6_config_pkg::CVA6ConfigRvfiTrace;
+    typedef rvfi_pkg::rvfi_instr_t [NR_COMMIT_PORTS-1:0] rvfi_port_t;
+
     typedef struct packed {
         logic [riscv::VLEN-1:0]   pc;            // PC of instruction
         logic [TRANS_ID_BITS-1:0] trans_id;      // this can potentially be simplified, we could index the scoreboard entry
@@ -678,12 +706,27 @@ package ariane_pkg;
         branchpredict_sbe_t       bp;            // branch predict scoreboard data structure
         logic                     is_compressed; // signals a compressed instructions, we need this information at the commit stage if
                                                  // we want jump accordingly e.g.: +4, +2
+        riscv::xlen_t               rs1_rdata;   // information needed by RVFI
+        riscv::xlen_t               rs2_rdata;   // information needed by RVFI
+        logic [riscv::VLEN-1:0]     lsu_addr;    // information needed by RVFI
+        logic [(riscv::XLEN/8)-1:0] lsu_rmask;   // information needed by RVFI
+        logic [(riscv::XLEN/8)-1:0] lsu_wmask;   // information needed by RVFI
+        riscv::xlen_t               lsu_wdata;   // information needed by RVFI
     } scoreboard_entry_t;
 
     // ---------------
     // MMU instanciation
     // ---------------
-     localparam bit MMU_PRESENT = 1'b1;  // MMU is present
+     localparam bit MMU_PRESENT = cva6_config_pkg::CVA6ConfigMmuPresent;
+
+     localparam int unsigned INSTR_TLB_ENTRIES = cva6_config_pkg::CVA6ConfigInstrTlbEntries;
+     localparam int unsigned DATA_TLB_ENTRIES  = cva6_config_pkg::CVA6ConfigDataTlbEntries;
+
+    // -------------------
+    // Performance counter
+    // -------------------
+    localparam bit PERF_COUNTER_EN = cva6_config_pkg::CVA6ConfigPerfCounterEn;
+    localparam int unsigned MHPMCounterNum = 6;
 
     // --------------------
     // Atomics
@@ -793,6 +836,7 @@ package ariane_pkg;
         logic                          data_we;
         logic [(riscv::XLEN/8)-1:0]    data_be;
         logic [1:0]                    data_size;
+        logic [DCACHE_TID_WIDTH-1:0]   data_id;
         logic                          kill_req;
         logic                          tag_valid;
     } dcache_req_i_t;
@@ -800,6 +844,7 @@ package ariane_pkg;
     typedef struct packed {
         logic                          data_gnt;
         logic                          data_rvalid;
+        logic [DCACHE_TID_WIDTH-1:0]   data_rid;
         riscv::xlen_t                  data_rdata;
         logic [DCACHE_USER_WIDTH-1:0]  data_ruser;
     } dcache_req_o_t;
@@ -860,6 +905,7 @@ package ariane_pkg;
                     3'b010: return 8'b0011_1100;
                     3'b011: return 8'b0111_1000;
                     3'b100: return 8'b1111_0000;
+                    default: ; // Do nothing
                 endcase
             end
             2'b01: begin
@@ -871,6 +917,7 @@ package ariane_pkg;
                     3'b100: return 8'b0011_0000;
                     3'b101: return 8'b0110_0000;
                     3'b110: return 8'b1100_0000;
+                    default: ; // Do nothing
                 endcase
             end
             2'b00: begin
@@ -899,7 +946,7 @@ package ariane_pkg;
                     2'b00: return 4'b0011;
                     2'b01: return 4'b0110;
                     2'b10: return 4'b1100;
-
+                    default: ; // Do nothing
                 endcase
             end
             2'b00: begin

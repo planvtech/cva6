@@ -34,6 +34,7 @@ module store_buffer import ariane_pkg::*; (
     input  logic         valid_without_flush_i, // just tell if the address is valid which we are current putting and do not take any further action
 
     input  logic [riscv::PLEN-1:0]  paddr_i,         // physical address of store which needs to be placed in the queue
+    output [riscv::PLEN-1:0]        mem_paddr_o,
     input  riscv::xlen_t            data_i,          // data which is placed in the queue
     input  logic [(riscv::XLEN/8)-1:0]   be_i,            // byte enable in
     input  logic [1:0]   data_size_i,     // type of request we are making (e.g.: bytes to write)
@@ -127,6 +128,8 @@ module store_buffer import ariane_pkg::*; (
     assign req_port_o.data_we   = 1'b1; // we will always write in the store queue
     assign req_port_o.tag_valid = 1'b0;
 
+    // we do not require an acknowledgement for writes, thus we do not need to identify uniquely the responses
+    assign req_port_o.data_id       = '0;
     // those signals can directly be output to the memory
     assign req_port_o.address_index = commit_queue_q[commit_read_pointer_q].address[ariane_pkg::DCACHE_INDEX_WIDTH-1:0];
     // if we got a new request we already saved the tag from the previous cycle
@@ -136,6 +139,8 @@ module store_buffer import ariane_pkg::*; (
     assign req_port_o.data_wdata    = commit_queue_q[commit_read_pointer_q].data;
     assign req_port_o.data_be       = commit_queue_q[commit_read_pointer_q].be;
     assign req_port_o.data_size     = commit_queue_q[commit_read_pointer_q].data_size;
+
+    assign mem_paddr_o              = commit_queue_n[commit_read_pointer_n].address;
 
     always_comb begin : store_if
         automatic logic [DEPTH_COMMIT:0] commit_status_cnt;
@@ -253,7 +258,6 @@ module store_buffer import ariane_pkg::*; (
 ///////////////////////////////////////////////////////
 
     //pragma translate_off
-    `ifndef VERILATOR
     // assert that commit is never set when we are flushing this would be counter intuitive
     // as flush and commit is decided in the same stage
     commit_and_flush: assert property (
@@ -271,7 +275,6 @@ module store_buffer import ariane_pkg::*; (
     commit_buffer_overflow: assert property (
         @(posedge clk_i) rst_ni && (commit_status_cnt_q == DEPTH_COMMIT) |-> !commit_i)
         else $error("[Commit Queue] You are trying to commit a store although the buffer is full");
-    `endif
     //pragma translate_on
 endmodule
 

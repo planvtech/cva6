@@ -95,6 +95,7 @@ module frontend import ariane_pkg::*; #(
     bht_prediction_t [INSTR_PER_FETCH-1:0] bht_prediction_shifted;
     btb_prediction_t [INSTR_PER_FETCH-1:0] btb_prediction_shifted;
     ras_t            ras_predict;
+    logic [riscv::VLEN-1:0]      vpc_btb;
 
     // branch-predict update
     logic            is_mispredict;
@@ -217,7 +218,9 @@ module frontend import ariane_pkg::*; #(
               taken_rvi_cf[i] = rvi_branch[i] & rvi_imm[i][riscv::VLEN-1];
               taken_rvc_cf[i] = rvc_branch[i] & rvc_imm[i][riscv::VLEN-1];
             end
-            if (taken_rvi_cf[i] || taken_rvc_cf[i]) cf_type[i] = ariane_pkg::Branch;
+            if (taken_rvi_cf[i] || taken_rvc_cf[i]) begin
+              cf_type[i] = ariane_pkg::Branch;
+            end
           end
           default:;
             // default: $error("Decoded more than one control flow");
@@ -310,15 +313,25 @@ module frontend import ariane_pkg::*; #(
         npc_d = predict_address;
       end
       // 1. Default assignment
-      if (if_ready) npc_d = {fetch_address[riscv::VLEN-1:2], 2'b0}  + 'h4;
+      if (if_ready) begin
+        npc_d = {fetch_address[riscv::VLEN-1:2], 2'b0}  + 'h4;
+      end
       // 2. Replay instruction fetch
-      if (replay) npc_d = replay_addr;
+      if (replay) begin
+        npc_d = replay_addr;
+      end
       // 3. Control flow change request
-      if (is_mispredict) npc_d = resolved_branch_i.target_address;
+      if (is_mispredict) begin
+        npc_d = resolved_branch_i.target_address;
+      end
       // 4. Return from environment call
-      if (eret_i) npc_d = epc_i;
+      if (eret_i) begin
+        npc_d = epc_i;
+      end
       // 5. Exception/Interrupt
-      if (ex_valid_i) npc_d = trap_vector_base_i;
+      if (ex_valid_i) begin
+        npc_d = trap_vector_base_i;
+      end
       // 6. Pipeline Flush because of CSR side effects
       // On a pipeline flush start fetching from the next address
       // of the instruction in the commit stage
@@ -326,10 +339,12 @@ module frontend import ariane_pkg::*; #(
       // as CSR or AMO instructions do not exist in a compressed form
       // we can unconditionally do PC + 4 here
       // TODO(zarubaf) This adder can at least be merged with the one in the csr_regfile stage
-      if (set_pc_commit_i) npc_d = pc_commit_i + {{riscv::VLEN-3{1'b0}}, 3'b100};
+      if (set_pc_commit_i) begin
+        npc_d = pc_commit_i + {{riscv::VLEN-3{1'b0}}, 3'b100};
+      end
       // 7. Debug
       // enter debug on a hard-coded base-address
-      if (set_debug_pc_i) npc_d = ArianeCfg.DmBaseAddress[riscv::VLEN-1:0] + dm::HaltAddress[riscv::VLEN-1:0];
+      if (set_debug_pc_i) npc_d = ArianeCfg.DmBaseAddress[riscv::VLEN-1:0] + ariane_dm_pkg::HaltAddress[riscv::VLEN-1:0];
       icache_dreq_o.vaddr = fetch_address;
     end
 
@@ -371,41 +386,58 @@ module frontend import ariane_pkg::*; #(
       end
     end
 
-    ras #(
-      .DEPTH  ( ArianeCfg.RASDepth  )
-    ) i_ras (
-      .clk_i,
-      .rst_ni,
-      .flush_i( flush_bp_i  ),
-      .push_i ( ras_push    ),
-      .pop_i  ( ras_pop     ),
-      .data_i ( ras_update  ),
-      .data_o ( ras_predict )
-    );
+    if (ArianeCfg.RASDepth == 0) begin
+      assign ras_predict = '0;
+    end else begin
+      ras #(
+        .DEPTH  ( ArianeCfg.RASDepth  )
+      ) i_ras (
+        .clk_i,
+        .rst_ni,
+        .flush_i( flush_bp_i  ),
+        .push_i ( ras_push    ),
+        .pop_i  ( ras_pop     ),
+        .data_i ( ras_update  ),
+        .data_o ( ras_predict )
+      );
+    end
 
-    btb #(
-      .NR_ENTRIES       ( ArianeCfg.BTBEntries   )
-    ) i_btb (
-      .clk_i,
-      .rst_ni,
-      .flush_i          ( flush_bp_i       ),
-      .debug_mode_i,
-      .vpc_i            ( icache_vaddr_q   ),
-      .btb_update_i     ( btb_update       ),
-      .btb_prediction_o ( btb_prediction   )
-    );
+    //For FPGA, BTB is implemented in read synchronous BRAM
+    //while for ASIC, BTB is implemented in D flip-flop
+    //and can be read at the same cycle.
+    assign vpc_btb = (ariane_pkg::FPGA_EN) ? icache_dreq_i.vaddr : icache_vaddr_q;
 
-    bht #(
-      .NR_ENTRIES       ( ArianeCfg.BHTEntries   )
-    ) i_bht (
-      .clk_i,
-      .rst_ni,
-      .flush_i          ( flush_bp_i       ),
-      .debug_mode_i,
-      .vpc_i            ( icache_vaddr_q   ),
-      .bht_update_i     ( bht_update       ),
-      .bht_prediction_o ( bht_prediction   )
-    );
+    if (ArianeCfg.BTBEntries == 0) begin
+      assign btb_prediction = '0;
+    end else begin
+      btb #(
+        .NR_ENTRIES       ( ArianeCfg.BTBEntries   )
+      ) i_btb (
+        .clk_i,
+        .rst_ni,
+        .flush_i          ( flush_bp_i       ),
+        .debug_mode_i,
+        .vpc_i            ( vpc_btb          ),
+        .btb_update_i     ( btb_update       ),
+        .btb_prediction_o ( btb_prediction   )
+      );
+    end
+
+    if (ArianeCfg.BHTEntries == 0) begin
+      assign bht_prediction = '0;
+    end else begin
+      bht #(
+        .NR_ENTRIES       ( ArianeCfg.BHTEntries   )
+      ) i_bht (
+        .clk_i,
+        .rst_ni,
+        .flush_i          ( flush_bp_i       ),
+        .debug_mode_i,
+        .vpc_i            ( icache_vaddr_q   ),
+        .bht_update_i     ( bht_update       ),
+        .bht_prediction_o ( bht_prediction   )
+      );
+    end
 
     // we need to inspect up to INSTR_PER_FETCH instructions for branches
     // and jumps

@@ -16,7 +16,6 @@ src/moore.sv
 build/*
 /tmp*
 *.dasm
-/Bender.lock
 /Bender.local
 build/
 *.vcd
@@ -40,3 +39,7 @@ tb/riscv-isa-sim/
 work-*/*
 install/
 xrun_results/
+/core/include/gen32_config_pkg.sv
+/core/include/gen64_config_pkg.sv
+__pycache__
+.bender/

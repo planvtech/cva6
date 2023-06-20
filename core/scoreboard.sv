@@ -61,7 +61,15 @@ module scoreboard #(
   input logic [NR_WB_PORTS-1:0][riscv::XLEN-1:0]                wbdata_i,    // write data in
   input ariane_pkg::exception_t [NR_WB_PORTS-1:0]               ex_i,        // exception from a functional unit (e.g.: ld/st exception)
   input logic [NR_WB_PORTS-1:0]                                 wt_valid_i,  // data in is valid
-  input logic                                                   x_we_i       // cvxif we for writeback
+  input logic                                                   x_we_i,      // cvxif we for writeback
+
+  // RVFI
+  input [riscv::VLEN-1:0]                                       lsu_addr_i,
+  input [(riscv::XLEN/8)-1:0]                                   lsu_rmask_i,
+  input [(riscv::XLEN/8)-1:0]                                   lsu_wmask_i,
+  input [ariane_pkg::TRANS_ID_BITS-1:0]                         lsu_addr_trans_id_i,
+  input riscv::xlen_t                                           rs1_forwarding_i,
+  input riscv::xlen_t                                           rs2_forwarding_i
 );
   localparam int unsigned BITS_ENTRIES = $clog2(NR_ENTRIES);
 
@@ -84,6 +92,19 @@ module scoreboard #(
   assign issue_full = (issue_cnt_q[BITS_ENTRIES] == 1'b1);
 
   assign sb_full_o = issue_full;
+
+  ariane_pkg::scoreboard_entry_t decoded_instr;
+  always_comb begin
+    decoded_instr = decoded_instr_i;
+    if (ariane_pkg::RVFI) begin
+      decoded_instr.rs1_rdata = rs1_forwarding_i;
+      decoded_instr.rs2_rdata = rs2_forwarding_i;
+      decoded_instr.lsu_addr  = '0;
+      decoded_instr.lsu_rmask = '0;
+      decoded_instr.lsu_wmask = '0;
+      decoded_instr.lsu_wdata = '0;
+    end
+  end
 
   // output commit instruction directly
   always_comb begin : commit_ports
@@ -118,7 +139,7 @@ module scoreboard #(
       issue_en = 1'b1;
       mem_n[issue_pointer_q] = {1'b1,                                      // valid bit
                                 ariane_pkg::is_rd_fpr(decoded_instr_i.op), // whether rd goes to the fpr
-                                decoded_instr_i                            // decoded instruction record
+                                decoded_instr                              // decoded instruction record
                                 };
     end
 
@@ -134,6 +155,17 @@ module scoreboard #(
     // ------------
     // Write Back
     // ------------
+    if (ariane_pkg::RVFI) begin
+      if (lsu_rmask_i != 0) begin
+        mem_n[lsu_addr_trans_id_i].sbe.lsu_addr = lsu_addr_i;
+        mem_n[lsu_addr_trans_id_i].sbe.lsu_rmask = lsu_rmask_i;
+      end else if (lsu_wmask_i != 0) begin
+        mem_n[lsu_addr_trans_id_i].sbe.lsu_addr = lsu_addr_i;
+        mem_n[lsu_addr_trans_id_i].sbe.lsu_wmask = lsu_wmask_i;
+        mem_n[lsu_addr_trans_id_i].sbe.lsu_wdata = wbdata_i[1];
+      end
+    end
+
     for (int unsigned i = 0; i < NR_WB_PORTS; i++) begin
       // check if this instruction was issued (e.g.: it could happen after a flush that there is still
       // something in the pipeline e.g. an incomplete memory operation)
@@ -180,12 +212,7 @@ module scoreboard #(
   end
 
   // FIFO counter updates
-  popcount #(
-    .INPUT_WIDTH(NR_COMMIT_PORTS)
-  ) i_popcount (
-    .data_i(commit_ack_i),
-    .popcount_o(num_commit)
-  );
+  assign num_commit = (NR_COMMIT_PORTS == 2) ? commit_ack_i[1] + commit_ack_i[0] : commit_ack_i[0];
 
   assign issue_cnt_n         = (flush_i) ? '0 : issue_cnt_q         - num_commit + issue_en;
   assign commit_pointer_n[0] = (flush_i) ? '0 : commit_pointer_q[0] + num_commit;
@@ -377,7 +404,6 @@ module scoreboard #(
   end
 
   //pragma translate_off
-  `ifndef VERILATOR
   initial begin
     assert (NR_ENTRIES == 2**BITS_ENTRIES) else $fatal(1, "Scoreboard size needs to be a power of two.");
   end
@@ -409,6 +435,5 @@ module scoreboard #(
         else $fatal (1,"Two or more functional units are retiring instructions with the same transaction id!");
     end
   end
-  `endif
   //pragma translate_on
 endmodule

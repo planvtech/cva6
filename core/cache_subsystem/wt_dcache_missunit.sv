@@ -15,9 +15,10 @@
 
 
 module wt_dcache_missunit import ariane_pkg::*; import wt_cache_pkg::*; #(
-  parameter bit                         Axi64BitCompliant  = 1'b0, // set this to 1 when using in conjunction with 64bit AXI bus adapter
-  parameter logic [CACHE_ID_WIDTH-1:0]  AmoTxId            = 1,    // TX id to be used for AMOs
-  parameter int unsigned                NumPorts           = 3     // number of miss ports
+  parameter bit                         AxiCompliant  = 1'b0, // set this to 1 when using in conjunction with AXI bus adapter
+  parameter logic [CACHE_ID_WIDTH-1:0]  AmoTxId       = 1,    // TX id to be used for AMOs
+  parameter int unsigned                NumPorts      = 3,    // number of miss ports
+  parameter int                         AxiDataWidth  = 0
 ) (
   input  logic                                       clk_i,       // Clock
   input  logic                                       rst_ni,      // Asynchronous reset active low
@@ -208,20 +209,26 @@ module wt_dcache_missunit import ariane_pkg::*; import wt_cache_pkg::*; #(
     if (riscv::IS_XLEN64) begin
       if (amo_req_i.size==2'b10) begin
         amo_data = {amo_req_i.operand_b[0 +: 32], amo_req_i.operand_b[0 +: 32]};
-        amo_user = {amo_req_i.operand_b[0 +: 32], amo_req_i.operand_b[0 +: 32]};
       end else begin
         amo_data = amo_req_i.operand_b;
-        amo_user = amo_req_i.operand_b;
       end
     end else begin
       amo_data = amo_req_i.operand_b[0 +: 32];
-      amo_user = amo_req_i.operand_b[0 +: 32];
+    end
+    if (ariane_pkg::DATA_USER_EN) begin
+      amo_user = amo_data;
+    end else begin
+      amo_user = '0;
     end
   end
 
   // note: openpiton returns a full cacheline!
-  if (Axi64BitCompliant) begin : gen_axi_rtrn_mux
-    assign amo_rtrn_mux = mem_rtrn_i.data[0 +: 64];
+  if (AxiCompliant) begin : gen_axi_rtrn_mux
+    if (AxiDataWidth > 64) begin
+      assign amo_rtrn_mux = mem_rtrn_i.data[amo_req_i.operand_a[$clog2(AxiDataWidth/8)-1:3]*64 +: 64];
+    end else begin
+      assign amo_rtrn_mux = mem_rtrn_i.data[0 +: 64];
+    end
   end else begin : gen_piton_rtrn_mux
     assign amo_rtrn_mux = mem_rtrn_i.data[amo_req_i.operand_a[DCACHE_OFFSET_WIDTH-1:3]*64 +: 64];
   end
@@ -295,7 +302,7 @@ module wt_dcache_missunit import ariane_pkg::*; import wt_cache_pkg::*; #(
           end
         end
         DCACHE_STORE_ACK: begin
-          if (stores_inflight_q) begin
+          if (stores_inflight_q>0) begin
             store_ack = 1'b1;
             miss_rtrn_vld_o[NumPorts-1] = 1'b1;
           end
@@ -306,7 +313,7 @@ module wt_dcache_missunit import ariane_pkg::*; import wt_cache_pkg::*; #(
             // need to set SC backoff counter if
             // this op failed
             if (amo_req_i.amo_op == AMO_SC) begin
-              if (amo_resp_o.result) begin
+              if (amo_resp_o.result>0) begin
                 sc_fail = 1'b1;
               end else begin
                 sc_pass = 1'b1;
