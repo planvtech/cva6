@@ -72,19 +72,19 @@ import std_cache_pkg::*;
     logic [2:0][55:0]                  mshr_addr;
     logic [2:0]                        mshr_addr_matches;
     logic [2:0]                        mshr_index_matches;
-
-    logic [2:0][$bits(miss_req_t)-1:0] miss_req;
-    logic [2:0]                        miss_gnt;
-
-    logic [2:0]                        active_serving;
-    logic                              flushing;
-    logic [2:0]                        bypass_gnt;
-    logic [2:0]                        bypass_valid;
-    logic [2:0][63:0]                  bypass_data;
     logic [63:0]                       critical_word;
     logic                              critical_word_valid;
 
-    logic                              invalidate;
+    logic [2:0][$bits(miss_req_t)-1:0] miss_req;
+    logic [2:0]                        miss_gnt;
+    logic [2:0]                        active_serving;
+    logic                                flushing;
+
+    logic [2:0]                        bypass_gnt;
+    logic [2:0]                        bypass_valid;
+    logic [2:0][63:0]                  bypass_data;
+
+  logic                                invalidate;
     logic [63:0]                       invalidate_addr;
 
     // -------------------------------
@@ -98,7 +98,7 @@ import std_cache_pkg::*;
     cl_be_t                              be_ram;
 
     readshared_done_t readshared_done;
-    logic [3:0]       updating_cache;
+    logic [3:0]                               updating_cache;
 
     // ------------------
     // Cache Controller
