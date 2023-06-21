@@ -184,40 +184,6 @@ import std_cache_pkg::*;
         end
     endgenerate
 
-  ariane_ace::m2s_nosnoop_t axi_nosnoop_data_o, axi_nosnoop_bypass_o;
-  ariane_ace::s2m_nosnoop_t axi_nosnoop_data_i, axi_nosnoop_bypass_i;
-
-  assign axi_data_o.aw = axi_nosnoop_data_o.aw;
-  assign axi_data_o.aw_valid = axi_nosnoop_data_o.aw_valid;
-  assign axi_data_o.w = axi_nosnoop_data_o.w;
-  assign axi_data_o.w_valid = axi_nosnoop_data_o.w_valid;
-  assign axi_data_o.b_ready = axi_nosnoop_data_o.b_ready;
-  assign axi_data_o.ar = axi_nosnoop_data_o.ar;
-  assign axi_data_o.ar_valid = axi_nosnoop_data_o.ar_valid;
-  assign axi_data_o.r_ready = axi_nosnoop_data_o.r_ready;
-  assign axi_nosnoop_data_i.aw_ready = axi_data_i.aw_ready;
-  assign axi_nosnoop_data_i.ar_ready = axi_data_i.ar_ready;
-  assign axi_nosnoop_data_i.w_ready = axi_data_i.w_ready;
-  assign axi_nosnoop_data_i.b_valid = axi_data_i.b_valid;
-  assign axi_nosnoop_data_i.b = axi_data_i.b;
-  assign axi_nosnoop_data_i.r_valid = axi_data_i.r_valid;
-  assign axi_nosnoop_data_i.r = axi_data_i.r;
-  assign axi_bypass_o.aw = axi_nosnoop_bypass_o.aw;
-  assign axi_bypass_o.aw_valid = axi_nosnoop_bypass_o.aw_valid;
-  assign axi_bypass_o.w = axi_nosnoop_bypass_o.w;
-  assign axi_bypass_o.w_valid = axi_nosnoop_bypass_o.w_valid;
-  assign axi_bypass_o.b_ready = axi_nosnoop_bypass_o.b_ready;
-  assign axi_bypass_o.ar = axi_nosnoop_bypass_o.ar;
-  assign axi_bypass_o.ar_valid = axi_nosnoop_bypass_o.ar_valid;
-  assign axi_bypass_o.r_ready = axi_nosnoop_bypass_o.r_ready;
-  assign axi_nosnoop_bypass_i.aw_ready = axi_bypass_i.aw_ready;
-  assign axi_nosnoop_bypass_i.ar_ready = axi_bypass_i.ar_ready;
-  assign axi_nosnoop_bypass_i.w_ready = axi_bypass_i.w_ready;
-  assign axi_nosnoop_bypass_i.b_valid = axi_bypass_i.b_valid;
-  assign axi_nosnoop_bypass_i.b = axi_bypass_i.b;
-  assign axi_nosnoop_bypass_i.r_valid = axi_bypass_i.r_valid;
-  assign axi_nosnoop_bypass_i.r = axi_bypass_i.r;
-
     // ------------------
     // Miss Handling Unit
     // ------------------
@@ -254,10 +220,10 @@ import std_cache_pkg::*;
         .be_o                   ( be              [0]  ),
         .data_o                 ( wdata           [0]  ),
         .we_o                   ( we              [0]  ),
-        .axi_bypass_o (axi_nosnoop_bypass_o),
-        .axi_bypass_i (axi_nosnoop_bypass_i),
-        .axi_data_o (axi_nosnoop_data_o),
-        .axi_data_i (axi_nosnoop_data_i),
+        .axi_bypass_o,
+        .axi_bypass_i,
+        .axi_data_o,
+        .axi_data_i,
         .updating_cache_o (updating_cache[0]),
         .*
     );
