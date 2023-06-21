@@ -412,7 +412,7 @@ module axi_adapter #(
   end
 
   generate
-  if ($bits(mst_req_t) == $bits(ariane_ace::m2s_nosnoop_t)) begin
+  if ($bits(axi_req_t) == $bits(ariane_ace::m2s_nosnoop_t)) begin
 
     always_ff @(posedge clk_i or negedge rst_ni) begin
       if (~rst_ni) begin
