@@ -122,83 +122,6 @@ module cva6_icache_axi_wrapper import ariane_pkg::*; import wt_cache_pkg::*; #(
   // --------
   // AXI shim
   // --------
-
-  ariane_axi::req_t axi_req;
-  ariane_axi::resp_t axi_resp;
-
-  generate
-  if ($bits(mst_req_t) == $bits(ariane_ace::m2s_nosnoop_t)) begin
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-      if (~rst_ni) begin
-        axi_req_o.wack <= 1'b0;
-        axi_req_o.rack <= 1'b0;
-      end
-      else begin
-        axi_req_o.wack <= 1'b0;
-        axi_req_o.rack <= 1'b0;
-        // set RACK the cycle after the BVALID/BREADY handshake is finished
-        if (axi_req_o.b_ready & axi_resp_i.b_valid)
-          axi_req_o.wack <= 1'b1;
-        // set RACK the cycle after the RVALID/RREADY handshake is finished
-        if (axi_req_o.r_ready & axi_resp_i.r_valid)
-          axi_req_o.rack <= 1'b1;
-      end
-    end
-
-    assign axi_req_o.aw.id = axi_req.aw.id;
-    assign axi_req_o.aw.addr = axi_req.aw.addr;
-    assign axi_req_o.aw.len = axi_req.aw.len;
-    assign axi_req_o.aw.size = axi_req.aw.size;
-    assign axi_req_o.aw.burst = axi_req.aw.burst;
-    assign axi_req_o.aw.lock = axi_req.aw.lock;
-    assign axi_req_o.aw.cache = axi_req.aw.cache;
-    assign axi_req_o.aw.prot = axi_req.aw.prot;
-    assign axi_req_o.aw.qos = axi_req.aw.qos;
-    assign axi_req_o.aw.region = axi_req.aw.region;
-    assign axi_req_o.aw.atop = axi_req.aw.atop;
-    assign axi_req_o.aw.user = axi_req.aw.user;
-    assign axi_req_o.aw.snoop = '0;
-    assign axi_req_o.aw.bar = '0;
-    assign axi_req_o.aw.domain = '0;
-    assign axi_req_o.aw.awunique = '0;
-    assign axi_req_o.aw_valid = axi_req.aw_valid;
-    assign axi_req_o.w = axi_req.w;
-    assign axi_req_o.w_valid = axi_req.w_valid;
-    assign axi_req_o.b_ready = axi_req.b_ready;
-    assign axi_req_o.ar.id = axi_req.ar.id;
-    assign axi_req_o.ar.addr = axi_req.ar.addr;
-    assign axi_req_o.ar.len = axi_req.ar.len;
-    assign axi_req_o.ar.size = axi_req.ar.size;
-    assign axi_req_o.ar.burst = axi_req.ar.burst;
-    assign axi_req_o.ar.lock = axi_req.ar.lock;
-    assign axi_req_o.ar.cache = axi_req.ar.cache;
-    assign axi_req_o.ar.prot = axi_req.ar.prot;
-    assign axi_req_o.ar.qos = axi_req.ar.qos;
-    assign axi_req_o.ar.region = axi_req.ar.region;
-    assign axi_req_o.ar.user = axi_req.ar.user;
-    assign axi_req_o.ar.snoop = '0;
-    assign axi_req_o.ar.bar = '0;
-    assign axi_req_o.ar.domain = '0;
-    assign axi_req_o.ar_valid = axi_req.ar_valid;
-    assign axi_req_o.r_ready = axi_req.r_ready;
-    assign axi_resp.aw_ready = axi_resp_i.aw_ready;
-    assign axi_resp.ar_ready = axi_resp_i.ar_ready;
-    assign axi_resp.w_ready = axi_resp_i.w_ready;
-    assign axi_resp.b_valid = axi_resp_i.b_valid;
-    assign axi_resp.b = axi_resp_i.b;
-    assign axi_resp.r_valid = axi_resp_i.r_valid;
-    assign axi_resp.r.id   = axi_resp_i.r.id;
-    assign axi_resp.r.data = axi_resp_i.r.data;
-    assign axi_resp.r.resp = axi_resp_i.r.resp[1:0];
-    assign axi_resp.r.last = axi_resp_i.r.last;
-    assign axi_resp.r.user = axi_resp_i.r.user;
-  end
-  else begin
-    assign axi_req_o = axi_req;
-    assign axi_resp = axi_resp_i;
-  end
-  endgenerate
-
     axi_shim #(
     .AxiNumWords     ( AxiNumWords    ),
     .AxiAddrWidth    ( AxiAddrWidth   ),
@@ -239,8 +162,8 @@ module cva6_icache_axi_wrapper import ariane_pkg::*; import wt_cache_pkg::*; #(
     .wr_valid_o      (                   ),
     .wr_id_o         (                   ),
     .wr_exokay_o     (                   ),
-    .axi_req_o       ( axi_req         ),
-    .axi_resp_i      ( axi_resp        )
+    .axi_req_o       ( axi_req_o         ),
+    .axi_resp_i      ( axi_resp_i        )
   );
 
   // Buffer burst data in shift register
