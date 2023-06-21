@@ -68,7 +68,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     output logic                                      we_o
 );
 
-    // MSHR ports (incl. snoop) + AMO port
+    // MSHR ports + AMO port
     parameter NR_BYPASS_PORTS = NR_PORTS + 1;
 
     // FSM states
