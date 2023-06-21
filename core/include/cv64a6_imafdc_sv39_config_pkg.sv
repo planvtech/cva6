@@ -34,7 +34,7 @@ package cva6_config_pkg;
     localparam CVA6ConfigFetchUserEn = 0;
     localparam CVA6ConfigFetchUserWidth = CVA6ConfigXlen;
     localparam CVA6ConfigDataUserEn = 0;
-    localparam CVA6ConfigDataUserWidth = CVA6ConfigXlen;
+    localparam CVA6ConfigDataUserWidth = 1;
 
     localparam CVA6ConfigRenameEn = 0;
 
@@ -69,7 +69,7 @@ package cva6_config_pkg;
 
     localparam CVA6ConfigPerfCounterEn = 1;
 
-    localparam CVA6ConfigDcacheType = WT;
+    localparam CVA6ConfigDcacheType = WB;
 
     localparam CVA6ConfigMmuPresent = 1;
 
