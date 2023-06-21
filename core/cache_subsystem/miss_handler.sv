@@ -717,26 +717,26 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     ) i_miss_axi_adapter (
         .clk_i,
         .rst_ni,
-        .req_i                 ( req_fsm_miss_valid    ),
-        .type_i                ( req_fsm_miss_req      ),
-        .trans_type_i          ( req_fsm_miss_type     ),
-        .amo_i                 ( AMO_NONE              ),
-        .gnt_o                 ( gnt_miss_fsm          ),
-        .addr_i                ( req_fsm_miss_addr     ),
-        .we_i                  ( req_fsm_miss_we       ),
-        .wdata_i               ( req_fsm_miss_wdata    ),
-        .be_i                  ( req_fsm_miss_be       ),
-        .size_i                ( req_fsm_miss_size     ),
-        .id_i                  ( 4'b1100               ),
-        .valid_o               ( valid_miss_fsm        ),
-        .rdata_o               ( data_miss_fsm         ),
-        .dirty_o               ( dirty_miss_fsm        ),
-        .shared_o              ( shared_miss_fsm       ),
-        .id_o                  (                       ),
-        .critical_word_o       ( critical_word_o       ),
-        .critical_word_valid_o ( critical_word_valid_o ),
-        .axi_req_o             ( axi_data_o            ),
-        .axi_resp_i            ( axi_data_i            )
+        .req_i               ( req_fsm_miss_valid ),
+        .type_i              ( req_fsm_miss_req   ),
+        .trans_type_i        ( req_fsm_miss_type  ),
+        .amo_i               ( AMO_NONE           ),
+        .gnt_o               ( gnt_miss_fsm       ),
+        .addr_i              ( req_fsm_miss_addr  ),
+        .we_i                ( req_fsm_miss_we    ),
+        .wdata_i             ( req_fsm_miss_wdata ),
+        .be_i                ( req_fsm_miss_be    ),
+        .size_i              ( req_fsm_miss_size  ),
+        .id_i                ( 4'b1100            ),
+        .valid_o             ( valid_miss_fsm     ),
+        .rdata_o             ( data_miss_fsm      ),
+        .dirty_o             ( dirty_miss_fsm     ),
+        .shared_o            ( shared_miss_fsm    ),
+        .id_o                (                    ),
+        .critical_word_o     ( critical_word_o    ),
+        .critical_word_valid_o (critical_word_valid_o),
+        .axi_req_o           ( axi_data_o         ),
+        .axi_resp_i          ( axi_data_i         )
     );
 
     // -----------------
@@ -758,14 +758,14 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
 
         for (int unsigned i = 0; i < NR_PORTS; i++) begin
             miss_req =  miss_req_t'(miss_req_i[i]);
-            miss_req_valid       [i] = miss_req.valid;
-            miss_req_bypass      [i] = miss_req.bypass;
-            miss_req_addr        [i] = miss_req.addr;
-            miss_req_wdata       [i] = miss_req.wdata;
-            miss_req_we          [i] = miss_req.we;
-            miss_req_be          [i] = miss_req.be;
-            miss_req_size        [i] = miss_req.size;
-            miss_req_make_unique [i] = miss_req.make_unique;
+            miss_req_valid  [i]  = miss_req.valid;
+            miss_req_bypass [i]  = miss_req.bypass;
+            miss_req_addr   [i]  = miss_req.addr;
+            miss_req_wdata  [i]  = miss_req.wdata;
+            miss_req_we     [i]  = miss_req.we;
+            miss_req_be     [i]  = miss_req.be;
+            miss_req_size   [i]  = miss_req.size;
+            miss_req_make_unique   [i]  = miss_req.make_unique;
         end
     end
 endmodule
