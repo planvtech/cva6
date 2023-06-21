@@ -58,7 +58,7 @@ module tb_ace_direct import ariane_pkg::*; import std_cache_pkg::*; import tb_pk
     SharedRegionAddrBase:  {SharedAddrBeg},
     SharedRegionLength:    {SharedAddrEnd-SharedAddrBeg+64'b1},
     // cache config
-    Axi64BitCompliant:     1'b1,
+    AxiCompliant:          1'b1,
     SwapEndianess:         1'b0,
     // debug
     DmBaseAddress:         64'h0,
