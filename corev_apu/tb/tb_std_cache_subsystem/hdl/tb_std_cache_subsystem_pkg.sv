@@ -208,7 +208,7 @@ package tb_std_cache_subsystem_pkg;
             end
 
             if (check_result) begin
-                a_rd_check : assert (vif.resp.result == exp_result) else 
+                a_rd_check : assert (vif.resp.result == exp_result) else
                     $error("%s : data mismatch. Expected 0x%16h, got 0x%16h", name, exp_result, vif.resp.result);
             end
 
@@ -467,7 +467,7 @@ package tb_std_cache_subsystem_pkg;
             end while (!vif.resp.data_rvalid);
 
             if (check_result) begin
-                a_rd_check : assert (vif.resp.data_rdata == exp_result) else 
+                a_rd_check : assert (vif.resp.data_rdata == exp_result) else
                     $error("%s : data mismatch. Expected 0x%16h, got 0x%16h", name, exp_result, vif.resp.data_rdata);
             end
 
@@ -790,7 +790,7 @@ package tb_std_cache_subsystem_pkg;
         mailbox aw_mbx = new, w_mbx = new, b_mbx = new, ar_mbx = new, r_mbx = new;
 
         // Snoop mailboxes
-        mailbox ac_mbx = new, cd_mbx = new, cr_mbx = new;
+        mailbox ac_mbx = new, ac_mbx_int = new, cd_mbx = new, cr_mbx = new;
 
         virtual dcache_sram_if sram_vif;
         virtual dcache_gnt_if  gnt_vif;
@@ -1397,34 +1397,6 @@ package tb_std_cache_subsystem_pkg;
                 fork
                     begin
                         fork
-
-/* writeback is done by the CCU
-                            begin
-                                // expect a writeback on CLEAN_INVALID
-                                if (isHit(ac.ac_addr) && isDirty(ac.ac_addr) && ac.ac_snoop == snoop_pkg::CLEAN_INVALID) begin
-                                    repeat(2) begin
-                                        ax_ace_beat_t aw_beat;
-                                        b_beat_t      b_beat;
-                                        w_beat_t      w_beat = new;
-                                        aw_mbx.get(aw_beat);
-                                        if (!isWriteBack(aw_beat))
-                                            $error("%s.check_snoop : WRITEBACK request expected after CLEAN_INVALID",name);
-                                        a_empty_aw : assert (aw_mbx.num() == 0) else $error ("%S.check_snoop : AW mailbox not empty", name);
-
-                                        // wait for W beat
-                                        while (!w_beat.w_last) begin
-                                            w_mbx.get(w_beat);
-                                            $display("%t ns %s.check_snoop: got W beat with last = %0d", $time, name, w_beat.w_last);
-                                        end
-                                        a_empty_w : assert (w_mbx.num() == 0) else $error ("%S.check_snoop : W mailbox not empty", name);
-                
-                                        b_mbx.get(b_beat);
-                                        a_empty_b : assert (b_mbx.num() == 0) else $error ("%S.check_snoop : B mailbox not empty", name);
-                                    end
-                                end
-                            end
-*/
-
                             begin
                                 bit           CheckOK;
                                 ace_cr_beat_t cr, cr_exp;
@@ -1452,6 +1424,9 @@ package tb_std_cache_subsystem_pkg;
                                 a_empty_cr : assert (cr_mbx.num() == 0) else $error ("%S.check_snoop : CR mailbox not empty", name);
 
                                 CheckOK = checkCRResp(.req(ac), .exp(cr_exp), .resp(cr));
+
+                                // send snoop to do_hit()
+                                ac_mbx_int.put(ac);
 
                                 // expect the data
                                 $display("%t ns %s.check_snoop: CD mailbox size : %0d", $time, name, cd_mbx.num());
@@ -1535,7 +1510,11 @@ package tb_std_cache_subsystem_pkg;
             $display("%t ns %s started hit task for message : %s", $time, name, msg.print_me());
             addr_v = tag_index2addr(.tag(msg.address_tag), .index(msg.address_index));
             if (msg.trans_type == WR_REQ) begin
+                ace_ac_beat_t ac = new();
                 msg.update_cache = 1'b1;
+
+                // empty snoop mailbox
+                while (ac_mbx_int.try_get(ac));
 
                 // Add one additional cycle before checking cache status, mimicing cache ctrl FSM.
                 @(posedge sram_vif.clk);
@@ -1566,8 +1545,20 @@ package tb_std_cache_subsystem_pkg;
                     a_empty_r : assert (r_mbx.num() == 0) else $error ("%S.do_hit : R mailbox not empty", name);
 
                     msg.insert_readback = 1'b1;
+
+                    // check if a ReadShared has arrived during writing
+                    while (ac_mbx_int.try_get(ac)) begin
+                        if (ac.ac_snoop == snoop_pkg::READ_SHARED && ac.ac_addr == addr_v) begin
+                            $display("%t ns %s Got matching ReadShared during hit + write shared, calling hit routine for message : %s", $time, name, msg.print_me());
+                            do_hit(msg);
+                        end
+                    end
+
                 end
+
             end
+
+
             if (!isHit(addr_v)) begin
                 $display("%t ns %s Cache status changed from hit to miss, calling miss routine for message : %s", $time, name, msg.print_me());
                 do_miss(msg);
@@ -2132,5 +2123,134 @@ package tb_std_cache_subsystem_pkg;
         endtask
 
     endclass
+
+
+    //--------------------------------------------------------------------------
+    // dcache checker
+    //--------------------------------------------------------------------------
+    class std_dcache_checker #(
+        parameter int unsigned NB_CORES        = 2,
+        parameter int unsigned SRAM_DATA_WIDTH = 0,
+        parameter int unsigned SRAM_NUM_WORDS  = 0
+    );
+
+        virtual dcache_sram_if                                                 dc_sram_vif [NB_CORES];
+        virtual sram_intf #(DCACHE_SET_ASSOC, SRAM_DATA_WIDTH, SRAM_NUM_WORDS) sram_vif    [NB_CORES];
+
+        string       name;
+        ariane_cfg_t ArianeCfg;
+
+        function new (
+            virtual sram_intf #(DCACHE_SET_ASSOC, SRAM_DATA_WIDTH, SRAM_NUM_WORDS) sram_vif    [NB_CORES],
+            virtual dcache_sram_if                                                 dc_sram_vif [NB_CORES],
+            ariane_cfg_t                                                           cfg,
+            string                                                                 name="std_dcache_checker"
+        );
+            this.name      = name;
+            this.ArianeCfg = cfg;
+            for (int c = 0; c < NB_CORES; c++) begin
+                this.sram_vif[c]    = sram_vif[c];
+                this.dc_sram_vif[c] = dc_sram_vif[c];
+            end
+        endfunction
+
+        // check the cache contents vs main memory and other caches on every write to the cache status
+        local task automatic mon_dcache;
+            $display("%t ns %s monitoring dcache", $time, name);
+            for (int c=0; c < NB_CORES; c++) begin
+                fork
+                    automatic int cc = c;
+
+                    begin
+                        forever begin
+                            if (dc_sram_vif[cc].vld_req && dc_sram_vif[cc].vld_we) begin
+                                logic [DCACHE_INDEX_WIDTH-DCACHE_BYTE_OFFSET-1:0] index;
+                                index = dc_sram_vif[cc].vld_index;
+                                $display("%t ns %s.monitor: Saw write to cache %0d, index 0x%3h",$time, name, cc, index);
+
+                                @(posedge dc_sram_vif[cc].clk);
+                                #0;
+
+                                for (int cw=0; cw<DCACHE_SET_ASSOC; cw++) begin
+                                    logic                         cc_valid, cc_dirty, cc_shared;
+                                    logic [DCACHE_TAG_WIDTH:0]    cc_tag;
+                                    logic [DCACHE_LINE_WIDTH-1:0] cc_data;
+                                    cc_dirty  = dc_sram_vif[cc].vld_sram[index][8*cw];
+                                    cc_valid  = dc_sram_vif[cc].vld_sram[index][8*cw+1];
+                                    cc_shared = dc_sram_vif[cc].vld_sram[index][8*cw+2];
+                                    cc_tag    = dc_sram_vif[cc].tag_sram[cw][index][DCACHE_TAG_WIDTH-1:0];
+                                    cc_data   = {dc_sram_vif[cc].data_sram[1][cw][index], dc_sram_vif[cc].data_sram[0][cw][index]};
+                                    if (cc_valid) begin
+                                        logic any_dirty;
+                                        any_dirty = cc_dirty;
+                                        // check entries in other caches
+                                        for (int oc=0; oc < NB_CORES; oc++) begin
+                                            if (oc != cc) begin
+                                                for (int ow=0; ow<DCACHE_SET_ASSOC; ow++) begin
+                                                    logic                         oc_valid, oc_dirty, oc_shared;
+                                                    logic [DCACHE_TAG_WIDTH:0]    oc_tag;
+                                                    logic [DCACHE_LINE_WIDTH-1:0] oc_data;
+                                                    oc_dirty  = dc_sram_vif[oc].vld_sram[index][8*ow];
+                                                    oc_valid  = dc_sram_vif[oc].vld_sram[index][8*ow+1];
+                                                    oc_shared = dc_sram_vif[oc].vld_sram[index][8*ow+2];
+                                                    oc_tag    = dc_sram_vif[oc].tag_sram[ow][index][DCACHE_TAG_WIDTH-1:0];
+                                                    oc_data   = {dc_sram_vif[oc].data_sram[1][ow][index], dc_sram_vif[oc].data_sram[0][ow][index]};
+                                                    if (oc_valid && (oc_tag == cc_tag)) begin
+                                                        any_dirty = any_dirty | oc_dirty;
+                                                        $display("%t ns %s.monitor: Cache match for index 0x%3h, tag 0x%16h between way %0d in core %0d and way %0d in core %0d",$time, name, index, cc_tag, cw, cc, ow, oc);
+
+                                                        // check that data matches
+                                                        a_data : assert (cc_data == oc_data) else
+                                                            $error("%s: Cache data mismatch for index %h, tag %h - core %0d, way %0d = 0x%16h_%16h, core %0d, way %0d = 0x%16h_%16h", name, index, cc_tag, cc, cw, cc_data[127:64], cc_data[63:0], oc, ow, oc_data[127:64], oc_data[63:0]);
+
+                                                        // If data is present in both caches they should be marked shared.
+                                                        // This will also implicitly check that a unique data is not present in
+                                                        // any other chache.
+                                                        a_cc_shared : assert (cc_shared) else
+                                                            $error("%s.monitor: Expected shared = 1 for index 0x%3h, tag 0x%16h, way %0d, core %0d, got 0", name, index, cc_tag, cw, cc);
+                                                        a_oc_shared : assert (oc_shared) else
+                                                            $error("%s.monitor: Expected shared = 1 for index 0x%3h, tag 0x%16h, way %0d, core %0d, got 0", name, index, oc_tag, ow, oc);
+
+                                                        // only one core could have the data marked as dirty
+                                                        if (cc_dirty) begin
+                                                            a_oc_clean : assert (!oc_dirty) else
+                                                                $error("%s.monitor: Expected dirty = 0 for index 0x%3h, tag 0x%16h, way %0d, core %0d, got 1", name, index, oc_tag, ow, oc);
+                                                        end
+
+
+                                                    end
+                                                end
+                                            end
+                                        end
+
+                                        // check that data matches SRAM for globally clean entries
+                                        if (!any_dirty) begin
+                                            logic [63:0] addr;
+                                            addr                  = {cc_tag, index};
+                                            sram_vif[cc].addr[cw] = (addr - (ArianeCfg.ExecuteRegionAddrBase[3] >> DCACHE_BYTE_OFFSET)) << 1;
+                                            #0
+                                            a_mem_data : assert (cc_data == sram_vif[cc].data[cw]) else
+                                                $error("%s: Cache vs Memory data mismatch for index %h, tag %h - core %0d, way %0d = 0x%16h_%16h, Memory[0x%16h] = 0x%16h_%16h", name, index, cc_tag, cc, cw, cc_data[127:64], cc_data[63:0], sram_vif[cc].addr[cw], sram_vif[cc].data[cw][1], sram_vif[cc].data[cw][0]);
+                                        end
+                                    end
+                                end
+                            end else begin
+                                @(posedge dc_sram_vif[cc].clk);
+                            end
+                        end
+                    end
+
+                join_none
+            end
+            wait fork;
+        endtask
+
+
+        task monitor;
+            mon_dcache();
+        endtask
+
+    endclass
+
 
 endpackage

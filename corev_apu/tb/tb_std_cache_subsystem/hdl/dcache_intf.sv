@@ -43,7 +43,7 @@ interface dcache_mgmt_intf (
 endinterface
 
 //------------------------------------------------------------------------------
-// interface to probe internal SRAM
+// interface to probe cache internal SRAMs
 //------------------------------------------------------------------------------
 interface dcache_sram_if (input logic clk);
     import ariane_pkg::*;
@@ -58,9 +58,14 @@ interface dcache_sram_if (input logic clk);
     typedef tag_t                            tag_sram_t  [DCACHE_NUM_WORDS-1:0];
     typedef vld_t                            vld_sram_t  [DCACHE_NUM_WORDS-1:0];
 
-    data_sram_t data_sram [1:0][DCACHE_SET_ASSOC-1:0];
-    tag_sram_t  tag_sram       [DCACHE_SET_ASSOC-1:0];
-    vld_sram_t  vld_sram;
+    data_sram_t                                       data_sram [1:0][DCACHE_SET_ASSOC-1:0];
+    tag_sram_t                                        tag_sram       [DCACHE_SET_ASSOC-1:0];
+    vld_sram_t                                        vld_sram;
+    logic                                             vld_req;
+    logic                                             vld_we;
+    logic [DCACHE_INDEX_WIDTH-DCACHE_BYTE_OFFSET-1:0] vld_index;
+
+
 endinterface
 
 //------------------------------------------------------------------------------
