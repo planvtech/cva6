@@ -74,5 +74,5 @@ endinterface
 interface dcache_gnt_if (input logic clk);
     logic [4:0] gnt;
     logic [4:0] rd_gnt;
-    logic [3:0] bypass_gnt;
+    logic [2:0] bypass_gnt;
 endinterface
