@@ -81,7 +81,7 @@ module pmp #(
                     no_locked &= 1'b0;
                 end else no_locked &= 1'b1;
             end
-            if (no_locked == 1'b1) assert(allow_o == 1'b1);
+            if (no_locked == 1'b1) assert #0 (allow_o == 1'b1);
         end
     end
     // synthesis translate_on
