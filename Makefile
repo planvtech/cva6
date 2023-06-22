@@ -135,13 +135,13 @@ endif
 # this list contains the standalone components
 src :=  core/include/$(target)_config_pkg.sv                                         \
         corev_apu/src/ariane.sv                                                      \
-        $(wildcard corev_apu/bootrom/*.sv)                                           \
-        $(wildcard corev_apu/clint/*.sv)                                             \
-        $(wildcard corev_apu/fpga/src/axi2apb/src/*.sv)                              \
-        $(wildcard corev_apu/fpga/src/apb_timer/*.sv)                                \
-        $(wildcard corev_apu/fpga/src/axi_slice/src/*.sv)                            \
-        $(wildcard corev_apu/src/axi_riscv_atomics/src/*.sv)                         \
-        $(wildcard corev_apu/axi_mem_if/src/*.sv)                                    \
+        $(subst $(root-dir),,$(wildcard $(root-dir)corev_apu/bootrom/*.sv))                   \
+        $(subst $(root-dir),,$(wildcard $(root-dir)corev_apu/clint/*.sv))                     \
+        $(subst $(root-dir),,$(wildcard $(root-dir)corev_apu/fpga/src/axi2apb/src/*.sv))      \
+        $(subst $(root-dir),,$(wildcard $(root-dir)corev_apu/fpga/src/apb_timer/*.sv))        \
+        $(subst $(root-dir),,$(wildcard $(root-dir)corev_apu/fpga/src/axi_slice/src/*.sv))    \
+        $(subst $(root-dir),,$(wildcard $(root-dir)corev_apu/src/axi_riscv_atomics/src/*.sv)) \
+        $(subst $(root-dir),,$(wildcard $(root-dir)corev_apu/axi_mem_if/src/*.sv))            \
         corev_apu/rv_plic/rtl/rv_plic_target.sv                                      \
         corev_apu/rv_plic/rtl/rv_plic_gateway.sv                                     \
         corev_apu/rv_plic/rtl/plic_regmap.sv                                         \
@@ -193,10 +193,14 @@ copro_src := core/cvxif_example/include/cvxif_instr_pkg.sv \
              $(wildcard core/cvxif_example/*.sv)
 copro_src := $(addprefix $(root-dir), $(copro_src))
 
-uart_src := $(wildcard corev_apu/fpga/src/apb_uart/src/*.vhd)
+uart_src := $(subst $(root-dir),,$(wildcard $(root-dir)corev_apu/fpga/src/apb_uart/src/*.vhd))
 uart_src := $(addprefix $(root-dir), $(uart_src))
 
-fpga_src :=  $(wildcard corev_apu/fpga/src/*.sv) $(wildcard corev_apu/fpga/src/bootrom/*.sv) $(wildcard corev_apu/fpga/src/ariane-ethernet/*.sv) common/local/util/tc_sram_fpga_wrapper.sv vendor/pulp-platform/fpga-support/rtl/SyncSpRamBeNx64.sv
+fpga_src :=  $(wildcard corev_apu/fpga/src/*.sv)                      \
+             $(wildcard corev_apu/fpga/src/bootrom/*.sv)              \
+             $(wildcard corev_apu/fpga/src/ariane-ethernet/*.sv)      \
+             common/local/util/tc_sram_fpga_wrapper.sv                \
+             vendor/pulp-platform/fpga-support/rtl/SyncSpRamBeNx64.sv
 fpga_src := $(addprefix $(root-dir), $(fpga_src))
 
 # look for testbenches
@@ -207,11 +211,11 @@ tbs := $(addprefix $(root-dir), $(tbs))
 # there is a definesd test-list with selected CI tests
 riscv-test-dir            := tmp/riscv-tests/build/isa/
 riscv-benchmarks-dir      := tmp/riscv-tests/build/benchmarks/
-riscv-asm-tests-list      := ci/riscv-asm-tests.list
-riscv-amo-tests-list      := ci/riscv-amo-tests.list
-riscv-mul-tests-list      := ci/riscv-mul-tests.list
-riscv-fp-tests-list       := ci/riscv-fp-tests.list
-riscv-benchmarks-list     := ci/riscv-benchmarks.list
+riscv-asm-tests-list      := $(root-dir)ci/riscv-asm-tests.list
+riscv-amo-tests-list      := $(root-dir)ci/riscv-amo-tests.list
+riscv-mul-tests-list      := $(root-dir)ci/riscv-mul-tests.list
+riscv-fp-tests-list       := $(root-dir)ci/riscv-fp-tests.list
+riscv-benchmarks-list     := $(root-dir)ci/riscv-benchmarks.list
 riscv-asm-tests           := $(shell xargs printf '\n%s' < $(riscv-asm-tests-list)  | cut -b 1-)
 riscv-amo-tests           := $(shell xargs printf '\n%s' < $(riscv-amo-tests-list)  | cut -b 1-)
 riscv-mul-tests           := $(shell xargs printf '\n%s' < $(riscv-mul-tests-list)  | cut -b 1-)
@@ -219,7 +223,7 @@ riscv-fp-tests            := $(shell xargs printf '\n%s' < $(riscv-fp-tests-list
 riscv-benchmarks          := $(shell xargs printf '\n%s' < $(riscv-benchmarks-list) | cut -b 1-)
 
 # Search here for include files (e.g.: non-standalone components)
-incdir := vendor/pulp-platform/common_cells/include/ vendor/pulp-platform/axi/include/ corev_apu/register_interface/include/
+incdir := vendor/pulp-platform/common_cells/include/ vendor/pulp-platform/axi/include/ corev_apu/register_interface/include/ 
 
 # Compile and sim flags
 compile_flag     += +cover=bcfst+/dut -incr -64 -nologo -quiet -suppress 13262 -permissive -svinputport=compat +define+$(defines)
@@ -230,7 +234,7 @@ compile_flag_vhd += -64 -nologo -quiet -2008
 
 # Iterate over all include directories and write them with +incdir+ prefixed
 # +incdir+ works for Verilator and QuestaSim
-list_incdir := $(foreach dir, ${incdir}, +incdir+$(dir))
+list_incdir := $(foreach dir, ${incdir}, +incdir+$(root-dir)$(dir))
 
 # RISCV torture setup
 riscv-torture-dir    := tmp/riscv-torture
@@ -284,11 +288,11 @@ build: $(library) $(library)/.build-srcs $(library)/.build-tb $(dpi-library)/ari
 
 # src files
 $(library)/.build-srcs: $(library)
-	$(VLOG) $(compile_flag) -timescale "1ns / 1ns" -work $(library) -pedanticerrors -f core/Flist.cva6 $(list_incdir) -suppress 2583 +defines+$(defines)
+	$(VLOG) $(compile_flag) -timescale "1ns / 1ns" -work $(library) -pedanticerrors -f $(root-dir)core/Flist.cva6 $(list_incdir) -suppress 2583 +defines+$(defines)
 	$(VLOG) $(compile_flag) -work $(library) $(filter %.sv,$(ariane_pkg)) $(list_incdir) -suppress 2583 +defines+$(defines)
 	# Suppress message that always_latch may not be checked thoroughly by QuestaSim.
 	$(VCOM) $(compile_flag_vhd) -work $(library) $(filter %.vhd,$(uart_src)) +defines+$(defines)
-	$(VLOG) $(compile_flag) -timescale "1ns / 1ns" -work $(library) -pedanticerrors $(filter %.sv,$(src)) $(tbs) $(list_incdir) -suppress 2583 +defines+$(defines)
+	$(VLOG) $(compile_flag) -timescale "1ns / 1ns" -work $(library) -pedanticerrors $(filter %.sv,$(src)) $(list_incdir) -suppress 2583 +defines+$(defines)
 	touch $(library)/.build-srcs
 
 # build TBs
@@ -643,7 +647,7 @@ check-torture:
 	grep 'All signatures match for $(test-location)' $(riscv-torture-dir)/$(test-location).log
 	diff -s $(riscv-torture-dir)/$(test-location).spike.sig $(riscv-torture-dir)/$(test-location).rtlsim.sig
 
-src_flist := $(addprefix $(root-dir), $(shell cat core/Flist.cva6|grep "$\{CVA6_REPO_DIR.\+sv"|sed "s/.*CVA6_REPO_DIR..//"|sed "s/..TARGET_CFG./$(target)/"))
+src_flist := $(addprefix $(root-dir), $(shell cat $(root-dir)/core/Flist.cva6|grep "$\{CVA6_REPO_DIR.\+sv"|sed "s/.*CVA6_REPO_DIR..//"|sed "s/..TARGET_CFG./$(target)/"))
 fpga_filter := $(addprefix $(root-dir), corev_apu/bootrom/bootrom.sv)
 fpga_filter += $(addprefix $(root-dir), core/include/instr_tracer_pkg.sv)
 fpga_filter += $(addprefix $(root-dir), src/util/ex_trace_item.sv)
@@ -672,7 +676,7 @@ clean:
 	rm -rf $(riscv-torture-dir)/output/test*
 	rm -rf $(library)/ $(dpi-library)/ $(ver-library)/ $(vcs-library)/
 	rm -f tmp/*.ucdb tmp/*.log *.wlf *vstf wlft* *.ucdb
-	cd corev_apu/fpga && make clean && cd ../..
+	cd $(root-dir)corev_apu/fpga && make clean && cd ../..
 
 .PHONY:
 	build sim sim-verilate clean                                              \
