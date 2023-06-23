@@ -26,7 +26,7 @@
 
 
 module cva6_icache import ariane_pkg::*; import wt_cache_pkg::*; #(
-  parameter logic [CACHE_ID_WIDTH-1:0]  RdTxId             = 0,                                  // ID to be used for read transactions
+  parameter logic [MEM_TID_WIDTH-1:0]   RdTxId             = 0,                                  // ID to be used for read transactions
   parameter ariane_pkg::ariane_cfg_t    ArianeCfg          = ariane_pkg::ArianeDefaultConfig     // contains cacheable regions
 ) (
   input  logic                      clk_i,
@@ -116,7 +116,7 @@ module cva6_icache import ariane_pkg::*; import wt_cache_pkg::*; #(
   assign cl_index    = vaddr_d[ICACHE_INDEX_WIDTH-1:ICACHE_OFFSET_WIDTH];
 
 
-  if (ArianeCfg.Axi64BitCompliant) begin : gen_axi_offset
+  if (ArianeCfg.AxiCompliant) begin : gen_axi_offset
     // if we generate a noncacheable access, the word will be at offset 0 or 4 in the cl coming from memory
     assign cl_offset_d = ( dreq_o.ready & dreq_i.req)      ? {dreq_i.vaddr>>2, 2'b0} :
                          ( paddr_is_nc  & mem_data_req_o ) ? cl_offset_q[2]<<2 : // needed since we transfer 32bit over a 64bit AXI bus in this case
@@ -372,7 +372,7 @@ end else begin : gen_piton_offset
 
   // generate random cacheline index
   lfsr #(
-    .LfsrWidth  ( ariane_pkg::ICACHE_SET_ASSOC        ),
+    .LfsrWidth  ( 8                                   ),
     .OutWidth   ( $clog2(ariane_pkg::ICACHE_SET_ASSOC))
   ) i_lfsr (
     .clk_i          ( clk_i       ),

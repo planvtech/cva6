@@ -39,6 +39,14 @@ def setup_parser_config_generator():
                       help="C extension enable ? 1 : enable, 0 : disable")
   parser.add_argument("--a_ext", type=int, default=None, choices=[0,1],
                       help="A extension enable ? 1 : enable, 0 : disable")
+  parser.add_argument("--b_ext", type=int, default=None, choices=[0,1],
+                      help="B extension enable ? 1 : enable, 0 : disable")
+  parser.add_argument("--AxiIdWidth", type=int, default=None,
+                      help="AXI transaction ID width")
+  parser.add_argument("--AxiAddrWidth", type=int, default=None,
+                      help="AXI address width")
+  parser.add_argument("--AxiDataWidth", type=int, default=None,
+                      help="AXI data width")
   parser.add_argument("--iuser_en", type=int, default=None, choices=[0,1],
                       help="Fetch User enable ? 1 : enable, 0 : disable")
   parser.add_argument("--iuser_w", type=int, default=None, choices=list(range(1,64)),
@@ -49,6 +57,54 @@ def setup_parser_config_generator():
                       help="Data User Width ? [1-64]")
   parser.add_argument("--RenameEn", type=int, default=None, choices=[0,1],
                       help="RenameEn ? 1 : enable, 0 : disable")
+  parser.add_argument("--IcacheByteSize", type=int, default=None,
+                      help="Instruction cache size in bytes")
+  parser.add_argument("--IcacheSetAssoc", type=int, default=None,
+                      help="Instruction cache associativity")
+  parser.add_argument("--IcacheLineWidth", type=int, default=None,
+                      help="Instruction cache line width")
+  parser.add_argument("--DcacheByteSize", type=int, default=None,
+                      help="Data cache size in bytes")
+  parser.add_argument("--DcacheSetAssoc", type=int, default=None,
+                      help="Data cache associativity")
+  parser.add_argument("--DcacheLineWidth", type=int, default=None,
+                      help="Data cache line width")
+  parser.add_argument("--DcacheIdWidth", type=int, default=None,
+                      help="Data cache TID width")
+  parser.add_argument("--MemTidWidth", type=int, default=None,
+                      help="Memory TID width")
+  parser.add_argument("--WtDcacheWbufDepth", type=int, default=None,
+                      help="WT data cache WBUF depth")
+  parser.add_argument("--NrCommitPorts", type=int, default=None, choices=[1,2],
+                      help="Number of commit ports")
+  parser.add_argument("--NrScoreboardEntries", type=int, default=None,
+                      help="Number of scoreboard entries")
+  parser.add_argument("--FPGAEn", type=int, default=None, choices=[0,1],
+                      help="Use FPGA-specific hardware")
+  parser.add_argument("--NrLoadPipeRegs", type=int, default=None,
+                      help="Load latency")
+  parser.add_argument("--NrStorePipeRegs", type=int, default=None,
+                      help="Store latency")
+  parser.add_argument("--InstrTlbEntries", type=int, default=None,
+                      help="Number of instruction TLB entries")
+  parser.add_argument("--DataTlbEntries", type=int, default=None,
+                      help="Number of data TLB entries")
+  parser.add_argument("--RASDepth", type=int, default=None,
+                      help="Depth of Return Address Stack")
+  parser.add_argument("--BTBEntries", type=int, default=None,
+                      help="Number of Branch Target Buffer entries")
+  parser.add_argument("--BHTEntries", type=int, default=None,
+                      help="Number of Branch History Table entries")
+  parser.add_argument("--NrPMPEntries", type=int, default=None,
+                      help="Number of PMP entries")
+  parser.add_argument("--PerfCounterEn", type=int, default=None,
+                      help="Enable performance counters")
+  parser.add_argument("--DcacheType", type=str, default=None, choices=["WB", "WT"],
+                      help="Cache type (WB or WT)")
+  parser.add_argument("--MmuPresent", type=int, default=None, choices=[0, 1],
+                      help="Use an MMU ? 1 : enable, 0 : disable")
+  parser.add_argument("--RvfiTrace", type=int, default=None, choices=[0, 1],
+                      help="Output an RVFI trace ? 1 : enable, 0 : disable")
   return parser
 
 ISA = ""
@@ -65,11 +121,42 @@ MapArgsToParameter={
   "cvxif" : "CVA6ConfigCvxifEn",
   "c_ext" : "CVA6ConfigCExtEn",
   "a_ext" : "CVA6ConfigAExtEn",
+  "b_ext" : "CVA6ConfigBExtEn",
+  "AxiIdWidth" : "CVA6ConfigAxiIdWidth",
+  "AxiAddrWidth" : "CVA6ConfigAxiAddrWidth",
+  "AxiDataWidth" : "CVA6ConfigAxiDataWidth",
   "iuser_en" : "CVA6ConfigFetchUserEn",
   "iuser_w" : "CVA6ConfigFetchUserWidth",
   "duser_en" : "CVA6ConfigDataUserEn",
   "duser_w" : "CVA6ConfigDataUserWidth",
   "RenameEn" : "CVA6ConfigRenameEn",
+  "IcacheByteSize" : "CVA6ConfigIcacheByteSize",
+  "IcacheSetAssoc" : "CVA6ConfigIcacheSetAssoc",
+  "IcacheLineWidth" : "CVA6ConfigIcacheLineWidth",
+  "DcacheByteSize" : "CVA6ConfigDcacheByteSize",
+  "DcacheSetAssoc" : "CVA6ConfigDcacheSetAssoc",
+  "DcacheLineWidth" : "CVA6ConfigDcacheLineWidth",
+  "DcacheIdWidth" : "CVA6ConfigDcacheIdWidth",
+  "DcacheIdWidth": "CVA6ConfigDcacheIdWidth",
+  "MemTidWidth": "CVA6ConfigMemTidWidth",
+  "WtDcacheWbufDepth": "CVA6ConfigWtDcacheWbufDepth",
+  "NrCommitPorts" : "CVA6ConfigNrCommitPorts",
+  "NrScoreboardEntries" : "CVA6ConfigNrScoreboardEntries",
+  "FPGAEn" : "CVA6ConfigFPGAEn",
+  "NrLoadPipeRegs" : "CVA6ConfigNrLoadPipeRegs",
+  "NrStorePipeRegs" : "CVA6ConfigNrStorePipeRegs",
+  "InstrTlbEntries" : "CVA6ConfigInstrTlbEntries",
+  "DataTlbEntries" : "CVA6ConfigDataTlbEntries",
+  "RASDepth": "CVA6ConfigRASDepth",
+  "BTBEntries": "CVA6ConfigBTBEntries",
+  "BHTEntries": "CVA6ConfigBHTEntries",
+  "NrPMPEntries": "CVA6ConfigNrPMPEntries",
+  "PerfCounterEn": "CVA6ConfigPerfCounterEn",
+  "DcacheType": "CVA6ConfigDcacheType",
+  "MmuPresent": "CVA6ConfigMmuPresent",
+  "RvfiTrace": "RVFI_PORT",
+  # Ignored parameters
+  "ignored": "CVA6ConfigRvfiTrace",
 }
 MapParametersToArgs = {i:k for k, i in MapArgsToParameter.items()} #reverse map
 
@@ -89,36 +176,50 @@ def generate_config(argv):
     gen = "gen64"
     Args['xlen'] = 64
     MABI = "lp64"
-  os.system("cp core/Flist."+Args['default_config']+" core/Flist."+gen) #copy Flist
-  os.system("cp core/include/"+Args['default_config']+"_config_pkg.sv core/include/"+gen+"_config_pkg.sv") # copy package
-  Flistfile = open("core/Flist."+gen, "r")
-  Flistlines = []
-  for line in Flistfile :
-    line = re.sub(r"(\${CVA6_REPO_DIR}/core/include/)"+Args['default_config']+"(_config_pkg.sv)", r"\g<1>"+gen+"\g<2>", line) # change package name in Flist to the one generated
-    Flistlines.append(line)
-  Flistfile = open("core/Flist."+gen, "w")
-  Flistfile.writelines(Flistlines)
-  Flistfile.close
-  for i in Args:
-    configfile = open("core/include/"+gen+"_config_pkg.sv", "r")
-    if i not in ['default_config', 'isa', 'xlen']:
-      if Args[i] != None:
-        print("setting", i, "to", Args[i])
-        alllines = []
-        lineXlen = None
-        for line in configfile :
-          lineXlen = re.match(r"(    localparam CVA6ConfigXlen = )(?P<value>.*)(;)", line) if lineXlen == None else lineXlen
-          line = re.sub(r"(    localparam "+MapArgsToParameter[i]+" = )(.*)(;)", r"\g<1>"+str(Args[i])+"\g<3>", line) # change parameter if required by Args
-          alllines.append(line)
-          linematch = re.match(r"(    localparam (CVA6Config)(?P<param>.*) = )(?P<value>.*)(;)", line) # and read the modified line to know which configuration we are creating
-          if linematch:
-            Param = MapParametersToArgs['CVA6Config'+linematch.group('param')]
-            Config[Param] = lineXlen.group('value') if linematch.group('value') == "CVA6ConfigXlen" else linematch.group('value')
-            for k in Config.keys():
-              Config[k] = int(Config[k]) # Convert value from str to int
-        configfile = open("core/include/"+gen+"_config_pkg.sv", "w")
-        configfile.writelines(alllines)
-  configfile.close
+
+  # Read file
+  alllines = []
+  with open("core/include/" + Args['default_config'] + "_config_pkg.sv", "r") as in_f:
+    alllines = in_f.readlines()
+
+  # Apply cmdline args to override individual localparam values.
+  for name, value in Args.items():
+    if name not in ['default_config', 'isa', 'xlen'] and value is not None:
+      param = MapArgsToParameter[name]
+      print("setting", name, "to", value)
+      for i, line in enumerate(alllines):
+        line = re.sub(r"^(\s*localparam\s+"+param+r"\s*=\s*)(.*)(;\s*)$", r"\g<1>"+str(value)+r"\g<3>", line)
+        if isinstance(value, int) and value in [0, 1]:
+            preproc_regexp = r"^(\s*`\s*)(define|undef)(\s+" + param + r"\s*)$"
+            directive = "define" if value == 1 else "undef"
+            line = re.sub(preproc_regexp, r"\g<1>" + directive + r"\g<3>", line)
+        alllines[i] = line
+
+  # Build Config and warn about localparams which have no matching cmdline option associated with them.
+  for line in alllines:
+    linematch = re.match(r"^(\s*localparam\s+CVA6Config(?P<param>\w*)\s*=\s*)(?P<value>.*)(;\s*)$", line)
+    if linematch:
+      param = 'CVA6Config'+linematch.group('param')
+      value = linematch.group('value')
+      if linematch:
+        try:
+          arg = MapParametersToArgs[param]
+          if value == "CVA6ConfigXlen":
+              Config[arg] = Config['xlen']
+          elif value == "WB":
+              Config[arg] = 0
+          elif value == "WT":
+              Config[arg] = 1
+          else:
+              Config[arg] = int(value)
+        except KeyError:
+          print(f"WARNING: CVA6 configuration parameter '{param}' not supported yet via cmdline args,",
+                "\n\t consider extending script 'config_pkg_generator.py'!")
+
+  # Write new file
+  with open("core/include/"+gen+"_config_pkg.sv", "w") as out_f:
+    out_f.writelines(alllines)
+
   print("[Generating configuration Done]")
   return [ISA, MABI, gen, Config] # return ISA, MABI, gen (for testharness), Config for cva6.py in core-v-verif
 

@@ -116,7 +116,14 @@ module ex_stage import ariane_pkg::*; #(
     output logic                                   dtlb_miss_o,
     // PMPs
     input  riscv::pmpcfg_t [15:0]                  pmpcfg_i,
-    input  logic[15:0][riscv::PLEN-3:0]            pmpaddr_i
+    input  logic[15:0][riscv::PLEN-3:0]            pmpaddr_i,
+
+    // RVFI
+    output [riscv::VLEN-1:0]                       lsu_addr_o,
+    output [riscv::PLEN-1:0]                       mem_paddr_o,
+    output [(riscv::XLEN/8)-1:0]                   lsu_rmask_o,
+    output [(riscv::XLEN/8)-1:0]                   lsu_wmask_o,
+    output [ariane_pkg::TRANS_ID_BITS-1:0]         lsu_addr_trans_id_o
 );
 
     // -------------------------
@@ -327,7 +334,12 @@ module ex_stage import ariane_pkg::*; #(
         .amo_req_o,
         .amo_resp_i,
         .pmpcfg_i,
-        .pmpaddr_i
+        .pmpaddr_i,
+        .lsu_addr_o,
+        .mem_paddr_o,
+        .lsu_rmask_o,
+        .lsu_wmask_o,
+        .lsu_addr_trans_id_o
     );
 
     if (CVXIF_PRESENT) begin : gen_cvxif
@@ -356,28 +368,28 @@ module ex_stage import ariane_pkg::*; #(
         assign x_valid_o     = '0;
     end
 
-	always_ff @(posedge clk_i or negedge rst_ni) begin
-	    if (~rst_ni) begin
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (~rst_ni) begin
           current_instruction_is_sfence_vma <= 1'b0;
-		  end else begin
+          end else begin
           if (flush_i) begin
               current_instruction_is_sfence_vma <= 1'b0;
-          end else if ((fu_data_i.operator == SFENCE_VMA) && csr_valid_i) begin
+          end else if ((fu_data_i.operation == SFENCE_VMA) && csr_valid_i) begin
               current_instruction_is_sfence_vma <= 1'b1;
           end
       end
   end
 
   // This process stores the rs1 and rs2 parameters of a SFENCE_VMA instruction.
-	always_ff @(posedge clk_i or negedge rst_ni) begin
-		if (~rst_ni) begin
-		    asid_to_be_flushed  <= '0;
-			  vaddr_to_be_flushed <=  '0;
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (~rst_ni) begin
+            asid_to_be_flushed  <= '0;
+              vaddr_to_be_flushed <=  '0;
     // if the current instruction in EX_STAGE is a sfence.vma, in the next cycle no writes will happen
-		end else if ((~current_instruction_is_sfence_vma) && (~((fu_data_i.operator == SFENCE_VMA) && csr_valid_i))) begin
-			  vaddr_to_be_flushed <=  rs1_forwarding_i;
-			  asid_to_be_flushed  <= rs2_forwarding_i[ASID_WIDTH-1:0];
-		end
-	end
+        end else if ((~current_instruction_is_sfence_vma) && (~((fu_data_i.operation == SFENCE_VMA) && csr_valid_i))) begin
+              vaddr_to_be_flushed <=  rs1_forwarding_i;
+              asid_to_be_flushed  <= rs2_forwarding_i[ASID_WIDTH-1:0];
+        end
+    end
 
 endmodule

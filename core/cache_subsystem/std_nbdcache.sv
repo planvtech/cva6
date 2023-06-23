@@ -15,8 +15,11 @@
 
 module std_nbdcache import std_cache_pkg::*; import ariane_pkg::*; #(
     parameter ariane_cfg_t ArianeCfg        = ArianeDefaultConfig, // contains cacheable regions
-    parameter type mst_req_t = logic,
-    parameter type mst_resp_t = logic
+    parameter int unsigned AXI_ADDR_WIDTH   = 0,
+    parameter int unsigned AXI_DATA_WIDTH   = 0,
+    parameter int unsigned AXI_ID_WIDTH     = 0,
+    parameter type axi_req_t = ariane_axi::req_t,
+    parameter type axi_rsp_t = ariane_axi::resp_t
 )(
     input logic  clk_i, // Clock
     input logic  rst_ni, // Asynchronous reset active low
@@ -32,13 +35,12 @@ module std_nbdcache import std_cache_pkg::*; import ariane_pkg::*; #(
     input        dcache_req_i_t [2:0] req_ports_i, // request ports
     output       dcache_req_o_t [2:0] req_ports_o, // request ports
     // Cache AXI refill port
-    output       mst_req_t axi_data_o,
-    input        mst_resp_t axi_data_i,
-    output       mst_req_t axi_bypass_o,
-    input        mst_resp_t axi_bypass_i,
-    output       ariane_ace::snoop_resp_t snoop_port_o,
-    input        ariane_ace::snoop_req_t snoop_port_i
-
+    output axi_req_t                       axi_data_o,
+    input  axi_rsp_t                       axi_data_i,
+    output axi_req_t                       axi_bypass_o,
+    input  axi_rsp_t                       axi_bypass_i,
+    output ariane_ace::snoop_resp_t        snoop_port_o,
+    input  ariane_ace::snoop_req_t         snoop_port_i
 );
 
 import std_cache_pkg::*;
@@ -174,82 +176,52 @@ import std_cache_pkg::*;
         end
     endgenerate
 
-  ariane_ace::m2s_nosnoop_t axi_nosnoop_data_o, axi_nosnoop_bypass_o;
-  ariane_ace::s2m_nosnoop_t axi_nosnoop_data_i, axi_nosnoop_bypass_i;
-
-  assign axi_data_o.aw = axi_nosnoop_data_o.aw;
-  assign axi_data_o.aw_valid = axi_nosnoop_data_o.aw_valid;
-  assign axi_data_o.w = axi_nosnoop_data_o.w;
-  assign axi_data_o.w_valid = axi_nosnoop_data_o.w_valid;
-  assign axi_data_o.b_ready = axi_nosnoop_data_o.b_ready;
-  assign axi_data_o.ar = axi_nosnoop_data_o.ar;
-  assign axi_data_o.ar_valid = axi_nosnoop_data_o.ar_valid;
-  assign axi_data_o.r_ready = axi_nosnoop_data_o.r_ready;
-  assign axi_nosnoop_data_i.aw_ready = axi_data_i.aw_ready;
-  assign axi_nosnoop_data_i.ar_ready = axi_data_i.ar_ready;
-  assign axi_nosnoop_data_i.w_ready = axi_data_i.w_ready;
-  assign axi_nosnoop_data_i.b_valid = axi_data_i.b_valid;
-  assign axi_nosnoop_data_i.b = axi_data_i.b;
-  assign axi_nosnoop_data_i.r_valid = axi_data_i.r_valid;
-  assign axi_nosnoop_data_i.r = axi_data_i.r;
-  assign axi_bypass_o.aw = axi_nosnoop_bypass_o.aw;
-  assign axi_bypass_o.aw_valid = axi_nosnoop_bypass_o.aw_valid;
-  assign axi_bypass_o.w = axi_nosnoop_bypass_o.w;
-  assign axi_bypass_o.w_valid = axi_nosnoop_bypass_o.w_valid;
-  assign axi_bypass_o.b_ready = axi_nosnoop_bypass_o.b_ready;
-  assign axi_bypass_o.ar = axi_nosnoop_bypass_o.ar;
-  assign axi_bypass_o.ar_valid = axi_nosnoop_bypass_o.ar_valid;
-  assign axi_bypass_o.r_ready = axi_nosnoop_bypass_o.r_ready;
-  assign axi_nosnoop_bypass_i.aw_ready = axi_bypass_i.aw_ready;
-  assign axi_nosnoop_bypass_i.ar_ready = axi_bypass_i.ar_ready;
-  assign axi_nosnoop_bypass_i.w_ready = axi_bypass_i.w_ready;
-  assign axi_nosnoop_bypass_i.b_valid = axi_bypass_i.b_valid;
-  assign axi_nosnoop_bypass_i.b = axi_bypass_i.b;
-  assign axi_nosnoop_bypass_i.r_valid = axi_bypass_i.r_valid;
-  assign axi_nosnoop_bypass_i.r = axi_bypass_i.r;
-
     // ------------------
     // Miss Handling Unit
     // ------------------
     miss_handler #(
-        .NR_PORTS   ( 3                         ),
-        .ArianeCfg  ( ArianeCfg                 ),
-        .mst_req_t  ( ariane_ace::m2s_nosnoop_t ),
-        .mst_resp_t ( ariane_ace::s2m_nosnoop_t )
+        .ArianeCfg              ( ArianeCfg            ),
+        .NR_PORTS               ( 3                    ),
+        .AXI_ADDR_WIDTH         ( AXI_ADDR_WIDTH       ),
+        .AXI_DATA_WIDTH         ( AXI_DATA_WIDTH       ),
+        .AXI_ID_WIDTH           ( AXI_ID_WIDTH         ),
+        .axi_req_t              ( axi_req_t            ),
+        .axi_rsp_t              ( axi_rsp_t            )
     ) i_miss_handler (
         .flush_i                 ( flush_i              ),
         .busy_i                  ( |busy                ),
         // AMOs
-        .amo_req_i               ( amo_req_i            ),
-        .amo_resp_o              ( amo_resp_o           ),
-        // invalidate
-        .snoop_invalidate_i      ( invalidate           ),
-        .snoop_invalidate_addr_i ( invalidate_addr      ),
-        // bypass
-        .miss_req_i              ( miss_req             ),
-        .miss_gnt_o              ( miss_gnt             ),
-        .bypass_gnt_o            ( bypass_gnt           ),
-        .bypass_valid_o          ( bypass_valid         ),
-        .bypass_data_o           ( bypass_data          ),
-        .critical_word_o         ( critical_word        ),
-        .critical_word_valid_o   ( critical_word_valid  ),
-        .mshr_addr_i             ( mshr_addr            ),
-        .mshr_addr_matches_o     ( mshr_addr_matches    ),
-        .mshr_index_matches_o    ( mshr_index_matches   ),
-        //
-        .active_serving_o        ( active_serving       ),
-        .flushing_o              ( flushing             ),
-        .req_o                   ( req              [0] ),
-        .addr_o                  ( addr             [0] ),
-        .data_i                  ( rdata                ),
-        .be_o                    ( be               [0] ),
-        .data_o                  ( wdata            [0] ),
-        .we_o                    ( we               [0] ),
-        .axi_bypass_o            ( axi_nosnoop_bypass_o ),
-        .axi_bypass_i            ( axi_nosnoop_bypass_i ),
-        .axi_data_o              ( axi_nosnoop_data_o   ),
-        .axi_data_i              ( axi_nosnoop_data_i   ),
-        .updating_cache_o        ( updating_cache   [0] ),
+
+
+
+
+        .amo_req_i              ( amo_req_i            ),
+        .amo_resp_o             ( amo_resp_o           ),
+        .snoop_invalidate_i     ( invalidate           ),
+        .snoop_invalidate_addr_i( invalidate_addr      ),
+        .miss_req_i             ( miss_req             ),
+        .miss_gnt_o             ( miss_gnt             ),
+        .bypass_gnt_o           ( bypass_gnt           ),
+        .bypass_valid_o         ( bypass_valid         ),
+        .bypass_data_o          ( bypass_data          ),
+        .critical_word_o        ( critical_word        ),
+        .critical_word_valid_o  ( critical_word_valid  ),
+        .mshr_addr_i            ( mshr_addr            ),
+        .mshr_addr_matches_o    ( mshr_addr_matches    ),
+        .mshr_index_matches_o   ( mshr_index_matches   ),
+        .active_serving_o       ( active_serving       ),
+        .flushing_o             ( flushing             ),
+        .req_o                  ( req             [0]  ),
+        .addr_o                 ( addr            [0]  ),
+        .data_i                 ( rdata                ),
+        .be_o                   ( be              [0]  ),
+        .data_o                 ( wdata           [0]  ),
+        .we_o                   ( we              [0]  ),
+        .axi_bypass_o,
+        .axi_bypass_i,
+        .axi_data_o,
+        .axi_data_i,
+        .updating_cache_o       ( updating_cache   [0] ),
         .*
     );
 
@@ -362,8 +334,7 @@ import std_cache_pkg::*;
 
 //pragma translate_off
     initial begin
-        assert ($bits(axi_data_o.aw.addr) == 64) else $fatal(1, "Ariane needs a 64-bit bus");
-        assert (DCACHE_LINE_WIDTH/64 inside {2, 4, 8, 16}) else $fatal(1, "Cache line size needs to be a power of two multiple of 64");
+        assert (DCACHE_LINE_WIDTH/AXI_DATA_WIDTH inside {2, 4, 8, 16}) else $fatal(1, "Cache line size needs to be a power of two multiple of AXI_DATA_WIDTH");
     end
 //pragma translate_on
 endmodule

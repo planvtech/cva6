@@ -496,49 +496,49 @@ module dcache_checker import ariane_pkg::*; import std_cache_pkg::*; import tb_p
     OK = 1'b1;
 
     // check the target_way
-    if (cache_status[current_req.mem_idx][target_way].dirty != i_dut.valid_dirty_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][8*target_way]) begin
+    if (cache_status[current_req.mem_idx][target_way].dirty != i_dut.valid_dirty_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][8*target_way]) begin
       OK = 1'b0;
-      $error("Cache mismatch index %h tag %h way %h - dirty bit: expected %d, actual %d", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].dirty, i_dut.valid_dirty_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][8*target_way]);
+      $error("Cache mismatch index %h tag %h way %h - dirty bit: expected %d, actual %d", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].dirty, i_dut.valid_dirty_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][8*target_way]);
     end
-    if (cache_status[current_req.mem_idx][target_way].valid != i_dut.valid_dirty_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][8*target_way+1]) begin
+    if (cache_status[current_req.mem_idx][target_way].valid != i_dut.valid_dirty_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][8*target_way+1]) begin
       OK = 1'b0;
-      $error("Cache mismatch index %h tag %h way %h - valid bit: expected %d, actual %d", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].valid, i_dut.valid_dirty_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][8*target_way+1]);
+      $error("Cache mismatch index %h tag %h way %h - valid bit: expected %d, actual %d", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].valid, i_dut.valid_dirty_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][8*target_way+1]);
     end
-    if (cache_status[current_req.mem_idx][target_way].shared != i_dut.valid_dirty_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][8*target_way+2]) begin
+    if (cache_status[current_req.mem_idx][target_way].shared != i_dut.valid_dirty_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][8*target_way+2]) begin
       OK = 1'b0;
-      $error("Cache mismatch index %h tag %h way %h - shared bit: expected %d, actual %d", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].shared, i_dut.valid_dirty_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][8*target_way+2]);
+      $error("Cache mismatch index %h tag %h way %h - shared bit: expected %d, actual %d", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].shared, i_dut.valid_dirty_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][8*target_way+2]);
     end
-    if (cache_status[current_req.mem_idx][0].tag != i_dut.sram_block[0].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
+    if (cache_status[current_req.mem_idx][0].tag != i_dut.sram_block[0].tag_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
       OK = 1'b0;
-      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[0].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
+      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[0].tag_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
     end
-    if (cache_status[current_req.mem_idx][1].tag != i_dut.sram_block[1].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
+    if (cache_status[current_req.mem_idx][1].tag != i_dut.sram_block[1].tag_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
       OK = 1'b0;
-      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[1].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
+      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[1].tag_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
     end
-    if (cache_status[current_req.mem_idx][2].tag != i_dut.sram_block[2].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
+    if (cache_status[current_req.mem_idx][2].tag != i_dut.sram_block[2].tag_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
       OK = 1'b0;
-      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[2].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
+      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[2].tag_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
     end
-    if (cache_status[current_req.mem_idx][3].tag != i_dut.sram_block[3].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
+    if (cache_status[current_req.mem_idx][3].tag != i_dut.sram_block[3].tag_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
       OK = 1'b0;
-      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[3].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
+      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[3].tag_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
     end
-    if (cache_status[current_req.mem_idx][4].tag != i_dut.sram_block[4].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
+    if (cache_status[current_req.mem_idx][4].tag != i_dut.sram_block[4].tag_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
       OK = 1'b0;
-      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[4].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
+      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[4].tag_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
     end
-    if (cache_status[current_req.mem_idx][5].tag != i_dut.sram_block[5].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
+    if (cache_status[current_req.mem_idx][5].tag != i_dut.sram_block[5].tag_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
       OK = 1'b0;
-      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[5].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
+      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[5].tag_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
     end
-    if (cache_status[current_req.mem_idx][6].tag != i_dut.sram_block[6].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
+    if (cache_status[current_req.mem_idx][6].tag != i_dut.sram_block[6].tag_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
       OK = 1'b0;
-      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[6].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
+      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[6].tag_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
     end
-    if (cache_status[current_req.mem_idx][7].tag != i_dut.sram_block[7].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
+    if (cache_status[current_req.mem_idx][7].tag != i_dut.sram_block[7].tag_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]) begin
       OK = 1'b0;
-      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[7].tag_sram.gen_cut[0].gen_mem.i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
+      $error("Cache mismatch index %h tag %h way %h - tag: expected %h, actual %h", current_req.index, current_req.tag, target_way, cache_status[current_req.mem_idx][target_way].tag, i_dut.sram_block[7].tag_sram.gen_cut[0].i_tc_sram_wrapper.i_tc_sram.sram[current_req.mem_idx][47:0]);
     end
   endtask
 

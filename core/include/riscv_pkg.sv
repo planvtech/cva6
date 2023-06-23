@@ -77,6 +77,27 @@ package riscv;
 
     typedef struct packed {
         logic         sd;     // signal dirty state - read-only
+        logic [62:34] wpri6;  // writes preserved reads ignored
+        xlen_e        uxl;    // variable user mode xlen - hardwired to zero
+        logic [12:0]  wpri5;  // writes preserved reads ignored
+        logic         mxr;    // make executable readable
+        logic         sum;    // permit supervisor user memory access
+        logic         wpri4;  // writes preserved reads ignored
+        xs_t          xs;     // extension register - hardwired to zero
+        xs_t          fs;     // floating point extension register
+        logic [1:0]   wpri3;  // writes preserved reads ignored
+        xs_t          vs;     // vector extension register
+        logic         spp;    // holds the previous privilege mode up to supervisor
+        logic         wpri2;  // writes preserved reads ignored
+        logic         ube;    // UBE controls whether explicit load and store memory accesses made from U-mode are little-endian (UBE=0) or big-endian (UBE=1)
+        logic         spie;   // supervisor interrupts enable bit active prior to trap
+        logic [1:0]   wpri1;  // writes preserved reads ignored
+        logic         sie;    // supervisor interrupts enable
+        logic         wpri0;  // writes preserved reads ignored
+    } sstatus_rv_t;
+    
+    typedef struct packed {
+        logic         sd;     // signal dirty state - read-only
         logic [62:36] wpri4;  // writes preserved reads ignored
         xlen_e        sxl;    // variable supervisor mode xlen - hardwired to zero
         xlen_e        uxl;    // variable user mode xlen - hardwired to zero
@@ -90,17 +111,17 @@ package riscv;
         xs_t          xs;     // extension register - hardwired to zero
         xs_t          fs;     // floating point extension register
         priv_lvl_t    mpp;    // holds the previous privilege mode up to machine
-        logic [1:0]   wpri2;  // writes preserved reads ignored
+        xs_t          vs;     // vector extension register
         logic         spp;    // holds the previous privilege mode up to supervisor
         logic         mpie;   // machine interrupts enable bit active prior to trap
-        logic         wpri1;  // writes preserved reads ignored
+        logic         ube;    // UBE controls whether explicit load and store memory accesses made from U-mode are little-endian (UBE=0) or big-endian (UBE=1)
         logic         spie;   // supervisor interrupts enable bit active prior to trap
-        logic         upie;   // user interrupts enable bit active prior to trap - hardwired to zero
+        logic         wpri2;  // writes preserved reads ignored
         logic         mie;    // machine interrupts enable
-        logic         wpri0;  // writes preserved reads ignored
+        logic         wpri1;  // writes preserved reads ignored
         logic         sie;    // supervisor interrupts enable
-        logic         uie;    // user interrupts enable - hardwired to zero
-    } status_rv_t;
+        logic         wpri0;  // writes preserved reads ignored
+    } mstatus_rv_t;
 
     typedef struct packed {
         logic [ModeW-1:0] mode;
@@ -274,7 +295,7 @@ package riscv;
     // memory management, pte for sv39
     typedef struct packed {
         logic [9:0]  reserved;
-        logic [44-1:0] ppn; // PPN length for 
+        logic [44-1:0] ppn; // PPN length for
         logic [1:0]  rsw;
         logic d;
         logic a;
@@ -288,7 +309,7 @@ package riscv;
 
     // memory management, pte for sv32
     typedef struct packed {
-        logic [22-1:0] ppn; // PPN length for 
+        logic [22-1:0] ppn; // PPN length for
         logic [1:0]  rsw;
         logic d;
         logic a;
@@ -333,12 +354,12 @@ package riscv;
     localparam logic [XLEN-1:0] MIP_SEIP = 1 << IRQ_S_EXT;
     localparam logic [XLEN-1:0] MIP_MEIP = 1 << IRQ_M_EXT;
 
-    localparam logic [XLEN-1:0] S_SW_INTERRUPT    = (1 << (XLEN-1)) | IRQ_S_SOFT;
-    localparam logic [XLEN-1:0] M_SW_INTERRUPT    = (1 << (XLEN-1)) | IRQ_M_SOFT;
-    localparam logic [XLEN-1:0] S_TIMER_INTERRUPT = (1 << (XLEN-1)) | IRQ_S_TIMER;
-    localparam logic [XLEN-1:0] M_TIMER_INTERRUPT = (1 << (XLEN-1)) | IRQ_M_TIMER;
-    localparam logic [XLEN-1:0] S_EXT_INTERRUPT   = (1 << (XLEN-1)) | IRQ_S_EXT;
-    localparam logic [XLEN-1:0] M_EXT_INTERRUPT   = (1 << (XLEN-1)) | IRQ_M_EXT;
+    localparam logic [XLEN-1:0] S_SW_INTERRUPT    = (1 << (XLEN-1)) | XLEN'(IRQ_S_SOFT);
+    localparam logic [XLEN-1:0] M_SW_INTERRUPT    = (1 << (XLEN-1)) | XLEN'(IRQ_M_SOFT);
+    localparam logic [XLEN-1:0] S_TIMER_INTERRUPT = (1 << (XLEN-1)) | XLEN'(IRQ_S_TIMER);
+    localparam logic [XLEN-1:0] M_TIMER_INTERRUPT = (1 << (XLEN-1)) | XLEN'(IRQ_M_TIMER);
+    localparam logic [XLEN-1:0] S_EXT_INTERRUPT   = (1 << (XLEN-1)) | XLEN'(IRQ_S_EXT);
+    localparam logic [XLEN-1:0] M_EXT_INTERRUPT   = (1 << (XLEN-1)) | XLEN'(IRQ_M_EXT);
 
     // -----
     // CSRs
@@ -368,6 +389,36 @@ package riscv;
         CSR_MIE            = 12'h304,
         CSR_MTVEC          = 12'h305,
         CSR_MCOUNTEREN     = 12'h306,
+        CSR_MCOUNTINHIBIT  = 12'h320,
+        CSR_MHPM_EVENT_3   = 12'h323,  //Machine performance monitoring Event Selector
+        CSR_MHPM_EVENT_4   = 12'h324,  //Machine performance monitoring Event Selector
+        CSR_MHPM_EVENT_5   = 12'h325,  //Machine performance monitoring Event Selector
+        CSR_MHPM_EVENT_6   = 12'h326,  //Machine performance monitoring Event Selector
+        CSR_MHPM_EVENT_7   = 12'h327,  //Machine performance monitoring Event Selector
+        CSR_MHPM_EVENT_8   = 12'h328,  //Machine performance monitoring Event Selector
+        CSR_MHPM_EVENT_9   = 12'h329,  //Reserved
+        CSR_MHPM_EVENT_10  = 12'h32A,  //Reserved
+        CSR_MHPM_EVENT_11  = 12'h32B,  //Reserved
+        CSR_MHPM_EVENT_12  = 12'h32C,  //Reserved
+        CSR_MHPM_EVENT_13  = 12'h32D,  //Reserved
+        CSR_MHPM_EVENT_14  = 12'h32E,  //Reserved
+        CSR_MHPM_EVENT_15  = 12'h32F,  //Reserved
+        CSR_MHPM_EVENT_16  = 12'h330,  //Reserved
+        CSR_MHPM_EVENT_17  = 12'h331,  //Reserved
+        CSR_MHPM_EVENT_18  = 12'h332,  //Reserved
+        CSR_MHPM_EVENT_19  = 12'h333,  //Reserved
+        CSR_MHPM_EVENT_20  = 12'h334,  //Reserved
+        CSR_MHPM_EVENT_21  = 12'h335,  //Reserved
+        CSR_MHPM_EVENT_22  = 12'h336,  //Reserved
+        CSR_MHPM_EVENT_23  = 12'h337,  //Reserved
+        CSR_MHPM_EVENT_24  = 12'h338,  //Reserved
+        CSR_MHPM_EVENT_25  = 12'h339,  //Reserved
+        CSR_MHPM_EVENT_26  = 12'h33A,  //Reserved
+        CSR_MHPM_EVENT_27  = 12'h33B,  //Reserved
+        CSR_MHPM_EVENT_28  = 12'h33C,  //Reserved
+        CSR_MHPM_EVENT_29  = 12'h33D,  //Reserved
+        CSR_MHPM_EVENT_30  = 12'h33E,  //Reserved
+        CSR_MHPM_EVENT_31  = 12'h33F,  //Reserved
         CSR_MSCRATCH       = 12'h340,
         CSR_MEPC           = 12'h341,
         CSR_MCAUSE         = 12'h342,
@@ -401,21 +452,21 @@ package riscv;
         CSR_MCYCLEH        = 12'hB80,
         CSR_MINSTRET       = 12'hB02,
         CSR_MINSTRETH      = 12'hB82,
-        // Performance counters (Machine Mode)
-        CSR_ML1_ICACHE_MISS = 12'hB03,  // L1 Instr Cache Miss
-        CSR_ML1_DCACHE_MISS = 12'hB04,  // L1 Data Cache Miss
-        CSR_MITLB_MISS      = 12'hB05,  // ITLB Miss
-        CSR_MDTLB_MISS      = 12'hB06,  // DTLB Miss
-        CSR_MLOAD           = 12'hB07,  // Loads
-        CSR_MSTORE          = 12'hB08,  // Stores
-        CSR_MEXCEPTION      = 12'hB09,  // Taken exceptions
-        CSR_MEXCEPTION_RET  = 12'hB0A,  // Exception return
-        CSR_MBRANCH_JUMP    = 12'hB0B,  // Software change of PC
-        CSR_MCALL           = 12'hB0C,  // Procedure call
-        CSR_MRET            = 12'hB0D,  // Procedure Return
-        CSR_MMIS_PREDICT    = 12'hB0E,  // Branch mis-predicted
-        CSR_MSB_FULL        = 12'hB0F,  // Scoreboard full
-        CSR_MIF_EMPTY       = 12'hB10,  // instruction fetch queue empty
+        //Performance Counters
+        CSR_MHPM_COUNTER_3 = 12'hB03,
+        CSR_MHPM_COUNTER_4 = 12'hB04,
+        CSR_MHPM_COUNTER_5 = 12'hB05,
+        CSR_MHPM_COUNTER_6 = 12'hB06,
+        CSR_MHPM_COUNTER_7 = 12'hB07, 
+        CSR_MHPM_COUNTER_8 = 12'hB08, 
+        CSR_MHPM_COUNTER_9 = 12'hB09,   // reserved
+        CSR_MHPM_COUNTER_10 = 12'hB0A,  // reserved
+        CSR_MHPM_COUNTER_11 = 12'hB0B,  // reserved
+        CSR_MHPM_COUNTER_12 = 12'hB0C,  // reserved
+        CSR_MHPM_COUNTER_13 = 12'hB0D,  // reserved
+        CSR_MHPM_COUNTER_14 = 12'hB0E,  // reserved
+        CSR_MHPM_COUNTER_15 = 12'hB0F,  // reserved
+        CSR_MHPM_COUNTER_16 = 12'hB10,  // reserved
         CSR_MHPM_COUNTER_17 = 12'hB11,  // reserved
         CSR_MHPM_COUNTER_18 = 12'hB12,  // reserved
         CSR_MHPM_COUNTER_19 = 12'hB13,  // reserved
@@ -430,7 +481,36 @@ package riscv;
         CSR_MHPM_COUNTER_28 = 12'hB1C,  // reserved
         CSR_MHPM_COUNTER_29 = 12'hB1D,  // reserved
         CSR_MHPM_COUNTER_30 = 12'hB1E,  // reserved
-        CSR_MHPM_COUNTER_31 = 12'hB1F,  // reserved
+        CSR_MHPM_COUNTER_31 = 12'hB1F,  // reserved        
+        CSR_MHPM_COUNTER_3H = 12'hB83,  
+        CSR_MHPM_COUNTER_4H = 12'hB84,  
+        CSR_MHPM_COUNTER_5H = 12'hB85,  
+        CSR_MHPM_COUNTER_6H = 12'hB86, 
+        CSR_MHPM_COUNTER_7H = 12'hB87,
+        CSR_MHPM_COUNTER_8H = 12'hB88,
+        CSR_MHPM_COUNTER_9H = 12'hB89,   // reserved
+        CSR_MHPM_COUNTER_10H = 12'hB8A,  // reserved
+        CSR_MHPM_COUNTER_11H = 12'hB8B,  // reserved
+        CSR_MHPM_COUNTER_12H = 12'hB8C,  // reserved
+        CSR_MHPM_COUNTER_13H = 12'hB8D,  // reserved
+        CSR_MHPM_COUNTER_14H = 12'hB8E,  // reserved
+        CSR_MHPM_COUNTER_15H = 12'hB8F,  // reserved
+        CSR_MHPM_COUNTER_16H = 12'hB90,  // reserved
+        CSR_MHPM_COUNTER_17H = 12'hB91,  // reserved
+        CSR_MHPM_COUNTER_18H = 12'hB92,  // reserved
+        CSR_MHPM_COUNTER_19H = 12'hB93,  // reserved
+        CSR_MHPM_COUNTER_20H = 12'hB94,  // reserved
+        CSR_MHPM_COUNTER_21H = 12'hB95,  // reserved
+        CSR_MHPM_COUNTER_22H = 12'hB96,  // reserved
+        CSR_MHPM_COUNTER_23H = 12'hB97,  // reserved
+        CSR_MHPM_COUNTER_24H = 12'hB98,  // reserved
+        CSR_MHPM_COUNTER_25H = 12'hB99,  // reserved
+        CSR_MHPM_COUNTER_26H = 12'hB9A,  // reserved
+        CSR_MHPM_COUNTER_27H = 12'hB9B,  // reserved
+        CSR_MHPM_COUNTER_28H = 12'hB9C,  // reserved
+        CSR_MHPM_COUNTER_29H = 12'hB9D,  // reserved
+        CSR_MHPM_COUNTER_30H = 12'hB9E,  // reserved
+        CSR_MHPM_COUNTER_31H = 12'hB9F,  // reserved
         // Cache Control (platform specifc)
         CSR_DCACHE         = 12'h701,
         CSR_ICACHE         = 12'h700,
@@ -453,35 +533,64 @@ package riscv;
         CSR_INSTRET        = 12'hC02,
         CSR_INSTRETH       = 12'hC82,
         // Performance counters (User Mode - R/O Shadows)
-        CSR_L1_ICACHE_MISS = 12'hC03,  // L1 Instr Cache Miss
-        CSR_L1_DCACHE_MISS = 12'hC04,  // L1 Data Cache Miss
-        CSR_ITLB_MISS      = 12'hC05,  // ITLB Miss
-        CSR_DTLB_MISS      = 12'hC06,  // DTLB Miss
-        CSR_LOAD           = 12'hC07,  // Loads
-        CSR_STORE          = 12'hC08,  // Stores
-        CSR_EXCEPTION      = 12'hC09,  // Taken exceptions
-        CSR_EXCEPTION_RET  = 12'hC0A,  // Exception return
-        CSR_BRANCH_JUMP    = 12'hC0B,  // Software change of PC
-        CSR_CALL           = 12'hC0C,  // Procedure call
-        CSR_RET            = 12'hC0D,  // Procedure Return
-        CSR_MIS_PREDICT    = 12'hC0E,  // Branch mis-predicted
-        CSR_SB_FULL        = 12'hC0F,  // Scoreboard full
-        CSR_IF_EMPTY       = 12'hC10,  // instruction fetch queue empty
-        CSR_HPM_COUNTER_17 = 12'hC11,  // reserved
-        CSR_HPM_COUNTER_18 = 12'hC12,  // reserved
-        CSR_HPM_COUNTER_19 = 12'hC13,  // reserved
-        CSR_HPM_COUNTER_20 = 12'hC14,  // reserved
-        CSR_HPM_COUNTER_21 = 12'hC15,  // reserved
-        CSR_HPM_COUNTER_22 = 12'hC16,  // reserved
-        CSR_HPM_COUNTER_23 = 12'hC17,  // reserved
-        CSR_HPM_COUNTER_24 = 12'hC18,  // reserved
-        CSR_HPM_COUNTER_25 = 12'hC19,  // reserved
-        CSR_HPM_COUNTER_26 = 12'hC1A,  // reserved
-        CSR_HPM_COUNTER_27 = 12'hC1B,  // reserved
-        CSR_HPM_COUNTER_28 = 12'hC1C,  // reserved
-        CSR_HPM_COUNTER_29 = 12'hC1D,  // reserved
-        CSR_HPM_COUNTER_30 = 12'hC1E,  // reserved
-        CSR_HPM_COUNTER_31 = 12'hC1F  // reserved
+        CSR_HPM_COUNTER_3   = 12'hC03,  
+        CSR_HPM_COUNTER_4   = 12'hC04,  
+        CSR_HPM_COUNTER_5   = 12'hC05,  
+        CSR_HPM_COUNTER_6   = 12'hC06,  
+        CSR_HPM_COUNTER_7   = 12'hC07,  
+        CSR_HPM_COUNTER_8   = 12'hC08,  
+        CSR_HPM_COUNTER_9   = 12'hC09,  // reserved  
+        CSR_HPM_COUNTER_10  = 12'hC0A,  // reserved  
+        CSR_HPM_COUNTER_11  = 12'hC0B,  // reserved  
+        CSR_HPM_COUNTER_12  = 12'hC0C,  // reserved  
+        CSR_HPM_COUNTER_13  = 12'hC0D,  // reserved  
+        CSR_HPM_COUNTER_14  = 12'hC0E,  // reserved  
+        CSR_HPM_COUNTER_15  = 12'hC0F,  // reserved  
+        CSR_HPM_COUNTER_16  = 12'hC10,  // reserved  
+        CSR_HPM_COUNTER_17  = 12'hC11,  // reserved
+        CSR_HPM_COUNTER_18  = 12'hC12,  // reserved
+        CSR_HPM_COUNTER_19  = 12'hC13,  // reserved
+        CSR_HPM_COUNTER_20  = 12'hC14,  // reserved
+        CSR_HPM_COUNTER_21  = 12'hC15,  // reserved
+        CSR_HPM_COUNTER_22  = 12'hC16,  // reserved
+        CSR_HPM_COUNTER_23  = 12'hC17,  // reserved
+        CSR_HPM_COUNTER_24  = 12'hC18,  // reserved
+        CSR_HPM_COUNTER_25  = 12'hC19,  // reserved
+        CSR_HPM_COUNTER_26  = 12'hC1A,  // reserved
+        CSR_HPM_COUNTER_27  = 12'hC1B,  // reserved
+        CSR_HPM_COUNTER_28  = 12'hC1C,  // reserved
+        CSR_HPM_COUNTER_29  = 12'hC1D,  // reserved
+        CSR_HPM_COUNTER_30  = 12'hC1E,  // reserved
+        CSR_HPM_COUNTER_31  = 12'hC1F,  // reserved
+        CSR_HPM_COUNTER_3H   = 12'hC83,  
+        CSR_HPM_COUNTER_4H   = 12'hC84,  
+        CSR_HPM_COUNTER_5H   = 12'hC85,  
+        CSR_HPM_COUNTER_6H   = 12'hC86,  
+        CSR_HPM_COUNTER_7H   = 12'hC87,  
+        CSR_HPM_COUNTER_8H   = 12'hC88,  
+        CSR_HPM_COUNTER_9H   = 12'hC89,  // reserved  
+        CSR_HPM_COUNTER_10H  = 12'hC8A,  // reserved  
+        CSR_HPM_COUNTER_11H  = 12'hC8B,  // reserved  
+        CSR_HPM_COUNTER_12H  = 12'hC8C,  // reserved  
+        CSR_HPM_COUNTER_13H  = 12'hC8D,  // reserved  
+        CSR_HPM_COUNTER_14H  = 12'hC8E,  // reserved  
+        CSR_HPM_COUNTER_15H  = 12'hC8F,  // reserved  
+        CSR_HPM_COUNTER_16H  = 12'hC90,  // reserved  
+        CSR_HPM_COUNTER_17H  = 12'hC91,  // reserved
+        CSR_HPM_COUNTER_18H  = 12'hC92,  // reserved
+        CSR_HPM_COUNTER_19H  = 12'hC93,  // reserved
+        CSR_HPM_COUNTER_20H  = 12'hC94,  // reserved
+        CSR_HPM_COUNTER_21H  = 12'hC95,  // reserved
+        CSR_HPM_COUNTER_22H  = 12'hC96,  // reserved
+        CSR_HPM_COUNTER_23H  = 12'hC97,  // reserved
+        CSR_HPM_COUNTER_24H  = 12'hC98,  // reserved
+        CSR_HPM_COUNTER_25H  = 12'hC99,  // reserved
+        CSR_HPM_COUNTER_26H  = 12'hC9A,  // reserved
+        CSR_HPM_COUNTER_27H  = 12'hC9B,  // reserved
+        CSR_HPM_COUNTER_28H  = 12'hC9C,  // reserved
+        CSR_HPM_COUNTER_29H  = 12'hC9D,  // reserved
+        CSR_HPM_COUNTER_30H  = 12'hC9E,  // reserved
+        CSR_HPM_COUNTER_31H  = 12'hC9F   // reserved
     } csr_reg_t;
 
     localparam logic [63:0] SSTATUS_UIE  = 'h00000001;

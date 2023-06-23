@@ -40,8 +40,8 @@ module issue_read_operands import ariane_pkg::*; #(
     input  fu_t [2**REG_ADDR_SIZE-1:0]             rd_clobber_fpr_i,
     // To FU, just single issue for now
     output fu_data_t                               fu_data_o,
-    output logic [riscv::VLEN-1:0]                 rs1_forwarding_o,  // unregistered version of fu_data_o.operanda
-    output logic [riscv::VLEN-1:0]                 rs2_forwarding_o,  // unregistered version of fu_data_o.operandb
+    output riscv::xlen_t                           rs1_forwarding_o,  // unregistered version of fu_data_o.operanda
+    output riscv::xlen_t                           rs2_forwarding_o,  // unregistered version of fu_data_o.operandb
     output logic [riscv::VLEN-1:0]                 pc_o,
     output logic                                   is_compressed_instr_o,
     // ALU 1
@@ -70,13 +70,15 @@ module issue_read_operands import ariane_pkg::*; #(
     input  logic [NR_COMMIT_PORTS-1:0][4:0]        waddr_i,
     input  logic [NR_COMMIT_PORTS-1:0][riscv::XLEN-1:0] wdata_i,
     input  logic [NR_COMMIT_PORTS-1:0]             we_gpr_i,
-    input  logic [NR_COMMIT_PORTS-1:0]             we_fpr_i
+    input  logic [NR_COMMIT_PORTS-1:0]             we_fpr_i,
+
+    output logic                                   stall_issue_o  // stall signal, we do not want to fetch any more entries
     // committing instruction instruction
     // from scoreboard
     // input  scoreboard_entry     commit_instr_i,
     // output logic                commit_ack_o
 );
-    logic stall;   // stall signal, we do not want to fetch any more entries
+    logic stall;   
     logic fu_busy; // functional unit is busy
     riscv::xlen_t    operand_a_regfile, operand_b_regfile;  // operands coming from regfile
     rs3_len_t operand_c_regfile; // third operand from fp regfile or gp regfile if NR_RGPR_PORTS == 3
@@ -115,7 +117,7 @@ module issue_read_operands import ariane_pkg::*; #(
     assign fu_data_o.operand_a = operand_a_q;
     assign fu_data_o.operand_b = operand_b_q;
     assign fu_data_o.fu        = fu_q;
-    assign fu_data_o.operator  = operator_q;
+    assign fu_data_o.operation  = operator_q;
     assign fu_data_o.trans_id  = trans_id_q;
     assign fu_data_o.imm       = imm_q;
     assign alu_valid_o         = alu_valid_q;
@@ -128,6 +130,7 @@ module issue_read_operands import ariane_pkg::*; #(
     assign fpu_rm_o            = fpu_rm_q;
     assign cvxif_valid_o       = CVXIF_PRESENT ? cvxif_valid_q : '0;
     assign cvxif_off_instr_o   = CVXIF_PRESENT ? cvxif_off_instr_q : '0;
+    assign stall_issue_o       = stall;
     // ---------------
     // Issue Stage
     // ---------------
@@ -385,7 +388,7 @@ module issue_read_operands import ariane_pkg::*; #(
         end
         // after a multiplication was issued we can only issue another multiplication
         // otherwise we will get contentions on the fixed latency bus
-        if (mult_valid_q && issue_instr_i.fu != MULT) begin
+        if (mult_valid_q && issue_instr_i.fu inside {ALU, CTRL_FLOW, CSR}) begin
             issue_ack_o = 1'b0;
         end
     end
@@ -407,21 +410,37 @@ module issue_read_operands import ariane_pkg::*; #(
         assign wdata_pack[i] = wdata_i[i];
         assign we_pack[i]    = we_gpr_i[i];
     end
-
-    ariane_regfile #(
-        .DATA_WIDTH     ( riscv::XLEN     ),
-        .NR_READ_PORTS  ( NR_RGPR_PORTS   ),
-        .NR_WRITE_PORTS ( NR_COMMIT_PORTS ),
-        .ZERO_REG_ZERO  ( 1               )
-    ) i_ariane_regfile (
-        .test_en_i ( 1'b0       ),
-        .raddr_i   ( raddr_pack ),
-        .rdata_o   ( rdata      ),
-        .waddr_i   ( waddr_pack ),
-        .wdata_i   ( wdata_pack ),
-        .we_i      ( we_pack    ),
-        .*
-    );
+    if (ariane_pkg::FPGA_EN) begin : gen_fpga_regfile
+        ariane_regfile_fpga #(
+            .DATA_WIDTH     ( riscv::XLEN     ),
+            .NR_READ_PORTS  ( NR_RGPR_PORTS   ),
+            .NR_WRITE_PORTS ( NR_COMMIT_PORTS ),
+            .ZERO_REG_ZERO  ( 1               )
+        ) i_ariane_regfile_fpga (
+            .test_en_i ( 1'b0       ),
+            .raddr_i   ( raddr_pack ),
+            .rdata_o   ( rdata      ),
+            .waddr_i   ( waddr_pack ),
+            .wdata_i   ( wdata_pack ),
+            .we_i      ( we_pack    ),
+            .*
+        );
+    end else begin : gen_asic_regfile
+        ariane_regfile #(
+            .DATA_WIDTH     ( riscv::XLEN     ),
+            .NR_READ_PORTS  ( NR_RGPR_PORTS   ),
+            .NR_WRITE_PORTS ( NR_COMMIT_PORTS ),
+            .ZERO_REG_ZERO  ( 1               )
+        ) i_ariane_regfile (
+            .test_en_i ( 1'b0       ),
+            .raddr_i   ( raddr_pack ),
+            .rdata_o   ( rdata      ),
+            .waddr_i   ( waddr_pack ),
+            .wdata_i   ( wdata_pack ),
+            .we_i      ( we_pack    ),
+            .*
+        );
+    end
 
     // -----------------------------
     // Floating-Point Register File
@@ -438,21 +457,37 @@ module issue_read_operands import ariane_pkg::*; #(
             for (genvar i = 0; i < NR_COMMIT_PORTS; i++) begin : gen_fp_wdata_pack
                 assign fp_wdata_pack[i] = {wdata_i[i][FLEN-1:0]};
             end
-
-            ariane_regfile #(
-                .DATA_WIDTH     ( FLEN            ),
-                .NR_READ_PORTS  ( 3               ),
-                .NR_WRITE_PORTS ( NR_COMMIT_PORTS ),
-                .ZERO_REG_ZERO  ( 0               )
-            ) i_ariane_fp_regfile (
-                .test_en_i ( 1'b0          ),
-                .raddr_i   ( fp_raddr_pack ),
-                .rdata_o   ( fprdata       ),
-                .waddr_i   ( waddr_pack    ),
-                .wdata_i   ( fp_wdata_pack ),
-                .we_i      ( we_fpr_i      ),
-                .*
-            );
+            if (ariane_pkg::FPGA_EN) begin : gen_fpga_fp_regfile
+                ariane_regfile_fpga #(
+                    .DATA_WIDTH     ( FLEN            ),
+                    .NR_READ_PORTS  ( 3               ),
+                    .NR_WRITE_PORTS ( NR_COMMIT_PORTS ),
+                    .ZERO_REG_ZERO  ( 0               )
+                ) i_ariane_fp_regfile_fpga (
+                    .test_en_i ( 1'b0          ),
+                    .raddr_i   ( fp_raddr_pack ),
+                    .rdata_o   ( fprdata       ),
+                    .waddr_i   ( waddr_pack    ),
+                    .wdata_i   ( fp_wdata_pack ),
+                    .we_i      ( we_fpr_i      ),
+                    .*
+                );
+            end else begin : gen_asic_fp_regfile
+                ariane_regfile #(
+                    .DATA_WIDTH     ( FLEN            ),
+                    .NR_READ_PORTS  ( 3               ),
+                    .NR_WRITE_PORTS ( NR_COMMIT_PORTS ),
+                    .ZERO_REG_ZERO  ( 0               )
+                ) i_ariane_fp_regfile (
+                    .test_en_i ( 1'b0          ),
+                    .raddr_i   ( fp_raddr_pack ),
+                    .rdata_o   ( fprdata       ),
+                    .waddr_i   ( waddr_pack    ),
+                    .wdata_i   ( fp_wdata_pack ),
+                    .we_i      ( we_fpr_i      ),
+                    .*
+                );
+            end
         end else begin : no_fpr_gen
             assign fprdata = '{default: '0};
         end
@@ -491,17 +526,15 @@ module issue_read_operands import ariane_pkg::*; #(
     end
 
     //pragma translate_off
-    `ifndef VERILATOR
     initial begin
         assert (NR_RGPR_PORTS == 2 || (NR_RGPR_PORTS == 3 && CVXIF_PRESENT))
         else $fatal(1, "If CVXIF is enable, ariane regfile can have either 2 or 3 read ports. Else it has 2 read ports.");
     end
 
-     assert property (
+    assert property (
         @(posedge clk_i) (branch_valid_q) |-> (!$isunknown(operand_a_q) && !$isunknown(operand_b_q)))
         else $warning ("Got unknown value in one of the operands");
 
-    `endif
     //pragma translate_on
 endmodule
 

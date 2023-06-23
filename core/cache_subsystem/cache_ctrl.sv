@@ -124,6 +124,7 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
         req_port_o.data_gnt    = 1'b0;
         req_port_o.data_rvalid = 1'b0;
         req_port_o.data_rdata  = '0;
+        req_port_o.data_rid    = '0;
         miss_req_o    = '0;
         mshr_addr_o   = '0;
         // Memory array communication
@@ -217,11 +218,7 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
                         end
 
                         // this is timing critical
-                        // req_port_o.data_rdata = cl_i[cl_offset +: 64];
-                        case (mem_req_q.index[3])
-                            1'b0: req_port_o.data_rdata = cl_i[63:0];
-                            1'b1: req_port_o.data_rdata = cl_i[127:64];
-                        endcase
+                        req_port_o.data_rdata = cl_i[cl_offset +: 64];
 
                         // report data for a read
                         if (!mem_req_q.we) begin

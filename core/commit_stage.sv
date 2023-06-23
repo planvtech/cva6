@@ -54,38 +54,6 @@ module commit_stage import ariane_pkg::*; #(
     output logic                                    sfence_vma_o        // flush TLBs and pipeline
 );
 
-// ila_0 i_ila_commit (
-//     .clk(clk_i), // input wire clk
-//     .probe0(commit_instr_i[0].pc), // input wire [63:0]  probe0
-//     .probe1(commit_instr_i[1].pc), // input wire [63:0]  probe1
-//     .probe2(commit_instr_i[0].valid), // input wire [0:0]  probe2
-//     .probe3(commit_instr_i[1].valid), // input wire [0:0]  probe3
-//     .probe4(commit_ack_o[0]), // input wire [0:0]  probe4
-//     .probe5(commit_ack_o[0]), // input wire [0:0]  probe5
-//     .probe6(1'b0), // input wire [0:0]  probe6
-//     .probe7(1'b0), // input wire [0:0]  probe7
-//     .probe8(1'b0), // input wire [0:0]  probe8
-//     .probe9(1'b0) // input wire [0:0]  probe9
-// );
-
-   xlnx_ila i_ila
-     (
-      .clk (clk_i),
-      .probe0 (commit_instr_i[0].pc[31:0]),
-      .probe1 (commit_instr_i[1].pc[31:0]),
-      .probe2 (commit_instr_i[0].result[31:0]),
-      .probe3 (commit_instr_i[1].result[31:0]),
-      .probe4 ('0),
-      .probe5 ('0),
-      .probe6 ('0),
-      .probe7 ('0),
-      .probe8 ('0),
-      .probe9 ('0),
-      .probe10 ('0),
-      .probe11 ('0),
-      .probe12 ({commit_instr_i[0].valid, commit_instr_i[1].valid, commit_ack_o[0], commit_ack_o[1]})
-      );
-
     for (genvar i = 0; i < NR_COMMIT_PORTS; i++) begin : gen_waddr
       assign waddr_o[i] = commit_instr_i[i].rd[4:0];
     end
@@ -110,18 +78,15 @@ module commit_stage import ariane_pkg::*; #(
     always_comb begin : commit
         // default assignments
         commit_ack_o[0]    = 1'b0;
-        commit_ack_o[1]    = 1'b0;
 
         amo_valid_commit_o = 1'b0;
 
         we_gpr_o[0]        = 1'b0;
-        we_gpr_o[1]        = 1'b0;
         we_fpr_o           = '{default: 1'b0};
         commit_lsu_o       = 1'b0;
         commit_csr_o       = 1'b0;
         // amos will commit on port 0
         wdata_o[0]      = (amo_resp_i.ack) ? amo_resp_i.result[riscv::XLEN-1:0] : commit_instr_i[0].result;
-        wdata_o[1]      = commit_instr_i[1].result;
         csr_op_o        = ADD; // this corresponds to a CSR NOP
         csr_wdata_o        = {riscv::XLEN{1'b0}};
         fence_i_o          = 1'b0;
@@ -227,6 +192,11 @@ module commit_stage import ariane_pkg::*; #(
         end
 
         if (NR_COMMIT_PORTS > 1) begin
+        
+            commit_ack_o[1]    = 1'b0;
+            we_gpr_o[1]        = 1'b0;
+            wdata_o[1]      = commit_instr_i[1].result;
+            
             // -----------------
             // Commit Port 2
             // -----------------

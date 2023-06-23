@@ -16,23 +16,38 @@ module cva6
   import ariane_pkg::*;
 #(
   parameter ariane_pkg::ariane_cfg_t ArianeCfg  = ariane_pkg::ArianeDefaultConfig,
-  parameter type                     mst_req_t  = logic,
-  parameter type                     mst_resp_t = logic
+  parameter int unsigned AxiAddrWidth = ariane_axi::AddrWidth,
+  parameter int unsigned AxiDataWidth = ariane_axi::DataWidth,
+  parameter int unsigned AxiIdWidth   = ariane_axi::IdWidth,
+  parameter type axi_ar_chan_t = ariane_axi::ar_chan_t,
+  parameter type axi_aw_chan_t = ariane_axi::aw_chan_t,
+  parameter type axi_w_chan_t  = ariane_axi::w_chan_t,
+  parameter type axi_req_t = ariane_axi::req_t,
+  parameter type axi_rsp_t = ariane_axi::resp_t
 ) (
-  input  logic                   clk_i,
-  input  logic                   rst_ni,
-  // Unused I/O
-  input  logic [riscv::VLEN-1:0] boot_addr_i,
-  input  logic [riscv::XLEN-1:0] hart_id_i,
-  input  logic [1:0]             irq_i,
-  input  logic                   ipi_i,
-  input  logic                   time_irq_i,
-  input  logic                   debug_req_i,
-  output cvxif_pkg::cvxif_req_t  cvxif_req_o,
-  input  cvxif_pkg::cvxif_resp_t cvxif_resp_i,
+  input  logic                         clk_i,
+  input  logic                         rst_ni,
+  // Core ID, Cluster ID and boot address are considered more or less static
+  input  logic [riscv::VLEN-1:0]       boot_addr_i,  // reset boot address
+  input  logic [riscv::XLEN-1:0]       hart_id_i,    // hart id in a multicore environment (reflected in a CSR)
+
+  // Interrupt inputs
+  input  logic [1:0]                   irq_i,        // level sensitive IR lines, mip & sip (async)
+  input  logic                         ipi_i,        // inter-processor interrupts (async)
+  // Timer facilities
+  input  logic                         time_irq_i,   // timer interrupt in (async)
+  input  logic                         debug_req_i,  // debug request (async)
+  // RISC-V formal interface port (`rvfi`):
+  // Can be left open when formal tracing is not needed.
+  output ariane_pkg::rvfi_port_t       rvfi_o,
+  output cvxif_pkg::cvxif_req_t        cvxif_req_o,
+  input  cvxif_pkg::cvxif_resp_t       cvxif_resp_i,
+  // L15 (memory side)
+  output wt_cache_pkg::l15_req_t       l15_req_o,
+  input  wt_cache_pkg::l15_rtrn_t      l15_rtrn_i,
   // memory side, AXI Master
-  output mst_req_t               axi_req_o,
-  input  mst_resp_t              axi_resp_i
+  output axi_req_t                     axi_req_o,
+  input  axi_rsp_t                     axi_resp_i
 );
 
   riscv::priv_lvl_t         priv_lvl;
@@ -65,9 +80,10 @@ module cva6
   assign icache_dreq_if_cache     = '0;
 
   assign cvxif_req_o = '0;
+  assign rvfi_o      = '0;
+  assign l15_req_o   = '0;
 
   assign priv_lvl_i = riscv::PRIV_LVL_M;
-
 
 
 
@@ -76,7 +92,7 @@ module cva6
   // Cache Subsystem
   // -------------------
 
-`ifdef WT_DCACHE
+  if (DCACHE_TYPE == int'(cva6_config_pkg::WT)) begin : WT
   // this is a cache subsystem that is compatible with OpenPiton
   wt_cache_subsystem #(
     .ArianeCfg            ( ArianeCfg     )
@@ -115,15 +131,21 @@ module cva6
     .axi_resp_i            ( axi_resp_i                  )
 `endif
   );
-`else
+  end else begin : WB
 
   std_cache_subsystem #(
     // note: this only works with one cacheable region
     // not as important since this cache subsystem is about to be
     // deprecated
     .ArianeCfg             ( ArianeCfg                   ),
-    .mst_req_t (mst_req_t),
-    .mst_resp_t (mst_resp_t)
+    .AxiAddrWidth          ( AxiAddrWidth                ),
+    .AxiDataWidth          ( AxiDataWidth                ),
+    .AxiIdWidth            ( AxiIdWidth                  ),
+    .axi_ar_chan_t         ( axi_ar_chan_t               ),
+    .axi_aw_chan_t         ( axi_aw_chan_t               ),
+    .axi_w_chan_t          ( axi_w_chan_t                ),
+    .axi_req_t             ( axi_req_t                   ),
+    .axi_rsp_t             ( axi_rsp_t                   )
   ) i_cache_subsystem (
     // to D$
     .clk_i                 ( clk_i                       ),
@@ -155,7 +177,7 @@ module cva6
     .axi_resp_i            ( axi_resp_i                  )
   );
   assign dcache_commit_wbuffer_not_ni = 1'b1;
-`endif
+  end
 
   // -------------------
   // Parameter Check
