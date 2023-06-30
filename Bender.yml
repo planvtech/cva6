@@ -8,7 +8,6 @@ package:
 # WT_DCACHE
 dependencies:
   axi: { git: "https://github.com/pulp-platform/axi.git", version: 0.31.0 }
-  ace: { git: "https://github.com/planvtech/ace.git", rev: 6091c1aa03203ac009f525646bdc5fa0584b9650 }
   common_cells:
     { git: "https://github.com/pulp-platform/common_cells", version: 1.23.0 }
   fpnew: { git: "https://github.com/openhwgroup/cvfpu.git", version: 0.7.0 }
@@ -17,6 +16,8 @@ dependencies:
       git: "https://github.com/pulp-platform/tech_cells_generic.git",
       rev: b2a68114302af1d8191ddf34ea0e07b471911866,
     }
+  # Coherent WB_DCACHE
+  ace: { git: "https://github.com/planvtech/ace.git", version: 0.0.1 }
 
 frozen: true
 
