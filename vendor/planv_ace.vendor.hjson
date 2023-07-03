@@ -1,7 +1,7 @@
 // -*- coding: utf-8 -*-
-// Copyright (C) 2022 Thales DIS France SAS
+// Copyright (C) 2023 PlanV GmbH
 // SPDX-License-Identifier: Apache-2.0 WITH SHL-2.0.
-// Original Author: Zbigniew Chamski (zbigniew.chamski@thalesgroup.com)
+// Original Author:
 
 {
     // Name of the project
@@ -19,7 +19,7 @@
     }
 
     // Patch dir for local changes
-    patch_dir: "patches/planv/ace",
+    // patch_dir: "patches/planv/ace",
 
     // Exclusions from upstream content
     exclude_from_upstream: [
