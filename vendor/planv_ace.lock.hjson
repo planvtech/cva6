@@ -9,6 +9,6 @@
   upstream:
   {
     url: https://github.com/planvtech/ace.git
-    rev: eeeb4febe72a99921ad385e8cd7469aa81424ad3
+    rev: 650ac3cc9a1b4b3494fc7be28565f9e949605188
   }
 }
