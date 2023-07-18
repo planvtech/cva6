@@ -15,7 +15,7 @@
         // URL
         url: "https://github.com/planvtech/ace.git",
         // revision
-        rev: "PROJ-239-ccu-acknowledges-clean-unique-requests-before-write-back)",
+        rev: "v0.0.2",
     }
 
     // Patch dir for local changes
