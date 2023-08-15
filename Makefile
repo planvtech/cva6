@@ -171,10 +171,16 @@ src :=  core/include/$(target)_config_pkg.sv                                    
         corev_apu/riscv-dbg/debug_rom/debug_rom.sv                                   \
         corev_apu/register_interface/src/apb_to_reg.sv                               \
         vendor/pulp-platform/axi/src/axi_multicut.sv                                 \
+        vendor/pulp-platform/common_cells/src/cb_filter_pkg.sv                       \
+        vendor/pulp-platform/common_cells/src/cb_filter.sv                           \
         vendor/pulp-platform/common_cells/src/rstgen_bypass.sv                       \
         vendor/pulp-platform/common_cells/src/rstgen.sv                              \
         vendor/pulp-platform/common_cells/src/addr_decode.sv                         \
         vendor/pulp-platform/common_cells/src/stream_register.sv                     \
+        vendor/pulp-platform/common_cells/src/stream_fifo.sv                         \
+        vendor/pulp-platform/common_cells/src/stream_xbar.sv                         \
+        vendor/pulp-platform/common_cells/src/onehot_to_bin.sv                       \
+        vendor/pulp-platform/common_cells/src/sub_per_hash.sv                        \
         vendor/pulp-platform/axi/src/axi_intf.sv                                     \
         vendor/pulp-platform/axi/src/axi_cut.sv                                      \
         vendor/pulp-platform/axi/src/axi_join.sv                                     \
@@ -186,6 +192,7 @@ src :=  core/include/$(target)_config_pkg.sv                                    
         vendor/pulp-platform/axi/src/axi_mux.sv                                      \
         vendor/pulp-platform/axi/src/axi_demux.sv                                    \
         vendor/pulp-platform/axi/src/axi_xbar.sv                                     \
+        vendor/pulp-platform/axi/src/axi_isolate.sv                                  \
         vendor/pulp-platform/common_cells/src/cdc_2phase.sv                          \
         vendor/pulp-platform/common_cells/src/spill_register_flushable.sv            \
         vendor/pulp-platform/common_cells/src/spill_register.sv                      \
@@ -224,6 +231,7 @@ fpga_src :=  $(subst $(root-dir),,$(wildcard $(root-dir)corev_apu/fpga/src/*.sv)
              $(subst $(root-dir),,$(wildcard $(root-dir)corev_apu/fpga/src/bootrom/*.sv))              \
              $(subst $(root-dir),,$(wildcard $(root-dir)corev_apu/fpga/src/ariane-ethernet/*.sv))      \
              common/local/util/tc_sram_fpga_wrapper.sv                \
+             vendor/pulp-platform/tech_cells_generic/src/fpga/tc_sram_xilinx.sv                        \
              vendor/pulp-platform/fpga-support/rtl/SyncSpRamBeNx64.sv
 fpga_src := $(addprefix $(root-dir), $(fpga_src))
 
