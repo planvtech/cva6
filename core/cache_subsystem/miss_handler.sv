@@ -104,6 +104,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     mshr_t                                  mshr_d, mshr_q;
     logic [DCACHE_INDEX_WIDTH-1:0]          cnt_d, cnt_q;
     logic [DCACHE_SET_ASSOC-1:0]            evict_way_d, evict_way_q;
+    logic [DCACHE_SET_ASSOC-1:0]            shared_way_d, shared_way_q;
 
     logic                                   colliding_clean_d, colliding_clean_q;
 
@@ -177,10 +178,11 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     // Cache Management
     // ------------------------------
     always_comb begin : cache_management
-        automatic logic [DCACHE_SET_ASSOC-1:0] evict_way, valid_way;
+        automatic logic [DCACHE_SET_ASSOC-1:0] evict_way, valid_way, shared_way;
 
         for (int unsigned i = 0; i < DCACHE_SET_ASSOC; i++) begin
             evict_way[i] = data_i[i].valid & data_i[i].dirty;
+            shared_way[i] = data_i[i].valid & data_i[i].shared;
             valid_way[i] = data_i[i].valid;
             matching_way[i] = data_i[i].valid & (data_i[i].tag == mshr_q.addr[DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:DCACHE_INDEX_WIDTH]);
             matching_dirty_way[i] = data_i[i].valid & data_i[i].dirty & (data_i[i].tag == mshr_q.addr[DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:DCACHE_INDEX_WIDTH]);
@@ -230,6 +232,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         state_d      = state_q;
         cnt_d        = cnt_q;
         evict_way_d  = evict_way_q;
+        shared_way_d = shared_way_q;
         evict_cl_d   = evict_cl_q;
         mshr_d       = mshr_q;
         colliding_clean_d = colliding_clean_q;
@@ -416,8 +419,18 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                     addr_o     = cnt_q;
                     req_o      = 1'b1;
                     we_o       = 1'b1;
-                    data_o.valid = INVALIDATE_ON_FLUSH ? 1'b0 : 1'b1;
-                    // invalidate
+
+                    if (state_q == WB_CACHELINE_FLUSH && !INVALIDATE_ON_FLUSH) begin
+                        // keep valid and shared flags, clear dirty flag
+                        data_o.valid  = 1'b1;
+                        data_o.shared = |(evict_way_q & shared_way_q);
+                        data_o.dirty = 1'b0;
+                    end else begin
+                        // invalidate
+                        data_o.valid  = 1'b0;
+                        data_o.shared = 1'b0;
+                        data_o.dirty  = 1'b0;
+                    end
                     be_o.vldrty = evict_way_q;
                     // go back to handling the miss or flushing or go to idle, depending on where we came from
                     state_d = (state_q == WB_CACHELINE_MISS) ? MISS :
@@ -446,6 +459,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                     // evict cache line, look for the first cache-line which is dirty
                     evict_way_d = get_victim_cl(evict_way);
                     evict_cl_d  = data_i[one_hot_to_bin(evict_way)];
+                    shared_way_d = shared_way;
                     state_d     = WB_CACHELINE_FLUSH;
                 // not dirty ~> increment and continue
                 end else begin
@@ -635,6 +649,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
             state_q       <= INIT;
             cnt_q         <= '0;
             evict_way_q   <= '0;
+            shared_way_q  <= '0;
             evict_cl_q    <= '0;
             serve_amo_q   <= 1'b0;
             colliding_clean_q <= '0;
@@ -643,6 +658,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
             state_q       <= state_d;
             cnt_q         <= cnt_d;
             evict_way_q   <= evict_way_d;
+            shared_way_q  <= shared_way_d;
             evict_cl_q    <= evict_cl_d;
             serve_amo_q   <= serve_amo_d;
             colliding_clean_q <= colliding_clean_d;

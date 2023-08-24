@@ -1957,29 +1957,26 @@ package tb_std_cache_subsystem_pkg;
                                 end
                                 @(posedge sram_vif.clk);
 
-                                // clear entry in cache model
-                                $display("%t ns %s.flush_cache: Flushing cache entry [%0d][%0d]", $time, name, ww, ll);
-                                cache_status[ww][ll] = '0;
+                                // clear entry dirty bit in cache model
+                                $display("%t ns %s.flush_cache: Clearing dirty bit of cache entry [%0d][%0d]", $time, name, ww, ll);
+                                cache_status[ww][ll].dirty = 1'b0;
                             end
                         join_any
                     end
                 end // l
 
+
                 // expect clear of cache entry
                 while (!gnt_vif.gnt[0]) begin
-                    $display("%t ns %s.flush_cache : skipping cycle without grant for clear of cache set [%0d]", $time, name, w);
+                    $display("%t ns %s.flush_cache : skipping cycle without grant for cache set [%0d]", $time, name, w);
                     @(posedge sram_vif.clk); // skip cycles without grant
                     w_cnt++;
                     if (w_cnt > 1000) begin
-                        $error("%s.flush_cache : timeout while waiting for grant for clear of cache set [%0d]", name, w);
+                        $error("%s.flush_cache : timeout while waiting for grant for cache set [%0d]", name, w);
                         break;
                     end
                 end
                 @(posedge sram_vif.clk);
-
-                // clear entry in cache model
-                $display("%t ns %s.flush_cache: Clear cache set [%0d]", $time, name, w);
-                cache_status[w] = '0;
 
             end // w
 
