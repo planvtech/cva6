@@ -15,6 +15,7 @@
 
 module std_nbdcache import std_cache_pkg::*; import ariane_pkg::*; #(
     parameter ariane_cfg_t ArianeCfg        = ArianeDefaultConfig, // contains cacheable regions
+    parameter VLD_SRAM_SIM_INIT             = "none",
     parameter int unsigned AXI_ADDR_WIDTH   = 0,
     parameter int unsigned AXI_DATA_WIDTH   = 0,
     parameter int unsigned AXI_ID_WIDTH     = 0,
@@ -120,6 +121,9 @@ import std_cache_pkg::*;
     readshared_done_t readshared_done;
     logic [3:0]       updating_cache;
 
+    logic [DCACHE_SET_ASSOC-1:0]         miss_invalidate_req;
+    logic [DCACHE_INDEX_WIDTH-1:0]       miss_invalidate_addr;
+
     assign busy_o = |busy | miss_handler_busy;
 
     assign hit_o = |hit;
@@ -162,6 +166,10 @@ import std_cache_pkg::*;
         .flushing_i           ( flushing              ),
         .amo_valid_i          ( serving_amo           ),
         .amo_addr_i           ( serving_amo_addr      ),
+
+        .miss_invalidate_req_i   (miss_invalidate_req  ),
+        .miss_invalidate_addr_i  (miss_invalidate_addr ),
+
         .clean_invalid_hit_o  ( clean_invalid_hit_o   ),
         .clean_invalid_miss_o ( clean_invalid_miss_o  ),
         .*
@@ -232,6 +240,8 @@ import std_cache_pkg::*;
         .amo_resp_o             ( amo_resp_o           ),
         .snoop_invalidate_i     ( invalidate           ),
         .snoop_invalidate_addr_i( invalidate_addr      ),
+        .invalidate_req_o       ( miss_invalidate_req  ),
+        .invalidate_addr_o      ( miss_invalidate_addr ),
         .miss_req_i             ( miss_req             ),
         .miss_gnt_o             ( miss_gnt             ),
         .bypass_gnt_o           ( bypass_gnt           ),
@@ -262,6 +272,7 @@ import std_cache_pkg::*;
     );
 
     assign tag[0] = '0;
+
 
     // --------------
     // Memory Arrays
@@ -320,6 +331,7 @@ import std_cache_pkg::*;
     end
 
     sram #(
+        .SIM_INIT   ( VLD_SRAM_SIM_INIT                ),
         .USER_WIDTH ( 1                                ),
         .DATA_WIDTH ( 4*DCACHE_DIRTY_WIDTH             ),
         .NUM_WORDS  ( DCACHE_NUM_WORDS                 )

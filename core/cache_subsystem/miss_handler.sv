@@ -58,8 +58,11 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
     output axi_req_t                                    axi_data_o,
     input  axi_rsp_t                                    axi_data_i,
 
+    // to/from snoop ctrl
     input  logic                                        snoop_invalidate_i,
     input  logic [63:0]                                 snoop_invalidate_addr_i,
+    output logic [DCACHE_SET_ASSOC-1:0]                 invalidate_req_o,
+    output logic [DCACHE_INDEX_WIDTH-1:0]               invalidate_addr_o,
 
     input  logic [NR_PORTS-1:0][55:0]                   mshr_addr_i,
     output logic [NR_PORTS-1:0]                         mshr_addr_matches_o,
@@ -99,7 +102,8 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
         WB_CACHELINE_AMO,   // F
         AMO_WAIT_RESP,      // 10
         SEND_CLEAN,         // 11
-        REQ_CACHELINE_UNIQUE // 12
+        REQ_CACHELINE_UNIQUE, // 12
+        WB_CACHELINE_AMO_WAIT_ACK // 13
     } state_d, state_q;
 
     // Registers
@@ -174,6 +178,10 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
 
     assign serving_amo_o = serve_amo_q;
     assign serving_amo_addr_o = amo_req_i.operand_a;
+
+    // inform snoop controller when invalidating a cache line
+    assign invalidate_addr_o = addr_o;
+    assign invalidate_req_o  = (req_o[0] && we_o && !data_o.valid) ? (be_o.vldrty) : '0;
 
     // ------------------------------
     // Cache Management
@@ -422,12 +430,21 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                     // invalidate
                     be_o.vldrty = evict_way_q;
                     // go back to handling the miss or flushing or go to idle, depending on where we came from
-                    state_d = (state_q == WB_CACHELINE_MISS) ? MISS :
+                    state_d = (state_q == WB_CACHELINE_MISS) ?
+                                (colliding_clean_q[mshr_q.id] ? REQ_CACHELINE_UNIQUE : REQ_CACHELINE) :
                               (state_q == WB_CACHELINE_FLUSH) ? FLUSH_REQ_STATUS :
-                              (state_q == WB_CACHELINE_AMO) ? AMO_REQ :
+                              (state_q == WB_CACHELINE_AMO) ? WB_CACHELINE_AMO_WAIT_ACK :
                               IDLE;
                 end
             end
+
+            // ~> write back before AMO needs to wait until write is completely finished
+            WB_CACHELINE_AMO_WAIT_ACK: begin
+                if (valid_miss_fsm) begin
+                    state_d = AMO_REQ;
+                end
+            end
+
 
             // ------------------------------
             // Flushing & Initialization
@@ -497,7 +514,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
 
               if (valid_miss_fsm) begin
                 // if the cacheline has just been invalidated, request it again
-                if (colliding_clean_q) begin
+                if (colliding_clean_q[mshr_q.id]) begin
                   state_d = MISS;
                 end
                 else begin
@@ -526,7 +543,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                         evict_cl_d  = data_i[i];
                         cnt_d       = amo_req_i.operand_a[DCACHE_INDEX_WIDTH-1:0];
                         state_d     = WB_CACHELINE_AMO;
-                        break;                           
+                        break;
                     end
                     // match line ~> invalidate
                     else if (data_i[i].valid & (data_i[i].tag == amo_req_i.operand_a[DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:DCACHE_INDEX_WIDTH])) begin
