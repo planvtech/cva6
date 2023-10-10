@@ -861,7 +861,7 @@ module cva6 import ariane_pkg::*; #(
 
   // pragma translate_off
   `ifndef VERILATOR
-  a_not_coherent : assert(DCACHE_COHERENT == 0) else $error("DCACHE_COHERENT only supported with WB cache");
+  initial a_not_coherent : assert(DCACHE_COHERENT == 0) else $error("DCACHE_COHERENT only supported with WB cache");
   `endif
   // pragma translate_on
 
