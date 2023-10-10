@@ -78,7 +78,7 @@ module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
 
     assign busy_o = icache_busy | dcache_busy;
 
-  if (type(axi_req_t) == type(ariane_ace::m2s_t)) begin
+  if (DCACHE_COHERENT) begin
     assign snoop_port_i.ac = axi_resp_i.ac;
     assign snoop_port_i.ac_valid = axi_resp_i.ac_valid;
     assign snoop_port_i.cr_ready = axi_resp_i.cr_ready;
