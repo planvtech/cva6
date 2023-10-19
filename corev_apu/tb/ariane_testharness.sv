@@ -75,6 +75,12 @@ module ariane_testharness #(
 
   assign test_en = 1'b0;
 
+  localparam type axi_ar_chan_t = `ifdef TB_AXI_ACE ariane_ace::ar_chan_t `else  ariane_axi::ar_chan_t `endif;
+  localparam type axi_aw_chan_t = `ifdef TB_AXI_ACE ariane_ace::aw_chan_t `else  ariane_axi::aw_chan_t `endif;
+  localparam type axi_w_chan_t  = `ifdef TB_AXI_ACE ariane_axi::w_chan_t  `else  ariane_axi::w_chan_t  `endif;
+  localparam type axi_req_t     = `ifdef TB_AXI_ACE ariane_ace::req_t     `else  ariane_axi::req_t     `endif;
+  localparam type axi_rsp_t     = `ifdef TB_AXI_ACE ariane_ace::resp_t    `else  ariane_axi::resp_t    `endif;
+
   AXI_BUS #(
     .AXI_ADDR_WIDTH ( AXI_ADDRESS_WIDTH   ),
     .AXI_DATA_WIDTH ( AXI_DATA_WIDTH      ),
@@ -739,8 +745,8 @@ module ariane_testharness #(
   // ---------------
   // Cores
   // ---------------
-  ariane_axi::req_t  [0:ariane_soc::NumHarts-1]  axi_ariane_req;
-  ariane_axi::resp_t [0:ariane_soc::NumHarts-1]  axi_ariane_resp;
+  axi_req_t                [0:ariane_soc::NumHarts-1] axi_ariane_req;
+  axi_rsp_t                [0:ariane_soc::NumHarts-1] axi_ariane_resp;
   ariane_pkg::rvfi_port_t  [0:ariane_soc::NumHarts-1] rvfi;
 
   generate
@@ -835,9 +841,14 @@ module ariane_testharness #(
       .irq_kill_ack_i (core_irq_kill_ack )
     );
 
-    // ariane
+    // cva6
     cva6 #(
-      .ArianeCfg  ( ariane_soc::ArianeSocCfg )
+      .ArianeCfg     ( ariane_soc::ArianeSocCfg ),
+      .axi_ar_chan_t ( axi_ar_chan_t            ),
+      .axi_aw_chan_t ( axi_aw_chan_t            ),
+      .axi_w_chan_t  ( axi_w_chan_t             ),
+      .axi_req_t     ( axi_req_t                ),
+      .axi_rsp_t     ( axi_rsp_t                )
     ) i_ariane (
       .clk_i                ( clk_i               ),
       .rst_ni               ( ndmreset_n          ),
@@ -874,8 +885,13 @@ module ariane_testharness #(
       .axi_resp_i           ( axi_ariane_resp[i]  )
     );
 
-      `AXI_ASSIGN_FROM_REQ(slave[i], axi_ariane_req[i])
-      `AXI_ASSIGN_TO_RESP(axi_ariane_resp[i], slave[i])
+    `AXI_ASSIGN_FROM_REQ(slave[i], axi_ariane_req[i])
+    always_comb begin
+      // assign default value '0 to ensure signals not included in `AXI_SET_TO_RESP
+      // (e.g. ACE signals) get defined
+      axi_ariane_resp[i] = '0;
+      `AXI_SET_TO_RESP(axi_ariane_resp[i], slave[i])
+    end
 
       // -------------
       // Simulation Helper Functions

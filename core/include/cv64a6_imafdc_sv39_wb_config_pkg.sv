@@ -77,6 +77,11 @@ package cva6_config_pkg;
 
     localparam CVA6ConfigMmuPresent = 1;
 
+    // this is used in ariane_testharness to select AXI type (with or without ACE)
+    // temporary solution as the cva6 configuration and parametrization is changing 
+    // upstream
+    `define TB_AXI_ACE
+
     `define RVFI_PORT
 
     // Do not modify
