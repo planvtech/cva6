@@ -309,7 +309,7 @@ module axi_shim #(
     assign axi_req_o.aw.awunique = '0;
     assign axi_req_o.ar.snoop = '0;
     assign axi_req_o.ar.bar = '0;
-    assign axi_req_o.ar.domain = '0;
+    assign axi_req_o.ar.domain = axi_req_o.ar_valid ? 2'b01 : '0;
     assign axi_req_o.ac_ready = '0;
     assign axi_req_o.cr_valid = '0;
     assign axi_req_o.cr_resp = '0;
