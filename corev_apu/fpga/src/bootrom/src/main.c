@@ -5,7 +5,10 @@
 
 int main()
 {
-    init_uart(50000000, 115200);
+    #define UART_FREQ      40000000
+    #define UART_BAUD_RATE 115200
+
+    init_uart(UART_FREQ, UART_BAUD_RATE);
     print_uart("Hello World!\r\n");
 
     int res = gpt_find_boot_partition((uint8_t *)0x80000000UL, 2 * 16384);

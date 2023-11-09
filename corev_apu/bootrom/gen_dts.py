@@ -61,7 +61,7 @@ header = f"""\
 cpus = ""
 for c in range(ncores):
     cpus = cpus + "    CPU" + str(c) + ": cpu@" + str(c) + " {\n"
-    cpus = cpus + "      clock-frequency = <50000000>; // 50 MHz\n"
+    cpus = cpus + "      clock-frequency = <40000000>; // 40 MHz\n"
     cpus = cpus + "      device_type = \"cpu\";\n"
     cpus = cpus + "      reg = <" + str(c) + ">;\n"
     cpus = cpus + "      status = \"okay\";\n"
@@ -117,7 +117,7 @@ footer = """\
     uart@10000000 {
       compatible = "ns16550a";
       reg = <0x0 0x10000000 0x0 0x1000>;
-      clock-frequency = <50000000>;
+      clock-frequency = <40000000>;
       current-speed = <115200>;
       // interrupt-parent = <&PLIC0>;
       interrupts = <1>;

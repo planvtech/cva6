@@ -24,7 +24,7 @@
     #size-cells = <0>;
     timebase-frequency = <32768>; // 32.768 kHz
     CPU0: cpu@0 {
-      clock-frequency = <50000000>; // 50 MHz
+      clock-frequency = <40000000>; // 40 MHz
       device_type = "cpu";
       reg = <0>;
       status = "okay";
@@ -40,7 +40,7 @@
       };
     };
     CPU1: cpu@1 {
-      clock-frequency = <50000000>; // 50 MHz
+      clock-frequency = <40000000>; // 40 MHz
       device_type = "cpu";
       reg = <1>;
       status = "okay";
@@ -94,7 +94,7 @@
     uart@10000000 {
       compatible = "ns16550a";
       reg = <0x0 0x10000000 0x0 0x1000>;
-      clock-frequency = <50000000>;
+      clock-frequency = <40000000>;
       current-speed = <115200>;
       // interrupt-parent = <&PLIC0>;
       interrupts = <1>;
