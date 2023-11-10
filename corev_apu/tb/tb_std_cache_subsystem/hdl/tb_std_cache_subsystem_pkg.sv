@@ -1164,6 +1164,8 @@ package tb_std_cache_subsystem_pkg;
 
         int verbosity;
 
+        logic axi_id_per_port = 0; // set to 1 if the lower 2 bits of the AXI ID corresponds to port ID
+
         function new (
             virtual dcache_sram_if sram_vif,
             virtual dcache_gnt_if  gnt_vif,
@@ -1308,7 +1310,10 @@ package tb_std_cache_subsystem_pkg;
         endfunction
 
         function automatic bit isDCache( input ax_ace_beat_t ax );
-            return (ax.ax_id == 4'b1100);
+            unique case (ax.ax_id)
+                4'b1100, 4'b1101, 4'b1110, 4'b1111: return 1;
+                default:                            return 0;
+            endcase
         endfunction
 
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2062,29 +2067,42 @@ package tb_std_cache_subsystem_pkg;
                 while (ac_mbx_int.try_get(ac));
 
                 if (isShared(addr_v)) begin
-                    ax_ace_beat_t ar_beat     = new();
-                    r_ace_beat_t  r_beat      = new();
-                    r_ace_beat_t  r_beat_peek = new();
+                    ax_ace_beat_t ar_beat      = new();
+                    ax_ace_beat_t ar_beat_peek = new();
+                    r_ace_beat_t  r_beat       = new();
+                    r_ace_beat_t  r_beat_peek  = new();
 
                     $display("%t ns %s.do_hit: Got status shared = %0d, redo_hit = %0d for message: %s", $time, name, isShared(addr_v), redo_hit, msg.print_me());
 
-                    if (msg.prio >= 2) begin
-                        int cnt = 0;
-                        // this is a request from a cache controller, wait for grant from miss handler
-                        $display("%t ns %s.do_hit: wait for miss handler grant for message : %s", $time, name, msg.print_me());
-                        while (!gnt_vif.miss_gnt[msg.port_idx]) begin
-                            @(posedge sram_vif.clk); // skip cycles without grant
-                            cnt++;
-                            if (cnt > cache_msg_timeout) begin
-                                $error("%s : Timeout while waiting for miss handler grant for message : %s", name, msg.print_me());
-                                break;
+                    if (axi_id_per_port) begin
+                        logic [3:0] exp_id = 4'hC + msg.port_idx;
+                        // wait for AR beat with expected ID
+                        while (ar_beat_peek.ax_id[3:0] != exp_id) begin
+                            ar_mbx.peek(ar_beat_peek);
+                            if (ar_beat_peek.ax_id != exp_id) begin
+                                $display("%t ns %s.do_hit: ignoring AR beat with ID 0x%0h for message : %s", $time, name, ar_beat_peek.ax_id, msg.print_me());
+                                @(posedge sram_vif.clk);
+                            end
+                        end
+                    end else begin
+                        if (msg.prio >= 2) begin
+                            int cnt = 0;
+                            // this is a request from a cache controller, wait for grant from miss handler
+                            $display("%t ns %s.do_hit: wait for miss handler grant for message : %s", $time, name, msg.print_me());
+                            while (!gnt_vif.miss_gnt[msg.port_idx]) begin
+                                @(posedge sram_vif.clk); // skip cycles without grant
+                                cnt++;
+                                if (cnt > cache_msg_timeout) begin
+                                    $error("%s : Timeout while waiting for miss handler grant for message : %s", name, msg.print_me());
+                                    break;
+                                end
                             end
                         end
                     end
 
                     // wait for AR beat
                     ar_mbx.get(ar_beat);
-                    $display("%t ns %s.do_hit: got AR beat with ID %0h for message : %s", $time, name, ar_beat.ax_id, msg.print_me());
+                    $display("%t ns %s.do_hit: got AR beat with ID 0x%0h for message : %s", $time, name, ar_beat.ax_id, msg.print_me());
                     if (!isCleanUnique(ar_beat))
                         $error("%s Error CLEAN_UNIQUE expected for message : %s", name, msg.print_me());
 
@@ -2094,9 +2112,9 @@ package tb_std_cache_subsystem_pkg;
                         if (r_beat_peek.r_id == ar_beat.ax_id) begin
                             // this is our response
                             r_mbx.get(r_beat);
-                            $display("%t ns %s.do_hit: got R beat with last = %0d for message : %s", $time, name, r_beat.r_last, msg.print_me());
+                            $display("%t ns %s.do_hit: got R beat with ID 0x%0h and last = %0d for message : %s", $time, name, r_beat.r_id, r_beat.r_last, msg.print_me());
                         end else begin
-                            $display("%t ns %s.do_hit: ignoring R beat with ID %0h for message : %s", $time, name, r_beat.r_last, r_beat_peek.r_id, msg.print_me());
+                            $display("%t ns %s.do_hit: ignoring R beat with ID 0x%0h for message : %s", $time, name, r_beat_peek.r_id, msg.print_me());
                             @(posedge sram_vif.clk);
                         end
                     end
@@ -2234,11 +2252,11 @@ package tb_std_cache_subsystem_pkg;
                             // this is our response
                             ar_mbx.get(ar_beat);
                         end else begin
-                            $display("%t ns %s.do_miss.check_axi: ignoring AR beat with ID 0x%2h for message : %s", $time, name, ar_beat_peek.ax_id, msg.print_me());
+                            $display("%t ns %s.do_miss.check_axi: ignoring AR beat with ID 0x%0h for message : %s", $time, name, ar_beat_peek.ax_id, msg.print_me());
                             @(posedge sram_vif.clk);
                         end
                     end
-                    $display("%t ns %s.do_miss.check_axi: got AR beat for message : %s", $time, name, msg.print_me());
+                    $display("%t ns %s.do_miss.check_axi: got AR beat with ID 0x%0h for message : %s", $time, name, ar_beat.ax_id, msg.print_me());
 
                     if (msg.trans_type == WR_REQ) begin
                         if (is_inside_shareable_regions(ArianeCfg, msg.get_addr())) begin
@@ -2269,7 +2287,7 @@ package tb_std_cache_subsystem_pkg;
                             // this is our response
                             r_mbx.get(r_beat);
                             msg.add_to_cache_line(r_beat.r_data);
-                            $display("%t ns %s.do_miss.check_axi: got R beat with last = %0d for message : %s", $time, name, r_beat.r_last, msg.print_me());
+                            $display("%t ns %s.do_miss.check_axi: got R beat with ID 0x%0h and last = %0d for message : %s", $time, name, r_beat.r_id, r_beat.r_last, msg.print_me());
                             if (msg.trans_type == RD_REQ) begin
                                 if (r_cnt == msg.data_offset) begin
                                     $display("%t ns %s.do_miss.check_axi: got R beat with valid data, changing type from RD_REQ to RD_RESP for message : %s", $time, name, msg.print_me());
@@ -2441,7 +2459,7 @@ package tb_std_cache_subsystem_pkg;
                                     // this is our response
                                     ar_mbx.get(ar_beat);
                                 end else begin
-                                    $display("%t ns %s.check_cache_msg: ignoring AR beat with ID 0x%2h for message : %s", $time, name, ar_beat_peek.ax_id, msg.print_me());
+                                    $display("%t ns %s.check_cache_msg: ignoring AR beat with ID 0x%0h for message : %s", $time, name, ar_beat_peek.ax_id, msg.print_me());
                                     @(posedge sram_vif.clk);
                                 end
                             end
@@ -2462,9 +2480,9 @@ package tb_std_cache_subsystem_pkg;
                                 if (r_beat_peek.r_id == ar_beat.ax_id) begin
                                     // this is our response
                                     r_mbx.get(r_beat);
-                                    $display("%t ns %s.check_cache_msg: got R beat with last = %0d and ID 0x%2h for message : %s", $time, name, r_beat.r_last, r_beat.r_id, msg.print_me());
+                                    $display("%t ns %s.check_cache_msg: got R beat with last = %0d and ID 0x%0h for message : %s", $time, name, r_beat.r_last, r_beat.r_id, msg.print_me());
                                 end else begin
-                                    $display("%t ns %s.check_cache_msg: ignoring R beat with ID 0x%2h for message : %s", $time, name, r_beat_peek.r_id, msg.print_me());
+                                    $display("%t ns %s.check_cache_msg: ignoring R beat with ID 0x%0h for message : %s", $time, name, r_beat_peek.r_id, msg.print_me());
                                     @(posedge sram_vif.clk);
                                 end
                             end
