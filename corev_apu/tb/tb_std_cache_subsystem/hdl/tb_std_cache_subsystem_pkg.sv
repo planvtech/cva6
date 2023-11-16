@@ -1696,6 +1696,13 @@ package tb_std_cache_subsystem_pkg;
                                     $error("%s.update_cache_from_req:: Timeout while waiting for grant for dcache req : %s", name, req.print_me());
                                     break;
                                 end
+                                if (hit && !isHit(addr_v)) begin
+                                    $display("%t ns %s.update_cache_from_req: hit status changed from hit to miss, calling do_miss for req : %s", $time, name, req.print_me());
+                                    hit = 0;
+                                    req.insert_readback = 0;
+                                    do_miss(req);
+                                end
+
                             end
                             $display("%t ns %s.update_cache_from_req: got grant for dcache req : %s", $time, name, req.print_me());
                             dut_way = one_hot_to_bin(gnt_vif.get_way(.use_be(req_t.prio==0)));
