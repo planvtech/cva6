@@ -336,8 +336,6 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
                 // check if the MSHR still doesn't match
                 mshr_addr_o = {mem_req_q.tag, mem_req_q.index};
 
-//                updating_cache_o = 1'b1;
-
                 // We need to re-check for MSHR aliasing here as the store requires at least
                 // two memory look-ups on a single-ported SRAM and therefore is non-atomic
                 if (!mshr_index_matches_i) begin
@@ -436,12 +434,6 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
 
             // ~> wait for critical word to arrive
             WAIT_CRITICAL_WORD: begin
-//                // speculatively request another word
-//                if (req_port_i.data_req) begin
-//                    // request the cache line
-//                    req_o = '1;
-//                end
-
                 if (critical_word_valid_i) begin
                     req_port_o.data_rvalid = ~mem_req_q.killed;
                     req_port_o.data_rdata = critical_word_i;
@@ -493,7 +485,7 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
         end
         // check if we've received a ReadShared while doing a CleanUnique
         // in this case, we have to rerun the CleanUnique
-        if (sample_readshared_q & readshared_done_i.valid & readshared_done_i.addr == {mem_req_q.tag, mem_req_q.index})
+        if (sample_readshared_q & readshared_done_i.valid & readshared_done_i.addr[63:DCACHE_BYTE_OFFSET] == {mem_req_q.tag, mem_req_q.index[DCACHE_INDEX_WIDTH-1:DCACHE_BYTE_OFFSET]})
           colliding_read_d = 1'b1;
     end
 
