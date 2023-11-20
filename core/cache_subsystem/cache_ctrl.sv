@@ -351,6 +351,9 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
                     state_d = WAIT_MSHR;
                 end else begin
                     if (colliding_clean_q) begin
+                        // Cache was invalidated while waiting for access. Restart request.
+                        // Note: there is no need to check colliding_clean_d too since it will only be high when the
+                        // snoop controller is updating the cache -> gnt_i will be low
                         req_o = '1;
                         addr_o = mem_req_q.index;
                         if (gnt_i) begin
@@ -360,7 +363,7 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
                         end
                     end else begin
                         if (colliding_read_q) begin
-                            // there has not been a colliding readshared request during a makeunique+write redo a CleanUnique
+                            // there has been a colliding readshared request during a makeunique+write; redo CleanUnique
                             colliding_read_d = 1'b0;
                             colliding_clean_d = 1'b0;
                             state_d = MAKE_UNIQUE;
@@ -386,6 +389,8 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
                                 state_d = IDLE;
                                 colliding_read_d = 1'b0;
                                 colliding_clean_d = 1'b0;
+                                a_colliding_clean : assert (!colliding_clean_d) else $error("Unexpected colliding_clean_d");
+                                a_colliding_read : assert (!colliding_read_d) else $error("Unexpected colliding_read_d");
                             end
                         end
                     end
