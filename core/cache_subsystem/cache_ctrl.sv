@@ -394,12 +394,12 @@ module cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
                             data_o.shared = 1'b0;
                             // got a grant ~> this is finished
                             if (gnt_i) begin
+                                a_colliding_clean : assert (!colliding_clean_d) else $error("Unexpected colliding_clean_d");
+                                a_colliding_read : assert (!colliding_read_d) else $error("Unexpected colliding_read_d");
                                 req_port_o.data_gnt = 1'b1;
                                 state_d = IDLE;
                                 colliding_read_d = 1'b0;
                                 colliding_clean_d = 1'b0;
-                                a_colliding_clean : assert (!colliding_clean_d) else $error("Unexpected colliding_clean_d");
-                                a_colliding_read : assert (!colliding_read_d) else $error("Unexpected colliding_read_d");
                             end
                         end
                     end
