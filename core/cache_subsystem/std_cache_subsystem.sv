@@ -14,6 +14,8 @@
 // Description: Standard Ariane cache subsystem with instruction cache and
 //              write-back data cache.
 
+`include "ace/assign.svh"
+`include "axi/assign.svh"
 
 module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
     parameter ariane_cfg_t ArianeCfg = ArianeDefaultConfig,  // contains cacheable regions
@@ -51,8 +53,6 @@ module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
     input  logic                           dcache_flush_i,         // high until acknowledged
     output logic                           dcache_flush_ack_o,     // send a single cycle acknowledge signal when the cache is flushed
     output logic                           dcache_miss_o,          // we missed on a ld/st
-    output logic                           dcache_hit_o,           // we hit on a ld/st
-    output logic                           dcache_flushing_o,      // flushing
     output logic                           wbuffer_empty_o,        // statically set to 1, as there is no wbuffer in this cache system
     // Request ports
     input  dcache_req_i_t   [2:0]          dcache_req_ports_i,     // to/from LSU
@@ -64,23 +64,28 @@ module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
 
   assign wbuffer_empty_o = 1'b1;
 
-    axi_req_t axi_req_icache;
-    axi_rsp_t axi_resp_icache;
+  axi_req_t axi_req_icache;
+  axi_rsp_t axi_resp_icache;
 
-    ariane_ace::m2s_nosnoop_t axi_req_bypass;
-    ariane_ace::s2m_nosnoop_t axi_resp_bypass;
-    ariane_ace::m2s_nosnoop_t axi_req_data;
-    ariane_ace::s2m_nosnoop_t axi_resp_data;
+  axi_req_t axi_req_bypass;
+  axi_rsp_t axi_resp_bypass;
+  axi_req_t axi_req_data;
+  axi_rsp_t axi_resp_data;
 
-    ariane_ace::snoop_req_t snoop_port_i;
-    ariane_ace::snoop_resp_t snoop_port_o;
+  ariane_ace::req_nosnoop_t  ace_req_bypass;
+  ariane_ace::resp_nosnoop_t ace_resp_bypass;
+  ariane_ace::req_nosnoop_t  ace_req_data;
+  ariane_ace::resp_nosnoop_t ace_resp_data;
 
-    logic              icache_busy;
-    logic              dcache_busy;
+  ariane_ace::snoop_req_t    snoop_port_i;
+  ariane_ace::snoop_resp_t   snoop_port_o;
 
-    assign busy_o = icache_busy | dcache_busy;
+  logic                      icache_busy;
+  logic                      dcache_busy;
 
-  if (type(axi_req_t) == type(ariane_ace::m2s_t)) begin
+  assign busy_o = icache_busy | dcache_busy;
+
+  if (DCACHE_COHERENT) begin
     assign snoop_port_i.ac = axi_resp_i.ac;
     assign snoop_port_i.ac_valid = axi_resp_i.ac_valid;
     assign snoop_port_i.cr_ready = axi_resp_i.cr_ready;
@@ -90,8 +95,20 @@ module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
     assign axi_req_o.cr_resp = snoop_port_o.cr_resp;
     assign axi_req_o.cd_valid = snoop_port_o.cd_valid;
     assign axi_req_o.cd = snoop_port_o.cd;
+    `ACE_ASSIGN_REQ_STRUCT(axi_req_bypass, ace_req_bypass)
+    `ACE_ASSIGN_REQ_STRUCT(axi_req_data, ace_req_data)
+    `ACE_ASSIGN_RESP_STRUCT(ace_resp_bypass, axi_resp_bypass)
+    `ACE_ASSIGN_RESP_STRUCT(ace_resp_data, axi_resp_data)
   end else begin
     assign snoop_port_i = '0;
+    `AXI_ASSIGN_REQ_STRUCT(axi_req_bypass, ace_req_bypass)
+    `AXI_ASSIGN_REQ_STRUCT(axi_req_data, ace_req_data)
+    always_comb begin
+      ace_resp_data   = '0;
+      ace_resp_bypass = '0;
+      `AXI_SET_RESP_STRUCT(ace_resp_bypass, axi_resp_bypass)
+      `AXI_SET_RESP_STRUCT(ace_resp_data, axi_resp_data)
+    end
   end
 
     cva6_icache_axi_wrapper #(
@@ -99,6 +116,7 @@ module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
         .AxiAddrWidth ( AxiAddrWidth ),
         .AxiDataWidth ( AxiDataWidth ),
         .AxiIdWidth   ( AxiIdWidth   ),
+        .AxiAce       ( DCACHE_COHERENT ),
         .axi_req_t    ( axi_req_t    ),
         .axi_rsp_t    ( axi_rsp_t    )
     ) i_cva6_icache_axi_wrapper (
@@ -128,8 +146,8 @@ module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
       .AXI_ADDR_WIDTH   ( AxiAddrWidth ),
       .AXI_DATA_WIDTH   ( AxiDataWidth ),
       .AXI_ID_WIDTH     ( AxiIdWidth   ),
-      .axi_req_t        ( ariane_ace::m2s_nosnoop_t ),
-      .axi_rsp_t        ( ariane_ace::s2m_nosnoop_t )
+      .axi_req_t        ( ariane_ace::req_nosnoop_t ),
+      .axi_rsp_t        ( ariane_ace::resp_nosnoop_t )
    ) i_nbdcache (
       .clk_i,
       .rst_ni,
@@ -137,15 +155,13 @@ module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
       .flush_i      ( dcache_flush_i         ),
       .flush_ack_o  ( dcache_flush_ack_o     ),
       .miss_o       ( dcache_miss_o          ),
-      .hit_o        ( dcache_hit_o           ),
-      .flushing_o   ( dcache_flushing_o      ),
       .busy_o       ( dcache_busy            ),
       .stall_i      ( stall_i                ),
       .init_ni      ( init_ni                ),
-      .axi_bypass_o ( axi_req_bypass         ),
-      .axi_bypass_i ( axi_resp_bypass        ),
-      .axi_data_o   ( axi_req_data           ),
-      .axi_data_i   ( axi_resp_data          ),
+      .axi_bypass_o ( ace_req_bypass         ),
+      .axi_bypass_i ( ace_resp_bypass        ),
+      .axi_data_o   ( ace_req_data           ),
+      .axi_data_i   ( ace_resp_data          ),
       .req_ports_i  ( dcache_req_ports_i     ),
       .req_ports_o  ( dcache_req_ports_o     ),
       .amo_req_i,
@@ -194,10 +210,10 @@ module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
     // to forward the correct write data.
     always_comb begin
         w_select = 0;
-        unique case (axi_req_o.aw.id)
-            4'b1100:                            w_select = 2; // dcache
-            4'b1000, 4'b1001, 4'b1010, 4'b1011: w_select = 1; // bypass
-            default:                            w_select = 0; // icache
+        unique case (axi_req_o.aw.id[3:2])
+            4'b11:   w_select = 2; // dcache
+            4'b10:   w_select = 1; // bypass
+            default: w_select = 0; // icache
         endcase
     end
 
@@ -254,11 +270,11 @@ module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
 
     always_comb begin
         r_select = 0;
-        unique case (axi_resp_i.r.id)
-            4'b1100:                            r_select = 0; // dcache
-            4'b1000, 4'b1001, 4'b1010, 4'b1011: r_select = 1; // bypass
-            4'b0000:                            r_select = 2; // icache
-            default:                            r_select = 0;
+        unique case (axi_resp_i.r.id[3:2])
+            2'b11:   r_select = 0; // dcache
+            2'b10:   r_select = 1; // bypass
+            2'b00:   r_select = 2; // icache
+            default: r_select = 0;
         endcase
     end
 
@@ -281,11 +297,11 @@ module std_cache_subsystem import ariane_pkg::*; import std_cache_pkg::*; #(
 
     always_comb begin
         b_select = 0;
-        unique case (axi_resp_i.b.id)
-            4'b1100:                            b_select = 0; // dcache
-            4'b1000, 4'b1001, 4'b1010, 4'b1011: b_select = 1; // bypass
-            4'b0000:                            b_select = 2; // icache
-            default:                            b_select = 0;
+        unique case (axi_resp_i.b.id[3:2])
+            2'b11:   b_select = 0; // dcache
+            2'b10:   b_select = 1; // bypass
+            2'b00:   b_select = 2; // icache
+            default: b_select = 0;
         endcase
     end
 

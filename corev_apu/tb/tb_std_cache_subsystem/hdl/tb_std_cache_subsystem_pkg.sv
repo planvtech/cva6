@@ -5,8 +5,11 @@ package tb_std_cache_subsystem_pkg;
     import snoop_test::*;
     import std_cache_pkg::*;
 
+    `define WAIT_CYC(CLK, N) \
+        repeat(N) @(posedge(CLK));
+
     // definitions for dcache request and response
-    typedef enum {WR_REQ, RD_REQ, RD_RESP, WR_RESP, EVICT, READBACK} dcache_trans_t;
+    typedef enum {WR_REQ, RD_REQ, RD_RESP, WR_RESP, EVICT, READBACK, UNDEF} dcache_trans_t;
 
     // definitions for dcache management transactions
     typedef enum {FLUSH_REQ} dcache_mgmt_trans_t;
@@ -65,12 +68,15 @@ package tb_std_cache_subsystem_pkg;
     function automatic void update_cache_line (
         inout logic [DCACHE_LINE_WIDTH-1:0] cache_line,
         input riscv::xlen_t                 data,
+        input logic [(riscv::XLEN/8)-1:0]   be,
         input int unsigned                  offset // in units of data width
     );
         logic [riscv::XLEN-1:0]       data_mask;
         logic [DCACHE_LINE_WIDTH-1:0] line_mask;
 
-        data_mask = '1;
+        for (int i=0; i<(riscv::XLEN/8); i++) begin
+            data_mask[i*8 +: 8] = {8{be[i]}};
+        end
         line_mask = data_mask; // zero-extend
 
         cache_line = ((line_mask & data) << (offset * riscv::XLEN)) | (cache_line & ~(line_mask << (offset * riscv::XLEN)));
@@ -78,7 +84,7 @@ package tb_std_cache_subsystem_pkg;
 
 
     function automatic logic [63:0] get_rand_addr_from_cfg(ariane_cfg_t cfg);
-        logic [63:0] start_addr, end_addr;
+        logic [63:0] start_addr, end_addr, range;
         logic [31:0] addr_msb, addr_lsb;
         int region;
 
@@ -98,11 +104,13 @@ package tb_std_cache_subsystem_pkg;
             end
         endcase
 
-        a_lsb_zero : assert (start_addr[31:0] === 0 && end_addr[31:0] === 0) else
-            $error("expected 32 LSB zeros for address range");
+        range = end_addr - start_addr - 1;
 
-        addr_msb = $urandom_range((end_addr-1) >> 32, start_addr>>32);
-        addr_lsb = $urandom;
+        a_lsb_zero : assert (range[63:32] === 0) else
+            $error("expected address range less than 32 bits");
+
+        addr_msb = start_addr>>32;
+        addr_lsb = start_addr[31:0] + $urandom_range(range);
 
         return {addr_msb, addr_lsb};
 
@@ -116,9 +124,11 @@ package tb_std_cache_subsystem_pkg;
         amo_t        op;
         logic [63:0] addr; // address
         logic [63:0] data; // data as layouted in the register
+        logic  [1:0] size;
+        int          id;
 
         function string print_me();
-            return $sformatf("type %0s, address 0x%16h, data 0x%16h", op.name(), addr, data);
+            return $sformatf("id %0d, type %0s, address 0x%16h, data 0x%16h, size 0b%2b", id, op.name(), addr, data, size);
         endfunction
     endclass
 
@@ -129,6 +139,11 @@ package tb_std_cache_subsystem_pkg;
     class amo_resp;
         amo_t        op;
         logic [63:0] data;
+        int          id;
+
+        function string print_me();
+            return $sformatf("id %0d, type %0s, data 0x%16h", id, op.name(), data);
+        endfunction
     endclass
 
 
@@ -146,24 +161,29 @@ package tb_std_cache_subsystem_pkg;
             this.vif = vif;
             vif.req = '0;
             this.name=name;
-            verbosity = 1;
+            verbosity = 0;
             this.cfg = cfg;
         endfunction
 
-        // request
-        task req (
-            input logic [63:0] data         = '0,
-            input logic [63:0] addr         = '0,
-            input amo_t        op           = AMO_ADD,
-            input bit          rand_data    = 0,
-            input bit          rand_addr    = 0,
-            input bit          rand_op      = 0,
-            input bit          check_result = 1'b0,
-            input logic [63:0] exp_result   = '0
+        // request with response output
+        task req_resp (
+            input  logic [63:0] data         = '0,
+            input  logic [63:0] addr         = '0,
+            input  logic  [1:0] size         = '1, // 2'b10 --> word operation, 2'b11 --> double word operation
+            input  amo_t        op           = AMO_ADD,
+            input  bit          rand_data    = 0,
+            input  bit          rand_addr    = 0,
+            input  bit          rand_op      = 0,
+            input  bit          rand_size    = 0,
+            input  bit          check_result = 1'b0,
+            input  logic [63:0] exp_result   = '0,
+            output logic [63:0] result
         );
             logic [63:0] addr_int;
             logic [63:0] data_int;
+            logic  [1:0] size_int;
             amo_t        op_int;
+            result = 'x;
 
             if (rand_addr) begin
                 addr_int = get_rand_addr_from_cfg(cfg);
@@ -175,6 +195,12 @@ package tb_std_cache_subsystem_pkg;
                 data_int = {$urandom, $urandom};
             end else begin
                 data_int = data;
+            end
+
+            if (rand_size) begin
+                size_int = $urandom_range(3,2);
+            end else begin
+                size_int = size;
             end
 
             if (rand_op) begin
@@ -195,26 +221,55 @@ package tb_std_cache_subsystem_pkg;
             #0;
             vif.req.req       = 1;        // this request is valid
             vif.req.amo_op    = op_int;   // atomic memory operation to perform
-            vif.req.size      = 2'b11;    // 2'b10 --> word operation, 2'b11 --> double word operation
+            vif.req.size      = size_int; // 2'b10 --> word operation, 2'b11 --> double word operation
             vif.req.operand_a = addr_int; // address
-            vif.req.operand_b = data_int; // address
+            vif.req.operand_b = data_int; // data
 
             do begin
                 @(posedge vif.clk);
             end while (!vif.resp.ack);
+            result = vif.resp.result;
 
             if (verbosity > 0) begin
                 $display("%t ns %s got ack for AMO request %s to address 0x%8h", $time, name, op.name(), addr_int);
             end
 
             if (check_result) begin
-                a_rd_check : assert (vif.resp.result == exp_result) else
-                    $error("%s : data mismatch. Expected 0x%16h, got 0x%16h", name, exp_result, vif.resp.result);
+                a_rd_check : assert (result == exp_result) else
+                    $error("%s : data mismatch. Expected 0x%16h, got 0x%16h", name, exp_result, result);
             end
 
             #0;
             vif.req.req    = 1'b0;
 
+        endtask
+
+        // request without response
+        task req (
+            input  logic [63:0] data         = '0,
+            input  logic [63:0] addr         = '0,
+            input  logic  [1:0] size         = '1, // 2'b10 --> word operation, 2'b11 --> double word operation
+            input  amo_t        op           = AMO_ADD,
+            input  bit          rand_data    = 0,
+            input  bit          rand_addr    = 0,
+            input  bit          rand_op      = 0,
+            input  bit          rand_size    = 0,
+            input  bit          check_result = 1'b0,
+            input  logic [63:0] exp_result   = '0
+        );
+            logic [63:0] dummy_result;
+            this.req_resp (
+                .data         ( data         ),
+                .addr         ( addr         ),
+                .size         ( size         ),
+                .op           ( op           ),
+                .rand_data    ( rand_data    ),
+                .rand_addr    ( rand_addr    ),
+                .rand_op      ( rand_op      ),
+                .rand_size    ( rand_size    ),
+                .check_result ( check_result ),
+                .exp_result   ( exp_result   ),
+                .result       ( dummy_result ));
         endtask
 
     endclass
@@ -232,11 +287,13 @@ package tb_std_cache_subsystem_pkg;
 
         string              name;
         int                 verbosity;
+        int                 id;
 
         function new (virtual amo_intf vif, string name="amo_monitor");
             this.vif  = vif;
             this.name = name;
-            verbosity = 1;
+            verbosity = 0;
+            id = 0;
         endfunction
 
         // get read requests and responses
@@ -252,6 +309,8 @@ package tb_std_cache_subsystem_pkg;
                     req.op   = vif.req.amo_op;
                     req.addr = vif.req.operand_a;
                     req.data = vif.req.operand_b;
+                    req.size = vif.req.size;
+                    req.id   = id;
                     op       = vif.req.amo_op; // remember op
 
                     if (verbosity > 0) begin
@@ -267,10 +326,12 @@ package tb_std_cache_subsystem_pkg;
                     resp      = new();
                     resp.op   = op;
                     resp.data = vif.resp.result;
+                    resp.id   = id;
+                    this.id++;
 
                     #0; // add zero delay here to make sure read response is repoerted after read request if it gets served immediately
                     if (verbosity > 0) begin
-                        $display("%t ns %s got AMO response with data 0x%8h", $time, name, resp.data);
+                        $display("%t ns %s got AMO response : %s", $time, name, resp.print_me());
                     end
                     resp_mbox.put(resp);
 
@@ -295,6 +356,8 @@ package tb_std_cache_subsystem_pkg;
         logic [DCACHE_INDEX_WIDTH-1:0]       address_index;
         logic [DCACHE_TAG_WIDTH-1:0]         address_tag;
         riscv::xlen_t                        data;
+        logic [(riscv::XLEN/8)-1:0]          be;
+        logic [1:0]                          size;
         // help variables
         int                                  port_idx;
         int                                  prio;
@@ -306,9 +369,12 @@ package tb_std_cache_subsystem_pkg;
         logic [DCACHE_LINE_WIDTH-1:0]        cache_line;  // for carrying an entire cache line from read response
         logic [$clog2(DCACHE_SET_ASSOC)-1:0] target_way;
         logic                                target_way_valid;
+        logic                                redo_hit;
+        int                                  id;
 
         function new();
             this.target_way_valid = 1'b0;
+            this.redo_hit         = 1'b0;
         endfunction
 
         task set_data_offset;
@@ -326,14 +392,13 @@ package tb_std_cache_subsystem_pkg;
             return tag_index2addr(.tag(this.address_tag), .index(this.address_index));
         endfunction
 
-
         function string print_me();
             if ((trans_type == WR_REQ) || (trans_type == RD_RESP)) begin
-                return $sformatf("type %0s, tag 0x%11h, index 0x%3h, data 0x%16h",trans_type.name(), address_tag, address_index, data);
+                return $sformatf("id %0d, type %0s, port idx %0d (prio %0d), tag 0x%11h, index 0x%3h, size %0d, be 0x%2h, data 0x%16h", id, trans_type.name(), port_idx, prio, address_tag, address_index, size, be, data);
             end else if (trans_type == READBACK) begin
-                return $sformatf("type %0s, tag 0x%11h, index 0x%3h, data 0x%16h_%16h",trans_type.name(), address_tag, address_index, cache_line[127:64], cache_line[63:0]);
+                return $sformatf("id %0d, type %0s, port idx %0d (prio %0d), tag 0x%11h, index 0x%3h, size %0d, be 0x%2h, data 0x%16h_%16h", id, trans_type.name(), port_idx, prio, address_tag, address_index, size, be, cache_line[127:64], cache_line[63:0]);
             end else begin
-                return $sformatf("type %0s, tag 0x%11h, index 0x%3h",trans_type.name(), address_tag, address_index);
+                return $sformatf("id %0d, type %0s, port idx %0d (prio %0d), tag 0x%11h, index 0x%3h, size %0d, be 0x%2h", id, trans_type.name(), port_idx, prio, address_tag, address_index, size, be);
             end
         endfunction
 
@@ -346,6 +411,21 @@ package tb_std_cache_subsystem_pkg;
     class dcache_resp;
         dcache_trans_t trans_type;
         riscv::xlen_t  data;
+        int            id;
+
+        function new();
+            this.trans_type = UNDEF;
+            this.data = 'x;
+        endfunction
+
+        function string print_me();
+            if (trans_type == RD_RESP) begin
+                return $sformatf("id %0d, type %0s, data 0x%16h", id, trans_type.name(), data);
+            end else begin
+                return $sformatf("id %0d, type %0s", id, trans_type.name());
+            end
+        endfunction
+
     endclass
 
 
@@ -358,6 +438,8 @@ package tb_std_cache_subsystem_pkg;
         ariane_cfg_t cfg;
         string name;
         int verbosity;
+        logic kill_req;
+        logic kill_armed;
 
         function new (virtual dcache_intf vif, ariane_cfg_t cfg, string name="dcache_driver");
             this.vif              = vif;
@@ -367,14 +449,29 @@ package tb_std_cache_subsystem_pkg;
             this.cfg              = cfg;
             this.name             = name;
             verbosity             = 0;
+            kill_req              = 0;
+            kill_armed            = 0;
         endfunction
 
         // read request
-        task rd (
-            input logic [63:0] addr      = '0,
-            input bit          rand_addr = 0
+        task automatic rd_resp (
+            input logic  [63:0] addr         = '0,
+            input logic   [1:0] size         = 2'b11,
+            input logic   [7:0] be           = '1,
+            input bit           rand_size_be = 0,
+            input bit           rand_addr    = 0,
+            input int           rand_kill    = 0, // chance of killing request in percentage
+            input bit           check_result = 1'b0,
+            input logic  [63:0] exp_result   = '0,
+            input bit           do_wait      = 1'b0,
+            input bit           kill         = 1'b0,
+            output logic [63:0] result
         );
             logic [63:0] addr_int;
+            logic  [1:0] size_int;
+            logic  [7:0] be_int;
+            logic        kill_int;
+            logic [63:0] bit_mask;
 
             if (rand_addr) begin
                 addr_int = get_rand_addr_from_cfg(cfg);
@@ -382,15 +479,35 @@ package tb_std_cache_subsystem_pkg;
                 addr_int = addr;
             end
 
+            if (rand_size_be) begin
+                int size_bytes;
+                size_int = $urandom_range(3);
+                size_bytes = 2**size_int;
+                be_int = ((2**size_bytes)-1) << $urandom_range(8 - size_bytes);
+            end else begin
+                be_int = be;
+                size_int = size;
+            end
+
+            for (int i=0; i<8; i++) begin
+                bit_mask[i*8 +:8] = {8{be_int[i]}};
+            end
+
+            if (kill) begin
+                kill_int = 1'b1;
+            end else begin
+                kill_int = (rand_kill >= $urandom_range(100,1));
+            end
+
             if (verbosity > 0) begin
-                $display("%t ns %s sending read request for address 0x%8h", $time, name, addr_int);
+                $display("%t ns %s: sending read request for address 0x%8h", $time, name, addr_int);
             end
 
             #0;
             vif.req.data_req      = 1'b1;
             vif.req.data_we       = 1'b0;
-            vif.req.data_be       = '1;
-            vif.req.data_size     = 2'b11;
+            vif.req.data_be       = be_int;
+            vif.req.data_size     = size_int;
             vif.req.address_index = addr2index(addr_int);
 
             do begin
@@ -400,89 +517,98 @@ package tb_std_cache_subsystem_pkg;
             fork
                 // send tag while allowing a new read to start
                 begin
+
                     if (verbosity > 0) begin
-                        $display("%t ns %s got grant for read address 0x%8h, sending tag 0x%6h", $time, name, addr_int, addr2tag(addr_int));
+                        $display("%t ns %s: got grant for read address 0x%8h, sending tag 0x%6h", $time, name, addr_int, addr2tag(addr_int));
                     end
 
                     #0;
                     vif.req.data_req    = 1'b0;
+
                     #0; // one more zero delay to "win" over an earlier read that sets tag_valid to 0
                     vif.req.tag_valid   = 1'b1;
                     vif.req.address_tag = addr2tag(addr_int);
 
-                    @(posedge vif.clk);
-                    #0;
-                    vif.req.tag_valid = '0;
+                    do begin
+                        if ((this.kill_req || kill_int) && !check_result) begin // don't kill transaction when we expect a result
+                            if (verbosity > 0) begin
+                                $display("%t ns %s: killing read request to address 0x%8h,", $time, name, addr_int);
+                            end
+                            vif.req.kill_req = 1'b1;
+                            this.kill_req = 0;
+                            kill_int = 0;
+                        end
+                        @(posedge vif.clk);
+                        #0;
+                        vif.req.tag_valid = '0;
+                        vif.req.kill_req = 1'b0;
+                    end while (!vif.resp.data_rvalid);
+
+                    result = vif.resp.data_rdata;
+
+                    if (verbosity > 0) begin
+                        $display("%t ns %s: got rvalid for read address 0x%8h", $time, name, addr_int);
+                    end
+
+                    if (check_result) begin
+                        a_rd_check : assert ((result & bit_mask) == exp_result) else
+                        $error("%s: data mismatch. Expected 0x%16h, got 0x%16h", name, exp_result, result);
+                    end
+
                 end
+
                 begin
-                    ;
+                    if (do_wait)
+                        wait (0); // avoid exiting fork
                 end
             join_any
         endtask
 
-        // read request, wait for read data
-        task rd_wait (
-            input logic [63:0] addr         = '0,
-            input bit          rand_addr    = 0,
-            input bit          check_result = 1'b0,
-            input logic [63:0] exp_result   = '0
+        // wrapper to rd_resp without result output mapped
+        task automatic rd (
+            input logic  [63:0] addr         = '0,
+            input logic   [1:0] size         = 2'b11,
+            input logic   [7:0] be           = '1,
+            input bit           rand_size_be = 0,
+            input bit           rand_addr    = 0,
+            input int           rand_kill    = 0, // chance of killing request in percentage
+            input bit           check_result = 1'b0,
+            input logic  [63:0] exp_result   = '0,
+            input bit           do_wait      = 1'b0,
+            input bit           kill         = 1'b0
         );
-            logic [63:0] addr_int;
-
-            if (rand_addr) begin
-                addr_int = get_rand_addr_from_cfg(cfg);
-            end else begin
-                addr_int = addr;
-            end
-
-            if (verbosity > 0) begin
-                $display("%t ns %s sending read request for address 0x%8h", $time, name, addr_int);
-            end
-
-            #0;
-            vif.req.data_req      = 1'b1;
-            vif.req.data_we       = 1'b0;
-            vif.req.data_be       = '1;
-            vif.req.data_size     = 2'b11;
-            vif.req.address_index = addr2index(addr_int);
-
-            do begin
-                @(posedge vif.clk);
-            end while (!vif.resp.data_gnt);
-
-            if (verbosity > 0) begin
-                $display("%t ns %s got grant for read address 0x%8h, sending tag 0x%6h", $time, name, addr_int, addr2tag(addr_int));
-            end
-
-            #0;
-            vif.req.data_req    = 1'b0;
-            #0; // one more zero delay to "win" over an earlier read that sets tag_valid to 0
-            vif.req.tag_valid   = 1'b1;
-            vif.req.address_tag = addr2tag(addr_int);
-
-            do begin
-                @(posedge vif.clk);
-                #0;
-                vif.req.tag_valid = '0;
-            end while (!vif.resp.data_rvalid);
-
-            if (check_result) begin
-                a_rd_check : assert (vif.resp.data_rdata == exp_result) else
-                    $error("%s : data mismatch. Expected 0x%16h, got 0x%16h", name, exp_result, vif.resp.data_rdata);
-            end
-
-
+            logic [63:0] dummy_result;
+            rd_resp (
+                .addr         ( addr         ),
+                .size         ( size         ),
+                .be           ( be           ),
+                .rand_size_be ( rand_size_be ),
+                .rand_addr    ( rand_addr    ),
+                .rand_kill    ( rand_kill    ),
+                .check_result ( check_result ),
+                .exp_result   ( exp_result   ),
+                .do_wait      ( do_wait      ),
+                .kill         ( kill         ),
+                .result       ( dummy_result )
+            );
         endtask
 
+
+
         // write request
-        task wr (
-            input logic [63:0] data      = 0,
-            input logic [63:0] addr      = '0,
-            input bit          rand_data = 0,
-            input bit          rand_addr = 0
+        task automatic wr (
+            input logic [63:0] data         = 0,
+            input logic [63:0] addr         = '0,
+            input logic  [1:0] size         = 2'b11,
+            input logic  [7:0] be           = '1,
+            input bit          rand_size_be = 0,
+            input bit          rand_data    = 0,
+            input bit          rand_addr    = 0
         );
             logic [63:0] addr_int;
             logic [63:0] data_int;
+            logic  [1:0] size_int;
+            logic  [7:0] be_int;
 
             if (rand_addr) begin
                 addr_int = get_rand_addr_from_cfg(cfg);
@@ -495,15 +621,26 @@ package tb_std_cache_subsystem_pkg;
             end else begin
                 data_int = data;
             end
+
+            if (rand_size_be) begin
+                int size_bytes;
+                size_int = $urandom_range(3);
+                size_bytes = 2**size_int;
+                be_int = ((2**size_bytes)-1) << $urandom_range(8 - size_bytes);
+            end else begin
+                be_int = be;
+                size_int = size;
+            end
+
             if (verbosity > 0) begin
-                $display("%t ns %s sending write request for address 0x%8h with data 0x%8h", $time, name, addr_int, data_int);
+                $display("%t ns %s: sending write request for address 0x%8h with data 0x%8h", $time, name, addr_int, data_int);
             end
 
             #0;
             vif.req.data_req      = 1'b1;
             vif.req.data_we       = 1'b1;
-            vif.req.data_be       = '1;
-            vif.req.data_size     = 2'b11;
+            vif.req.data_be       = be_int;
+            vif.req.data_size     = size_int;
             vif.req.data_wdata    = data_int;
             vif.req.address_index = addr2index(addr_int);
             vif.req.address_tag   = addr2tag(addr_int);
@@ -514,10 +651,35 @@ package tb_std_cache_subsystem_pkg;
             end while (!vif.resp.data_gnt);
 
             #0;
-            vif.req.data_req    = 1'b0;
-            vif.req.data_we     = 1'b0;
-            vif.req.tag_valid   = 1'b0;
+            vif.req.data_req  = 1'b0;
+            vif.req.data_we   = 1'b0;
+            vif.req.tag_valid = 1'b0;
 
+        endtask
+
+        // wait between [min_wait] and [max_wait] cycles, then arm kill_req with a
+        // probability of [prob] %
+        task automatic arm_kill (
+            input int min_wait = 100,
+            input int max_wait = 500,
+            input int prob     = 100
+        );
+            this.kill_armed = 1;
+            fork
+                begin
+                    while (this.kill_armed) begin
+                        `WAIT_CYC(vif.clk, $urandom_range(max_wait, min_wait));
+                        if ($urandom_range(100,1) <= prob) begin
+                            this.kill_req = kill_armed;
+                        end
+                    end
+                end
+            join_none
+        endtask
+
+        // stop the killing
+        task automatic disarm_kill ();
+            this.kill_armed = 0;
         endtask
 
     endclass
@@ -536,32 +698,55 @@ package tb_std_cache_subsystem_pkg;
         string                 name;
         int                    verbosity;
         int                    port_idx;
+        int                    rd_req_cnt;
+        int                    rd_kill_cnt;
+        int                    rd_resp_cnt;
+        int                    wr_req_cnt;
+        int                    req_id;
+        int                    resp_id;
 
         function new (virtual dcache_intf vif, int port_idx=0, string name="dcache_monitor");
             this.vif       = vif;
             this.name      = name;
             this.port_idx  = port_idx;
             verbosity = 0;
+
+            rd_req_cnt = 0;
+            rd_kill_cnt = 0;
+            rd_resp_cnt = 0;
+            wr_req_cnt = 0;
+            req_id = 0;
+            resp_id = 0;
+
         endfunction
 
+        task print_stats;
+          $display("%s: got %5d read requests, (%4d killed), %5d read responses, %5d write requests", name, rd_req_cnt, rd_kill_cnt, rd_resp_cnt, wr_req_cnt);
+        endtask
+
         // get read requests
-        local task mon_rd_req;
-            dcache_req rd_req;
-            $display("%t ns %s monitoring read requests", $time, name);
+        local task automatic mon_rd_req;
+            $display("%t ns %s: monitoring read requests", $time, name);
             forever begin
                 if (vif.req.data_req && !vif.req.data_we) begin // got read request
+                    automatic dcache_req rd_req;
 
                     while (!vif.resp.data_gnt) begin
                         @(posedge vif.clk);
                     end
                     if (verbosity > 0) begin
-                        $display("%t ns %s got request for read", $time, name);
+                        $display("%t ns %s: got request for read", $time, name);
                     end
 
                     rd_req = new();
-                    rd_req.trans_type      = RD_REQ;
+                    rd_req.trans_type    = RD_REQ;
                     rd_req.address_index = vif.req.address_index;
+                    rd_req.be            = vif.req.data_be;
+                    rd_req.size          = vif.req.data_size;
                     rd_req.port_idx      = port_idx;
+                    rd_req.id            = this.req_id;
+                    this.rd_req_cnt++;
+                    this.req_id++;
 
                     @(posedge vif.clk);
                     while (!vif.req.tag_valid) begin
@@ -570,10 +755,36 @@ package tb_std_cache_subsystem_pkg;
 
                     rd_req.address_tag = vif.req.address_tag;
                     rd_req.set_data_offset();
-                    if (verbosity > 0) begin
-                        $display("%t ns %s got request for read tag 0x%6h, index 0x%3h", $time, name, rd_req.address_tag, rd_req.address_index);
+                    if (vif.req.kill_req) begin
+                        if (verbosity > 0) begin
+                            $display("%t ns %s: read request killed", $time, name);
+                        end
+                        this.rd_kill_cnt++;
+                    end else begin
+                        if (verbosity > 0) begin
+                            $display("%t ns %s: got request for read tag 0x%6h, index 0x%3h", $time, name, rd_req.address_tag, rd_req.address_index);
+                        end
+                        req_mbox.put(rd_req);
+
+                        fork begin
+                            while (!vif.resp.data_rvalid) begin
+                                assert (!vif.req.kill_req) else $error("%s: Got kill req without rvalid",name);
+                                @(posedge vif.clk);
+                            end
+
+                            if (vif.req.kill_req) begin
+                                if (verbosity > 0) begin
+                                    $display("%t ns %s: read request killed", $time, name);
+                                end
+                                this.rd_kill_cnt++;
+                            end
+
+                            if (verbosity > 0) begin
+                                $display("%t ns %s: saw read response", $time, name);
+                            end
+                        end join_none
+
                     end
-                    req_mbox.put(rd_req);
 
                 end else begin
                     @(posedge vif.clk);
@@ -590,6 +801,9 @@ package tb_std_cache_subsystem_pkg;
                     rd_resp = new();
                     rd_resp.trans_type = RD_RESP;
                     rd_resp.data = vif.resp.data_rdata;
+                    rd_resp.id = this.resp_id;
+                    this.rd_resp_cnt++;
+                    this.resp_id++;
                     #0; // add zero delay here to make sure read response is repoerted after read request if it gets served immediately
                     if (verbosity > 0) begin
                         $display("%t ns %s got read response with data 0x%8h", $time, name, rd_resp.data);
@@ -606,14 +820,31 @@ package tb_std_cache_subsystem_pkg;
             dcache_resp wr_resp;
             $display("%t ns %s monitoring write requests", $time, name);
             forever begin
-                if (vif.req.data_req && vif.req.data_we && vif.wr_gnt) begin // got write request
+                if (vif.req.data_req && vif.req.data_we) begin // got write request
+
+                    while (!vif.wr_gnt) begin
+                        @(posedge vif.clk);
+                    end
+                    this.wr_req_cnt++;
+                    if (verbosity > 0) begin
+                        $display("%t ns %s got request for write", $time, name);
+                    end
+
                     wr_req = new();
                     wr_req.trans_type      = WR_REQ;
                     wr_req.address_index = vif.req.address_index;
-                    wr_req.address_tag   = vif.req.address_tag;
                     wr_req.data          = vif.req.data_wdata;
+                    wr_req.be            = vif.req.data_be;
+                    wr_req.size          = vif.req.data_size;
                     wr_req.port_idx      = port_idx;
+                    wr_req.id            = this.req_id;
+                    wr_req.address_tag   = vif.req.address_tag;
                     wr_req.set_data_offset();
+
+                    this.req_id++;
+
+                    // add one more cycle here to get same timing as read requests
+                    @(posedge vif.clk);
 
                     if (verbosity > 0) begin
                         $display("%t ns %s got request for write tag 0x%6h, index 0x%3h, data 0x%8h", $time, name, wr_req.address_tag, wr_req.address_index, wr_req.data);
@@ -625,6 +856,12 @@ package tb_std_cache_subsystem_pkg;
                     end
                     wr_resp = new();
                     wr_resp.trans_type = WR_RESP;
+                    wr_resp.id = this.resp_id;
+                    this.resp_id++;
+
+                    if (verbosity > 0) begin
+                        $display("%t ns %s got write response %s", $time, name, wr_resp.print_me());
+                    end
                     resp_mbox.put(wr_resp);
                 end
                 @(posedge vif.clk);
@@ -638,6 +875,113 @@ package tb_std_cache_subsystem_pkg;
                 mon_wr_req();
             join
         endtask
+
+    endclass
+
+    //--------------------------------------------------------------------------
+    // icache request
+    //--------------------------------------------------------------------------
+    class icache_req;
+        logic [riscv::VLEN-1:0] vaddr;
+        // helper variables
+        int                     id;
+
+        function new(int id = 0);
+            this.id = id;
+        endfunction
+
+        function string print_me();
+            return $sformatf("id %0d, vaddr %0h", id, vaddr);
+        endfunction
+    endclass
+
+
+    //--------------------------------------------------------------------------
+    // Driver for the CPU / instruction cache interface
+    //--------------------------------------------------------------------------
+    class icache_driver;
+
+        virtual icache_intf vif;
+        ariane_cfg_t cfg;
+        string name;
+        int verbosity;
+        logic en_random_req;
+        logic random_req_running;
+
+        function new (virtual icache_intf vif, ariane_cfg_t cfg, string name="icache_driver");
+            this.vif      = vif;
+            this.cfg      = cfg;
+            vif.req       = '0;
+            vif.req.vaddr = $urandom;
+            this.name     = name;
+            verbosity     = 0;
+            en_random_req = 0;
+            random_req_running = 0;
+        endfunction
+
+        // read request
+        task automatic rd_resp (
+            input logic  [63:0] addr      = '0,
+            input bit           rand_addr = 0,
+            output logic [63:0] result
+        );
+            logic [63:0] addr_int;
+
+            if (rand_addr) begin
+                addr_int = get_rand_addr_from_cfg(this.cfg);
+            end else begin
+                addr_int = addr;
+            end
+
+            if (verbosity > 0) begin
+                $display("%t ns %s: sending read request for address 0x%8h", $time, name, addr_int);
+            end
+
+            #0;
+            vif.req.req   = 1'b1;
+            vif.req.vaddr = addr_int;
+
+            do begin
+                @(posedge vif.clk);
+            end while (!vif.resp.ready);
+            vif.req.req = 1'b0;
+
+        endtask
+
+        // wrapper to rd_resp without result output mapped
+        task automatic rd (
+            input logic  [63:0] addr      = '0,
+            input bit           rand_addr = 0
+        );
+            logic [63:0] dummy_result;
+            rd_resp (
+                .addr      ( addr         ),
+                .rand_addr ( rand_addr    ),
+                .result    ( dummy_result )
+            );
+        endtask
+
+        task automatic start_random_req(input int wait_time=10);
+
+            this.en_random_req      = 1;
+            this.random_req_running = 1;
+            fork begin
+                while (en_random_req) begin
+                    rd(.rand_addr(1));
+                    `WAIT_CYC(vif.clk,$urandom_range(wait_time));
+                end
+                random_req_running = 0;
+            end join_none;
+
+        endtask
+
+        task automatic stop_random_req();
+            this.en_random_req = 0;
+            while (random_req_running) begin
+                `WAIT_CYC(vif.clk,1);
+            end
+        endtask
+
 
     endclass
 
@@ -779,20 +1123,26 @@ package tb_std_cache_subsystem_pkg;
         mailbox #(dcache_req)    dcache_req_mbox_prio;
         mailbox #(dcache_req)    dcache_req_mbox_prio_tmp;
         mailbox #(dcache_req)    dcache_req_mbox  [2:0];
+        mailbox #(dcache_req)    dcache_req_mbox_fwd;
+
+        mailbox #(dcache_resp)   dcache_resp_mbox_prio;
+        mailbox #(dcache_resp)   dcache_resp_mbox_prio_tmp;
         mailbox #(dcache_resp)   dcache_resp_mbox [2:0];
+        mailbox #(dcache_resp)   dcache_resp_mbox_fwd;
 
         mailbox #(dcache_req)    req_to_cache_update;
 
         mailbox #(dcache_req)    req_to_cache_check;
         mailbox #(ace_ac_beat_t) snoop_to_cache_update;
 
-        mailbox #(amo_req)       amo_req_mbox;
-        mailbox #(amo_resp)      amo_resp_mbox;
+        mailbox #(amo_req)       amo_req_mbox, amo_req_mbox_fwd;
+        mailbox #(amo_resp)      amo_resp_mbox, amo_resp_mbox_fwd;
 
         mailbox #(dcache_mgmt_trans) mgmt_mbox;
 
         // ACE mailboxes
         mailbox aw_mbx = new, w_mbx = new, b_mbx = new, ar_mbx = new, r_mbx = new;
+        mailbox aw_mbx_pre_filt = new, w_mbx_pre_filt = new, b_mbx_pre_filt = new, ar_mbx_pre_filt = new, r_mbx_pre_filt = new;
 
         // Snoop mailboxes
         mailbox ac_mbx = new, ac_mbx_int = new, cd_mbx = new, cr_mbx = new;
@@ -812,6 +1162,10 @@ package tb_std_cache_subsystem_pkg;
         int amo_msg_timeout    = 10000;
         int mgmt_trans_timeout = 10000;
 
+        int verbosity;
+
+        logic axi_id_per_port = 0; // set to 1 if the lower 2 bits of the AXI ID corresponds to port ID
+
         function new (
             virtual dcache_sram_if sram_vif,
             virtual dcache_gnt_if  gnt_vif,
@@ -825,7 +1179,9 @@ package tb_std_cache_subsystem_pkg;
 
             this.dcache_req_mbox_prio = new();
             this.dcache_req_mbox_prio_tmp = new();
-            this.mgmt_mbox            = new();
+
+            this.dcache_resp_mbox_prio = new();
+            this.dcache_resp_mbox_prio_tmp = new();
 
             cache_status              = '0;
             lfsr                      = '0;
@@ -833,6 +1189,8 @@ package tb_std_cache_subsystem_pkg;
             req_to_cache_update = new();
             req_to_cache_check = new();
             snoop_to_cache_update = new();
+
+            verbosity = 0;
 
         endfunction
 
@@ -944,16 +1302,39 @@ package tb_std_cache_subsystem_pkg;
                 return 1'b0;
         endfunction
 
-        function automatic bit mustEvict (input logic [63:0] addr);
+        function automatic bit isBypass( input ax_ace_beat_t ax );
+            unique case (ax.ax_id)
+                4'b1000, 4'b1001, 4'b1010, 4'b1011: return 1;
+                default:                            return 0;
+            endcase
+        endfunction
+
+        function automatic bit isDCache( input ax_ace_beat_t ax );
+            unique case (ax.ax_id)
+                4'b1100, 4'b1101, 4'b1110, 4'b1111: return 1;
+                default:                            return 0;
+            endcase
+        endfunction
+
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // check if cache eviction is needed
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        function automatic bit mustEvict (input dcache_req msg);
             logic valid = 1'b1;
+            logic [63:0] addr = msg.get_addr();
+            // check if cache is full
             for (int i = 0; i < DCACHE_SET_ASSOC; i++) begin
                 valid = valid & cache_status[addr2mem_idx(addr)][i].valid;
             end
-            if (!isHit(addr) && valid == 1'b1 && cache_status[addr2mem_idx(addr)][lfsr[$clog2(DCACHE_SET_ASSOC)-1:0]].dirty == 1'b1)
+            // check if target way is dirty
+            if (!isHit(addr) && valid == 1'b1 && cache_status[addr2mem_idx(addr)][msg.target_way].dirty == 1'b1) begin
+                assert (msg.target_way_valid) else $error("mustEvict(): Expected valid target way");
                 return 1'b1;
-            else
+            end else begin
                 return 1'b0;
+            end
         endfunction
+
 
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         // calculate next lfsr
@@ -1011,8 +1392,6 @@ package tb_std_cache_subsystem_pkg;
             return cache_status[mem_idx_v][way].valid;
         endfunction
 
-
-
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         // Check cache contents against real memory
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1026,28 +1405,39 @@ package tb_std_cache_subsystem_pkg;
             logic [DCACHE_TAG_WIDTH-1:0]                      tag_v;
             bit                                               OK;
 
+            logic vld_sram_valid, vld_sram_shared, vld_sram_dirty;
+
             OK        = 1'b1;
             mem_idx_v = addr2mem_idx(addr);
             idx_v     = addr2index(addr);
             tag_v     = addr2tag(addr);
 
+            vld_sram_dirty  = sram_vif.get_dirty(.index(mem_idx_v), .way(way));
+            vld_sram_shared = sram_vif.get_shared(.index(mem_idx_v), .way(way));
+            vld_sram_valid  = sram_vif.get_valid(.index(mem_idx_v), .way(way));
+
             // check the target way
-            if (cache_status[mem_idx_v][way].dirty != sram_vif.vld_sram[mem_idx_v][8*way]) begin
+            if (cache_status[mem_idx_v][way].valid != vld_sram_valid) begin
                 OK = 1'b0;
-                $error("%s: Cache mismatch index %h tag %h way %h - dirty bit: expected %d, actual %d", {name,".",origin}, idx_v, tag_v, way, cache_status[mem_idx_v][way].dirty, sram_vif.vld_sram[mem_idx_v][8*way]);
-            end
-            if (cache_status[mem_idx_v][way].valid != sram_vif.vld_sram[mem_idx_v][8*way+1]) begin
-                OK = 1'b0;
-                $error("%s: Cache mismatch index %h tag %h way %h - valid bit: expected %d, actual %d", {name,".",origin}, idx_v, tag_v, way, cache_status[mem_idx_v][way].valid, sram_vif.vld_sram[mem_idx_v][8*way+1]);
-            end
-            if (cache_status[mem_idx_v][way].shared != sram_vif.vld_sram[mem_idx_v][8*way+2]) begin
-                OK = 1'b0;
-                $error("%s: Cache mismatch index %h tag %h way %h - shared bit: expected %d, actual %d", {name,".",origin}, idx_v, tag_v, way, cache_status[mem_idx_v][way].shared, sram_vif.vld_sram[mem_idx_v][8*way+2]);
+                $error("%s: Cache mismatch index %h tag %h way %h - valid bit: expected %d, actual %d", {name,".",origin}, idx_v, tag_v, way, cache_status[mem_idx_v][way].valid, vld_sram_valid);
             end
 
+            if (vld_sram_valid) begin
+
+                if (cache_status[mem_idx_v][way].dirty != vld_sram_dirty) begin
+                    OK = 1'b0;
+                    $error("%s: Cache mismatch index %h tag %h way %h - dirty bit: expected %d, actual %d", {name,".",origin}, idx_v, tag_v, way, cache_status[mem_idx_v][way].dirty, vld_sram_dirty);
+                end
+
+                if (cache_status[mem_idx_v][way].shared != vld_sram_shared) begin
+                    OK = 1'b0;
+                    $error("%s: Cache mismatch index %h tag %h way %h - shared bit: expected %d, actual %d", {name,".",origin}, idx_v, tag_v, way, cache_status[mem_idx_v][way].shared, vld_sram_shared);
+                end
+            end
 
             // check tags and data for valid entries
             for (int w=0;w<DCACHE_SET_ASSOC; w++) begin
+                vld_sram_valid = sram_vif.get_valid(.index(mem_idx_v), .way(w));
                 if (cache_status[mem_idx_v][w].valid) begin
 
                     if (cache_status[mem_idx_v][w].tag != sram_vif.tag_sram[w][mem_idx_v][47:0]) begin
@@ -1055,14 +1445,14 @@ package tb_std_cache_subsystem_pkg;
                         $error("%s: Cache mismatch index %h tag %h way %0h - tag: expected %h, actual %h", {name,".",origin}, idx_v, tag_v, w, cache_status[mem_idx_v][w].tag, sram_vif.tag_sram[w][mem_idx_v][47:0]);
                     end
 
-                    if (cache_status[mem_idx_v][w].data != {sram_vif.data_sram[1][w][mem_idx_v], sram_vif.data_sram[0][w][mem_idx_v]}) begin
+                    if (cache_status[mem_idx_v][w].data != sram_vif.data_sram[w][mem_idx_v]) begin
                         OK = 1'b0;
-                        $error("%s: Cache mismatch index %h tag %h way %h - data: expected 0x%16h_%16h, actual 0x%16h_%16h", {name,".",origin}, idx_v, tag_v, way, cache_status[mem_idx_v][way].data[127:64], cache_status[mem_idx_v][way].data[63:0], sram_vif.data_sram[1][way][mem_idx_v], sram_vif.data_sram[0][way][mem_idx_v]);
+                        $error("%s: Cache mismatch index %h tag %h way %h - data: expected 0x%16h_%16h, actual 0x%16h_%16h", {name,".",origin}, idx_v, tag_v, way, cache_status[mem_idx_v][way].data[127:64], cache_status[mem_idx_v][way].data[63:0], sram_vif.data_sram[way][mem_idx_v][127:64], sram_vif.data_sram[way][mem_idx_v][63:0]);
                     end
 
-                end else if (sram_vif.vld_sram[mem_idx_v][8*w+1]) begin
+                end else if (vld_sram_valid) begin
                     OK = 1'b0;
-                    $error("%s: Cache mismatch index %h tag %h way %0h - valid: expected %h, actual %h", {name,".",origin}, idx_v, tag_v, w, cache_status[mem_idx_v][w].valid, sram_vif.vld_sram[mem_idx_v][8*w+1]);
+                    $error("%s: Cache mismatch index %h tag %h way %0h - valid: expected %h, actual %h", {name,".",origin}, idx_v, tag_v, w, cache_status[mem_idx_v][w].valid, vld_sram_valid);
                 end
             end
             return OK;
@@ -1141,6 +1531,8 @@ package tb_std_cache_subsystem_pkg;
                 OK = 1'b0;
             end
 
+            return OK;
+
         endfunction
 
 
@@ -1163,7 +1555,26 @@ package tb_std_cache_subsystem_pkg;
                 mem_idx_v = addr2mem_idx(ac.ac_addr);
                 hit_v     = 1'b0;
 
+                // actual cache update takes 3 more cycles (with grant for some)
+                cnt = 0;
+                // 1. wait for grant to read cache
+                while (!gnt_vif.gnt[1]) begin
+                    $display("%t ns %s.update_cache_from_snoop: skipping cycle without grant for snoop", $time, name);
+                    @(posedge sram_vif.clk); // skip cycles without grant
+                    cnt++;
+                    if (cnt > 1000) begin
+                        $error("%t timeout while waiting for grant for snoop update", $time);
+                        break;
+                    end
+                end
+                $display("%t ns %s.update_cache_from_snoop: got grant for snoop", $time, name);
+                @(posedge sram_vif.clk);
+
+                // 2. wait for FSM
+                @(posedge sram_vif.clk);
+
                 // look for the right tag
+                hit_v     = 1'b0;
                 for (int i=0; i<DCACHE_SET_ASSOC; i++) begin
                     if (cache_status[mem_idx_v][i].valid && cache_status[mem_idx_v][i].tag == addr2tag(ac.ac_addr)) begin
                         hit_way = i;
@@ -1172,29 +1583,12 @@ package tb_std_cache_subsystem_pkg;
                     end
                 end
 
-                // actual cache update takes 3 more cycles (with grant for some)
-                cnt = 0;
-                // 1. wait for grant to read cache
-                while (!gnt_vif.gnt[1]) begin
-                    $display("%t ns %s: skipping cycle without grant for snoop", $time, name);
-                    @(posedge sram_vif.clk); // skip cycles without grant
-                    cnt++;
-                    if (cnt > 1000) begin
-                        $error("%t timeout while waiting for grant for snoop update", $time);
-                        break;
-                    end
-                end
-                @(posedge sram_vif.clk);
-
-                // 2. wait for FSM
-                @(posedge sram_vif.clk);
-
                 // 3. wait for grant to write cache, if required
                 if (hit_v && (ac.ac_snoop == snoop_pkg::READ_SHARED ||
                               ac.ac_snoop == snoop_pkg::READ_UNIQUE ||
                               ac.ac_snoop == snoop_pkg::CLEAN_INVALID)) begin
-                    while (!gnt_vif.gnt[1]) begin
-                        $display("%t ns %s: skipping cycle without grant for snoop", $time, name);
+                    while (!gnt_vif.snoop_wr_gnt) begin
+                        $display("%t ns %s.update_cache_from_snoop: skipping cycle without grant for snoop", $time, name);
                         @(posedge sram_vif.clk); // skip cycles without grant
                         cnt++;
                         if (cnt > 1000) begin
@@ -1204,7 +1598,21 @@ package tb_std_cache_subsystem_pkg;
                     end
                 end
                 @(posedge sram_vif.clk);
-                $display("%t ns %s updating cache status from snoop", $time, name);
+
+                // send snoop message to do_hit()
+                ac_mbx_int.put(ac);
+
+                $display("%t ns %s.update_cache_from_snoop: updating cache status", $time, name);
+
+                // check hit again, might have been invalidated by eviction
+                hit_v = 1'b0;
+                for (int i=0; i<DCACHE_SET_ASSOC; i++) begin
+                    if (cache_status[mem_idx_v][i].valid && cache_status[mem_idx_v][i].tag == addr2tag(ac.ac_addr)) begin
+                        hit_way = i;
+                        hit_v   = 1'b1;
+                        break;
+                    end
+                end
 
                 if (hit_v) begin
                     case (ac.ac_snoop)
@@ -1228,7 +1636,7 @@ package tb_std_cache_subsystem_pkg;
                             $display("Update mem [%0d][%0d] from READ_ONCE", mem_idx_v, hit_way);
                         end
                         default: begin
-                            $error("%s: unexpected snoop type %0d", name, ac.ac_snoop);
+                            $error("%t unexpected snoop type %0d", name, ac.ac_snoop);
                         end
                     endcase
                     if (cache_status[mem_idx_v][hit_way].valid) begin
@@ -1267,56 +1675,75 @@ package tb_std_cache_subsystem_pkg;
 
                 fork
                     begin
-                        // declare variables here to get sepa
-                        logic [DCACHE_SET_ASSOC-1:0]                      valid_v;
                         logic [DCACHE_INDEX_WIDTH-DCACHE_BYTE_OFFSET-1:0] mem_idx_v;
                         logic [63:0]                                      addr_v;
                         bit                                               CheckOK;
                         logic [$clog2(DCACHE_SET_ASSOC)-1:0]              target_way;
+                        logic [$clog2(DCACHE_SET_ASSOC)-1:0]              dut_way;
                         bit                                               hit;
                         dcache_req                                        req;
 
-                        req    = new req_t;
-
+                        req       = new req_t;
                         addr_v    = tag_index2addr(.tag(req.address_tag), .index(req.address_index));
                         mem_idx_v = addr2mem_idx(addr_v);
-                        for (int i=0; i<DCACHE_SET_ASSOC; i++) begin
-                            valid_v[i] = cache_status[mem_idx_v][i].valid;
-                        end
-                        hit = isHit(addr_v);
+                        hit       = isHit(addr_v);
 
                         // check that cache access is granted if needed
                         if (req.update_cache) begin
                             int cnt = 0;
                             while (!gnt_vif.gnt[req.prio]) begin
-                                $display("%t ns %s skipping cycle without grant for dcache req : %s", $time, name, req.print_me());
+
+                                $display("%t ns %s.update_cache_from_req: skipping cycle without grant for dcache req : %s", $time, name, req.print_me());
                                 @(posedge sram_vif.clk); // skip cycles without grant
                                 cnt++;
                                 if (cnt > cache_msg_timeout) begin
-                                    $error("%s : Timeout while waiting for grant for dcache req : %s", name, req.print_me());
+                                    $error("%s.update_cache_from_req:: Timeout while waiting for grant for dcache req : %s", name, req.print_me());
                                     break;
                                 end
+                                if (hit && !isHit(addr_v)) begin
+                                    $display("%t ns %s.update_cache_from_req: hit status changed from hit to miss, calling do_miss for req : %s", $time, name, req.print_me());
+                                    hit = 0;
+                                    req.insert_readback = 0;
+                                    do_miss(req);
+                                end
+
                             end
-                            $display("%t ns %s got grant for dcache req : %s", $time, name, req.print_me());
+                            $display("%t ns %s.update_cache_from_req: got grant for dcache req : %s", $time, name, req.print_me());
+                            dut_way = one_hot_to_bin(gnt_vif.get_way(.use_be(req_t.prio==0)));
+                            $display("%t ns %s.update_cache_from_req: got DUT target way %0d for dcache req : %s", $time, name, dut_way, req.print_me());
                             @(posedge sram_vif.clk);
-                            $display("%t ns %s updating cache status from dcache req : %s", $time, name, req.print_me());
+                            $display("%t ns %s.update_cache_from_req: updating cache status from dcache req : %s", $time, name, req.print_me());
                         end else begin
-                            $display("%t ns %s no cache update expected for dcache req : %s", $time, name, req.print_me());
+                            $display("%t ns %s.update_cache_from_req: no cache update expected for dcache req : %s", $time, name, req.print_me());
                         end
 
+                        $display("%t ns %s addr: 0x%16h, mem_idx: %0d", $time, name, addr_v, mem_idx_v);
 
                         if (hit) begin
                             // cache hit
                             $display("Cache hit");
                             target_way = getHitWay(addr_v);
+
+                            if (target_way != dut_way)
+                                $error("Mismatch between target way %0d DUT way %0d", target_way, dut_way);
+
                             if (req.trans_type == WR_REQ) begin
                                 cache_status[mem_idx_v][target_way].dirty  = 1'b1;
                                 cache_status[mem_idx_v][target_way].shared = 1'b0;
-                                update_cache_line(cache_status[mem_idx_v][target_way].data, req.data, req.data_offset);
+
+                                $display("cache_date[%0d][%0d]: before update: 0x%16h_%16h", mem_idx_v, target_way,
+                                    cache_status[mem_idx_v][target_way].data[127:64],
+                                    cache_status[mem_idx_v][target_way].data[63:0]
+                                );
+                                update_cache_line(cache_status[mem_idx_v][target_way].data, req.data, req.be, req.data_offset);
                             end
                         end else begin
+                            logic [DCACHE_SET_ASSOC-1:0] valid_v;
                             // cache miss
                             $display("Cache miss");
+                            for (int i=0; i<DCACHE_SET_ASSOC; i++) begin
+                                valid_v[i] = cache_status[mem_idx_v][i].valid;
+                            end
                             if (&valid_v) begin
                                 // all ways occupied
                                 $display("No empty way");
@@ -1337,7 +1764,7 @@ package tb_std_cache_subsystem_pkg;
                                     cache_status[mem_idx_v][target_way].dirty  = 1'b1;
                                     cache_status[mem_idx_v][target_way].shared = 1'b0;
                                     cache_status[mem_idx_v][target_way].data   = req.cache_line;
-                                    update_cache_line(cache_status[mem_idx_v][target_way].data, req.data, req.data_offset);
+                                    update_cache_line(cache_status[mem_idx_v][target_way].data, req.data, req.be, req.data_offset);
                                 end else  if (req.trans_type == READBACK || req.trans_type == RD_RESP) begin
                                     cache_status[mem_idx_v][target_way].tag    = req.address_tag;
                                     cache_status[mem_idx_v][target_way].dirty  = req.r_dirty;
@@ -1354,17 +1781,29 @@ package tb_std_cache_subsystem_pkg;
                                 end else begin
                                     $display("Empty way found");
                                     target_way = one_hot_to_bin(get_victim_cl(~valid_v));
+                                    if (target_way != dut_way)
+                                        $warning("Adjusting target way %0d to match DUT way %0d", target_way, dut_way);
+                                    target_way = dut_way;
                                 end
                                 cache_status[mem_idx_v][target_way].tag   = req.address_tag;
-                                cache_status[mem_idx_v][target_way].valid = 1'b1;
-                                if (req.trans_type == WR_REQ) begin
+
+                                if (req.trans_type == EVICT) begin
+                                    $display("Evict");
+                                    cache_status[mem_idx_v][target_way].valid  = 1'b0;
+                                    cache_status[mem_idx_v][target_way].dirty  = 1'b0;
+                                    cache_status[mem_idx_v][target_way].shared = 1'b0;
+                                end else  if (req.trans_type == WR_REQ) begin
+                                    cache_status[mem_idx_v][target_way].valid  = 1'b1;
                                     cache_status[mem_idx_v][target_way].dirty  = 1'b1;
                                     cache_status[mem_idx_v][target_way].shared = 1'b0;
+                                    cache_status[mem_idx_v][target_way].tag    = req.address_tag;
                                     cache_status[mem_idx_v][target_way].data   = req.cache_line;
-                                    update_cache_line(cache_status[mem_idx_v][target_way].data, req.data, req.data_offset);
+                                    update_cache_line(cache_status[mem_idx_v][target_way].data, req.data, req.be, req.data_offset);
                                 end else  if (req.trans_type == READBACK || req.trans_type == RD_RESP) begin
+                                    cache_status[mem_idx_v][target_way].valid  = 1'b1;
                                     cache_status[mem_idx_v][target_way].dirty  = req.r_dirty;
                                     cache_status[mem_idx_v][target_way].shared = req.r_shared;
+                                    cache_status[mem_idx_v][target_way].tag    = req.address_tag;
                                     cache_status[mem_idx_v][target_way].data   = req.cache_line;
                                 end else begin
                                     $error("Didn't expect trans_type %s", req.trans_type.name());
@@ -1377,16 +1816,17 @@ package tb_std_cache_subsystem_pkg;
                         end else begin
                             assert (req.update_cache == 1) else $error("Expected cache update for a write or miss");
                         end
-                            $display("Updated cache_status[%0d][%0d]: valid : %0d, dirty : %0d, shared : %0d, tag : 0x%6h, data : 0x%16h_%16h", mem_idx_v, target_way,
+
+                        $display("Updated cache_status[%0d][%0d]: valid : %0d, dirty : %0d, shared : %0d, tag : 0x%6h, data : 0x%16h_%16h", mem_idx_v, target_way,
                                 cache_status[mem_idx_v][target_way].valid,
                                 cache_status[mem_idx_v][target_way].dirty,
                                 cache_status[mem_idx_v][target_way].shared,
                                 cache_status[mem_idx_v][target_way].tag,
                                 cache_status[mem_idx_v][target_way].data[127:64],
                                 cache_status[mem_idx_v][target_way].data[63:0]
-                            );
+                        );
 
-                            CheckOK = checkCache(addr_v, target_way, "update_cache_from_req");
+                        CheckOK = checkCache(addr_v, target_way, "update_cache_from_req");
 
                     end
 
@@ -1409,7 +1849,7 @@ package tb_std_cache_subsystem_pkg;
                 ac = new();
                 ac_mbx.get(ac);
                 e = acsnoop_enum_t'(ac.ac_snoop);
-                $display("%t ns %s.check_snoop: Got snoop request %0s", $time, name, e.name());
+                $display("%t ns %s.check_snoop: Got snoop request %0s to address 0x%16h", $time, name, e.name(), ac.ac_addr);
                 a_empty_ac : assert (ac_mbx.num() == 0) else $error ("%S.check_snoop : AC mailbox not empty", name);
 
                 fork
@@ -1423,17 +1863,11 @@ package tb_std_cache_subsystem_pkg;
                                     snoop_to_cache_update.put(ac);
                                 end
 
-                                // send snoop to do_hit()
-                                ac_mbx_int.put(ac);
-
-                                // wait to prepare expected response until last cycle before cache is updated by snoop
-                                // 1. wait for grant to read cache
+                                // wait for grant to read cache
                                 while (!gnt_vif.gnt[1]) begin
                                     $display("%t ns %s.check_snoop: skipping cycle without grant for snoop", $time, name);
                                     @(posedge sram_vif.clk); // skip cycles without grant
                                 end
-                                @(posedge sram_vif.clk);
-                                // 2. wait for FSM
                                 @(posedge sram_vif.clk);
 
                                 cr_exp = GetCRResp(ac);
@@ -1489,26 +1923,32 @@ package tb_std_cache_subsystem_pkg;
             $display("%t ns %s retreiving dcache messages", $time, name);
             forever begin
                 for (int i=0; i<=2; i++) begin
-                    dcache_req msg;
-                    if (dcache_req_mbox[i].try_get(msg)) begin
-                        dcache_req msg_t;
-                        msg_t = new msg;
-                        dcache_req_mbox_prio_tmp.put(msg_t);
+                    dcache_req req;
+                    dcache_resp resp;
+                    if (dcache_req_mbox[i].try_get(req)) begin
+                        dcache_req req_t;
+                        req_t = new req;
+                        dcache_req_mbox_prio_tmp.put(req_t);
+                    end
+                    if (dcache_resp_mbox[i].try_get(resp)) begin
+                        dcache_resp resp_t;
+                        resp_t = new resp;
+                        dcache_resp_mbox_prio_tmp.put(resp_t);
                     end
                 end
                 @(posedge sram_vif.clk);
             end
         endtask
 
-        local task automatic get_cache_msg_tmp;
-            dcache_req msg;
+        local task automatic get_cache_req_tmp;
+            dcache_req req;
             forever begin
-                dcache_req_mbox_prio_tmp.get(msg);
+                dcache_req_mbox_prio_tmp.get(req);
                 fork
                     begin
-                        dcache_req msg_t;
-                        msg_t = new msg;
-                        dcache_req_mbox_prio.put(msg_t);
+                        dcache_req req_t;
+                        req_t = new req;
+                        dcache_req_mbox_prio.put(req_t);
                         check_cache_msg();
                     end
                     begin
@@ -1519,35 +1959,191 @@ package tb_std_cache_subsystem_pkg;
         endtask
 
 
+        local task automatic get_cache_resp_tmp;
+            dcache_resp resp;
+            forever begin
+                resp = new();
+                dcache_resp_mbox_prio_tmp.get(resp);
+                fork
+                    automatic dcache_resp resp_tmp;
+                    begin
+                        resp_tmp = new resp;
+                        // dcache_resp_mbox_prio.put(resp_tmp); // not used at the moment, put
+                        // response directly in forwarding mailbox
+                        dcache_resp_mbox_fwd.put(resp_tmp);
+                    end
+                    begin
+                        @(posedge sram_vif.clk);
+                    end
+                join_any
+            end
+        endtask
+
+
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // filter AXI bus
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        local task automatic axi_ar_filter;
+            $display("%t ns %s filtering AXI AR transactions", $time, name);
+            forever begin                ax_ace_beat_t ar_beat = new();
+                ar_mbx_pre_filt.get(ar_beat);
+                if (ar_beat.ax_id[3:0] != 0) begin
+                    ar_mbx.put(ar_beat);
+                end
+            end
+        endtask
+
+        local task automatic axi_r_filter;
+            $display("%t ns %s filtering AXI R transactions", $time, name);
+            forever begin
+                r_ace_beat_t  r_beat  = new();
+                r_mbx_pre_filt.get(r_beat);
+                if (r_beat.r_id[3:0] != 0) begin
+                    r_mbx.put(r_beat);
+                end
+            end
+        endtask
+
+
+        local task automatic axi_write_filter;
+            logic forward = 0;
+            $display("%t ns %s filtering AXI write transactions", $time, name);
+            forever begin
+                ax_ace_beat_t aw_beat = new();
+                b_beat_t      b_beat  = new();
+                w_beat_t      w_beat  = new();
+
+                forward = 0;
+                aw_mbx_pre_filt.get(aw_beat);
+                if (aw_beat.ax_id[3:0] != 0) begin
+                    forward = 1;
+                    aw_mbx.put(aw_beat);
+                end
+
+                while (!w_beat.w_last) begin
+                    w_mbx_pre_filt.get(w_beat);
+                    if (forward) begin
+                        w_mbx.put(w_beat);
+                    end
+                end
+
+                b_mbx_pre_filt.get(b_beat);
+                if (forward) begin
+                     b_mbx.put(b_beat);
+                end
+
+            end
+        endtask
+
+
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         // subtask for hit case
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         local task automatic do_hit (input dcache_req msg);
             logic [63:0]  addr_v;
+            int cnt = 0;
+            logic mshr_match = 0;
+            logic redo_hit;
 
             $display("%t ns %s started hit task for message : %s", $time, name, msg.print_me());
             addr_v = tag_index2addr(.tag(msg.address_tag), .index(msg.address_index));
+            redo_hit = msg.redo_hit;
+            msg.redo_hit = 1'b0;
+
             if (msg.trans_type == WR_REQ) begin
                 ace_ac_beat_t ac = new();
                 msg.update_cache = 1'b1;
 
+                if (redo_hit == 1'b1) begin
+                    // The timing is a bit different when redoing hit - compensate for it here
+                    @(posedge sram_vif.clk);
+                end
+
+                // wait for possible MSHR match
+                while (gnt_vif.mshr_match[msg.port_idx]) begin
+                    mshr_match = 1;
+                    if (cnt == 0 || verbosity > 0) begin
+                        $display("%t ns %s.do_hit: wait for MSHR match for message : %s", $time, name, msg.print_me());
+                    end
+                    @(posedge sram_vif.clk);
+                    cnt++;
+                    if (cnt > cache_msg_timeout) begin
+                        $error("%s.do_hit : Timeout while waiting for MSHR match for message : %s", name, msg.print_me());
+                        break;
+                    end
+                    if (!gnt_vif.mshr_match[msg.port_idx]) begin
+                        // if there was an MHSR match we need to get cache grant again
+                        $display("%t ns %s.do_hit: MSHR match ended, wait for cache grant for message : %s", $time, name, msg.print_me());
+                        while (!gnt_vif.rd_gnt[msg.prio]) begin
+                            @(posedge sram_vif.clk); // skip cycles without grant
+                            cnt++;
+                            if (cnt > cache_msg_timeout) begin
+                                $error("%s : Timeout while waiting for cache grant for message : %s", name, msg.print_me());
+                                break;
+                            end
+                        end
+                        $display("%t ns %s.do_hit: got cache grant for message : %s", $time, name, msg.print_me());
+                        @(posedge sram_vif.clk); // wait one more cycle before reading cache status
+                    end
+                end
+
+                if (mshr_match) begin
+                    $display("%t ns %s.do_hit: MSHR match ended and got grant for message : %s", $time, name, msg.print_me());
+                end else begin
+                    while (gnt_vif.req[msg.prio] && (!gnt_vif.rd_gnt[msg.prio])) begin
+                        $display("%t ns %s.do_hit: wait for cache grant for message : %s", $time, name, msg.print_me());
+                        @(posedge sram_vif.clk); // skip cycles without grant
+                        cnt++;
+                        if (cnt > cache_msg_timeout) begin
+                            $error("%s : Timeout while waiting for cache grant for message : %s", name, msg.print_me());
+                            break;
+                        end
+                    end
+                    $display("%t ns %s.do_hit: got cache grant for message : %s", $time, name, msg.print_me());
+                end
+
                 // empty snoop mailbox
                 while (ac_mbx_int.try_get(ac));
 
-                // Add one additional cycle before checking cache status, mimicing cache ctrl FSM.
-                @(posedge sram_vif.clk);
-
                 if (isShared(addr_v)) begin
-                    ax_ace_beat_t ar_beat     = new();
-                    r_ace_beat_t  r_beat      = new();
-                    r_ace_beat_t  r_beat_peek = new();
+                    ax_ace_beat_t ar_beat      = new();
+                    ax_ace_beat_t ar_beat_peek = new();
+                    r_ace_beat_t  r_beat       = new();
+                    r_ace_beat_t  r_beat_peek  = new();
+
+                    $display("%t ns %s.do_hit: Got status shared = %0d, redo_hit = %0d for message: %s", $time, name, isShared(addr_v), redo_hit, msg.print_me());
+
+                    if (axi_id_per_port) begin
+                        logic [3:0] exp_id = 4'hC + msg.port_idx;
+                        // wait for AR beat with expected ID
+                        while (ar_beat_peek.ax_id[3:0] != exp_id) begin
+                            ar_mbx.peek(ar_beat_peek);
+                            if (ar_beat_peek.ax_id != exp_id) begin
+                                $display("%t ns %s.do_hit: ignoring AR beat with ID 0x%0h for message : %s", $time, name, ar_beat_peek.ax_id, msg.print_me());
+                                @(posedge sram_vif.clk);
+                            end
+                        end
+                    end else begin
+                        if (msg.prio >= 2) begin
+                            int cnt = 0;
+                            // this is a request from a cache controller, wait for grant from miss handler
+                            $display("%t ns %s.do_hit: wait for miss handler grant for message : %s", $time, name, msg.print_me());
+                            while (!gnt_vif.miss_gnt[msg.port_idx]) begin
+                                @(posedge sram_vif.clk); // skip cycles without grant
+                                cnt++;
+                                if (cnt > cache_msg_timeout) begin
+                                    $error("%s : Timeout while waiting for miss handler grant for message : %s", name, msg.print_me());
+                                    break;
+                                end
+                            end
+                        end
+                    end
 
                     // wait for AR beat
                     ar_mbx.get(ar_beat);
-                    $display("%t ns %s.do_hit: got AR beat for message : %s", $time, name, msg.print_me());
+                    $display("%t ns %s.do_hit: got AR beat with ID 0x%0h for message : %s", $time, name, ar_beat.ax_id, msg.print_me());
                     if (!isCleanUnique(ar_beat))
                         $error("%s Error CLEAN_UNIQUE expected for message : %s", name, msg.print_me());
-                    a_empty_ar : assert (ar_mbx.num() == 0) else $error ("%S.do_hit : AR mailbox not empty", name);
 
                     // wait for R beat
                     while (!r_beat.r_last) begin
@@ -1555,20 +2151,20 @@ package tb_std_cache_subsystem_pkg;
                         if (r_beat_peek.r_id == ar_beat.ax_id) begin
                             // this is our response
                             r_mbx.get(r_beat);
-                            $display("%t ns %s.do_hit: got R beat with last = %0d for message : %s", $time, name, r_beat.r_last, msg.print_me());
+                            $display("%t ns %s.do_hit: got R beat with ID 0x%0h and last = %0d for message : %s", $time, name, r_beat.r_id, r_beat.r_last, msg.print_me());
                         end else begin
+                            $display("%t ns %s.do_hit: ignoring R beat with ID 0x%0h for message : %s", $time, name, r_beat_peek.r_id, msg.print_me());
                             @(posedge sram_vif.clk);
                         end
                     end
-                    a_empty_r : assert (r_mbx.num() == 0) else $error ("%S.do_hit : R mailbox not empty", name);
 
                     msg.insert_readback = 1'b1;
 
                     // check if a ReadShared has arrived during writing
                     while (ac_mbx_int.try_get(ac)) begin
-                        if (ac.ac_snoop == snoop_pkg::READ_SHARED && ac.ac_addr == addr_v) begin
+                        if (ac.ac_snoop == snoop_pkg::READ_SHARED && (ac.ac_addr >> DCACHE_BYTE_OFFSET) == (addr_v >> DCACHE_BYTE_OFFSET)) begin
                             $display("%t ns %s Got matching ReadShared during hit + write shared, calling hit routine for message : %s", $time, name, msg.print_me());
-                            do_hit(msg);
+                            msg.redo_hit = 1'b1;
                         end
                     end
 
@@ -1576,10 +2172,11 @@ package tb_std_cache_subsystem_pkg;
 
             end
 
-
             if (!isHit(addr_v)) begin
                 $display("%t ns %s Cache status changed from hit to miss, calling miss routine for message : %s", $time, name, msg.print_me());
+                msg.prio = 0; // miss handler will handle this
                 do_miss(msg);
+                msg.redo_hit = 1'b0;
             end
         endtask
 
@@ -1593,110 +2190,131 @@ package tb_std_cache_subsystem_pkg;
             $display("%t ns %s started miss task for message : %s", $time, name, msg.print_me());
             addr_v = tag_index2addr(.tag(msg.address_tag), .index(msg.address_index));
 
-            if (!msg.insert_readback) begin // if cache was changed due to insert readback then the original port will do the
-                msg.prio = 0; // miss has highest prio
-            end
             msg.update_cache = 1'b1;
-
             fork
-                begin
+                // Get target way and handle eviction  . . . . . . . . . . . . .
+                begin : evict
                     ax_ace_beat_t aw_beat = new();
                     b_beat_t      b_beat  = new();
                     w_beat_t      w_beat  = new();
+                    dcache_req    evict_msg;
 
-                    // monitor if eviction is necessary
-                    dcache_req evict_msg;
-                    while (!mustEvict(addr_v)) begin
-                        // check if target way gets taken, then update to new way
-                        if (msg.target_way_valid && check_way_from_cache(msg.get_addr(), msg.target_way)) begin
-                            msg.target_way_valid = get_way_from_cache(msg.get_addr(), msg.target_way);
-                            if (msg.target_way_valid) begin
-                                $display("%t ns %s target way got occupied, update way to %d for message : %s", $time, name, msg.target_way, msg.print_me());
-                            end else begin
-                                $display("%t ns %s all ways got occupied, invalidate target way for message : %s", $time, name, msg.print_me());
-                            end
+                    int cnt = 0;
+                    while (!gnt_vif.wr_gnt[msg.port_idx]) begin
+                        // $display("%t ns %s.do_miss.evict: skipping cycle without miss handler processingfor message : %s", $time, name, msg.print_me());
+                        @(posedge sram_vif.clk); // skip cycles without grant
+                        cnt++;
+                        if (cnt > cache_msg_timeout) begin
+                            $error("%s : Timeout while waiting for miss handler processing for message : %s", name, msg.print_me());
+                            break;
                         end
-                        @(posedge sram_vif.clk);
+                    end
+                    $display("%t ns %s.do_miss.evict: miss handler started processing message : %s", $time, name, msg.print_me());
+
+                    msg.target_way_valid = get_way_from_cache(msg.get_addr(), msg.target_way);
+                    if (msg.target_way_valid) begin
+                        $display("%t ns %s.do_miss.evict: found empty target way %d for message : %s", $time, name, msg.target_way, msg.print_me());
+                    end else begin
+                        msg.target_way = get_way_from_lfsr(lfsr);
+                        msg.target_way_valid = 1'b1;
+                        $display("%t ns %s.do_miss.evict: all ways occupied, set target way %d for message : %s", $time, name, msg.target_way, msg.print_me());
                     end
 
-                    // get target way to evict msg
-                    evict_msg                  = new msg;
-                    evict_msg.trans_type       = EVICT;
-                    evict_msg.target_way       = get_way_from_lfsr(lfsr);
-                    evict_msg.target_way_valid = 1'b1;
+                    // monitor if eviction is necessary
+                    while (!mustEvict(msg)) begin
+                        @(posedge sram_vif.clk);
+                    end
+                    $display("%t ns %s.do_miss.evict: Eviction needed for message %s", $time, name, msg.print_me());
 
-                    // copy target way to msg
-                    msg.target_way       = evict_msg.target_way;
-                    msg.target_way_valid = 1'b1;
+                    // insert evict message
+                    evict_msg            = new msg;
+                    evict_msg.trans_type = EVICT;
+                    evict_msg.prio       = 0; // miss handler updates the cache
+                    $display("%t ns %s.do_miss.evict: New message created with target way %0d : %s", $time, name, evict_msg.target_way, evict_msg.print_me());
 
-                    $display("%t ns %s Eviction needed, wait for eviction AW beat for message : %s", $time, name, msg.print_me());
+                    $display("%t ns %s.do_miss.evict: Wait for eviction AW beat for message : %s", $time, name, msg.print_me());
                     aw_mbx.get(aw_beat);
                     if (!isWriteBack(aw_beat))
-                        $error("%s.do_miss : WRITEBACK request expected after eviction for message : %s", name, msg.print_me());
+                        $error("%s.do_miss.evict : WRITEBACK request expected after eviction for message : %s", name, msg.print_me());
                     a_empty_aw : assert (aw_mbx.num() == 0) else $error ("%S.do_miss : AW mailbox not empty", name);
 
-                    $display("%t ns %s inserting a new dcache message :%s", $time, name, msg.print_me());
+                    $display("%t ns %s.do_miss.evict: sending evict message to cache update: %s", $time, name, evict_msg.print_me());
                     req_to_cache_update.put(evict_msg);
 
                     // wait for W beat
                     while (!w_beat.w_last) begin
                         w_mbx.get(w_beat);
-                        $display("%t ns %s.do_miss : got W beat with last = %0d for message %s", $time, name, w_beat.w_last, msg.print_me());
+                        $display("%t ns %s.do_miss.evict : got W beat with last = %0d for message %s", $time, name, w_beat.w_last, msg.print_me());
                     end
                     a_empty_w : assert (w_mbx.num() == 0) else $error ("%S.do_miss : W mailbox not empty", name);
 
                     // wait for B beat
                     b_mbx.get(b_beat);
-                    $display("%t ns %s.do_miss : got B beat for message %s", $time, name, msg.print_me());
+                    $display("%t ns %s.do_miss.evict : got B beat for message %s", $time, name, msg.print_me());
                     a_empty_b : assert (b_mbx.num() == 0) else $error ("%S.do_miss : B mailbox not empty", name);
 
                     wait (0); // avoid exiting fork
 
                 end
 
-                begin
+                // Check AXI transactions  . . . . . . . . . . . . . . . . . . .
+                begin : check_axi
+                    ax_ace_beat_t ar_beat      = new();
+                    ax_ace_beat_t ar_beat_peek = new();
+                    r_ace_beat_t  r_beat       = new();
+                    r_ace_beat_t  r_beat_peek  = new();
+                    int           r_cnt        = 0;
+                    int cnt =0;
+                    logic mshr_match = 0;
 
-                    ax_ace_beat_t ar_beat     = new();
-                    r_ace_beat_t  r_beat      = new();
-                    r_ace_beat_t  r_beat_peek = new();
-                    int           r_cnt       = 0;
-
-                    // wait for miss FSM before getting target way
-                    repeat (2)
-                        @(posedge sram_vif.clk);
-                    msg.target_way_valid = get_way_from_cache(msg.get_addr(), msg.target_way);
-
-                    if (msg.target_way_valid) begin
-                        $display("%t ns %s.do_miss: set target way to %d for message : %s", $time, name, msg.target_way, msg.print_me());
-                    end else begin
-                        $display("%t ns %s.do_miss: all ways occupied for message : %s", $time, name, msg.print_me());
+                    if (msg.prio >= 2) begin
+                        int cnt = 0;
+                        // this is a request from a cache controller, wait for grant from miss handler
+                        $display("%t ns %s.do_miss.check_axi: wait for miss handler grant for message : %s", $time, name, msg.print_me());
+                        while (!gnt_vif.miss_gnt[msg.port_idx]) begin
+                            // $display("%t ns %s.do_miss.check_axi: skipping cycle without miss handler grant for message : %s", $time, name, msg.print_me());
+                            @(posedge sram_vif.clk); // skip cycles without grant
+                            cnt++;
+                            if (cnt > cache_msg_timeout) begin
+                                $error("%s : Timeout while waiting for miss handler grant for message : %s", name, msg.print_me());
+                                break;
+                            end
+                        end
+                        $display("%t ns %s.do_miss.check_axi: got miss handler grant for message : %s", $time, name, msg.print_me());
                     end
 
-
-                    $display("%t ns %s wait for AR beat for message : %s", $time, name, msg.print_me());
                     // wait for AR beat
-                    ar_mbx.get(ar_beat);
-                    $display("%t ns %s.do_miss: got AR beat for message : %s", $time, name, msg.print_me());
-                    a_empty_ar : assert (ar_mbx.num() == 0) else $error ("%S.do_miss : AR mailbox not empty", name);
+                    $display("%t ns %s.do_miss.check_axi: waiting for AR beat for message : %s", $time, name, msg.print_me());
+                    while (!isDCache(ar_beat)) begin
+                        ar_mbx.peek(ar_beat_peek);
+                        if (isDCache(ar_beat_peek)) begin
+                            // this is our response
+                            ar_mbx.get(ar_beat);
+                        end else begin
+                            $display("%t ns %s.do_miss.check_axi: ignoring AR beat with ID 0x%0h for message : %s", $time, name, ar_beat_peek.ax_id, msg.print_me());
+                            @(posedge sram_vif.clk);
+                        end
+                    end
+                    $display("%t ns %s.do_miss.check_axi: got AR beat with ID 0x%0h for message : %s", $time, name, ar_beat.ax_id, msg.print_me());
 
                     if (msg.trans_type == WR_REQ) begin
                         if (is_inside_shareable_regions(ArianeCfg, msg.get_addr())) begin
                             if (!isReadUnique(ar_beat)) begin
-                                $error("%s.do_miss : READ_UNIQUE request expected for message : %s", name, msg.print_me());
+                                $error("%s.do_miss.check_axi: READ_UNIQUE request expected for message : %s", name, msg.print_me());
                             end
                         end else begin
                             if (!isReadNoSnoop(ar_beat)) begin
-                                $error("%s.do_miss : READ_NO_SNOOP request expected for message : %s", name, msg.print_me());
+                                $error("%s.do_miss.check_axi: READ_NO_SNOOP request expected for message : %s", name, msg.print_me());
                             end
                         end
                     end else begin // RD_REQ
                         if (is_inside_shareable_regions(ArianeCfg, msg.get_addr())) begin
                             if (!isReadShared(ar_beat)) begin
-                                $error("%s.do_miss : READ_SHARED request expected for message : %s", name, msg.print_me());
+                                $error("%s.do_miss.check_axi: READ_SHARED request expected for message : %s", name, msg.print_me());
                             end
                         end else begin
                             if (!isReadNoSnoop(ar_beat)) begin
-                                $error("%s.do_miss : READ_NO_SNOOP request expected for message : %s", name, msg.print_me());
+                                $error("%s.do_miss.check_axi: READ_NO_SNOOP request expected for message : %s", name, msg.print_me());
                             end
                         end
                     end
@@ -1708,10 +2326,10 @@ package tb_std_cache_subsystem_pkg;
                             // this is our response
                             r_mbx.get(r_beat);
                             msg.add_to_cache_line(r_beat.r_data);
-                            $display("%t ns %s.do_miss: got R beat with last = %0d for message : %s", $time, name, r_beat.r_last, msg.print_me());
+                            $display("%t ns %s.do_miss.check_axi: got R beat with ID 0x%0h and last = %0d for message : %s", $time, name, r_beat.r_id, r_beat.r_last, msg.print_me());
                             if (msg.trans_type == RD_REQ) begin
                                 if (r_cnt == msg.data_offset) begin
-                                    $display("%t ns %s.do_miss: got R beat with valid data, changing type from RD_REQ to RD_RESP for message : %s", $time, name, msg.print_me());
+                                    $display("%t ns %s.do_miss.check_axi: got R beat with valid data, changing type from RD_REQ to RD_RESP for message : %s", $time, name, msg.print_me());
                                     msg.trans_type = RD_RESP;
                                     msg.data       = r_beat.r_data;
                                 end
@@ -1721,7 +2339,6 @@ package tb_std_cache_subsystem_pkg;
                             @(posedge sram_vif.clk);
                         end
                     end
-                    a_empty_r : assert (r_mbx.num() == 0) else $error ("%S.do_miss : R mailbox not empty", name);
 
                     msg.r_dirty  = r_beat.r_resp[2];
                     msg.r_shared = r_beat.r_resp[3];
@@ -1737,24 +2354,41 @@ package tb_std_cache_subsystem_pkg;
                         readback_msg.update_cache  = 1'b1;
                         readback_msg.r_dirty       = r_beat.r_resp[2];
                         readback_msg.r_shared      = r_beat.r_resp[3];
+                        readback_msg.be            = '1;
+                        readback_msg.size          = 3;
+
 
                         $display("%t ns %s inserting a new dcache message : %s", $time, name, readback_msg.print_me());
-
                         req_to_cache_update.put(readback_msg);
+
+                        $display("%t ns %s.do_miss: expect hit after readback, calling hit routine for message : %s", $time, name, msg.print_me());
+                        msg.prio            = msg.port_idx + 2; // the original port will do the last write, revert prio
+                        msg.insert_readback = 0;
+                        msg.redo_hit        = 1'b1;
+
+
+                    end else begin
+                        msg.prio = 0; // miss handler will do the final writeback
                     end
 
                 end
 
-                begin
+                // Monitor hit status  . . . . . . . . . . . . . . . . . . . . .
+                begin : mon_hit
                     // check if hit status changes, could be result of miss handler writeback
                     // in that case stop waiting for an AR beat
-                    $display("%t ns %s monitoring hit status for message : %s", $time, name, msg.print_me());
+                    $display("%t ns %s.do_miss.mon_hit: monitoring hit status for message : %s", $time, name, msg.print_me());
 
-                    while (!isHit(addr_v) || !gnt_vif.rd_gnt[msg.port_idx + 2]) begin
+                    while (!isHit(addr_v)) begin
+                        while (!gnt_vif.rd_gnt[msg.port_idx + 2]) begin
+                            // wait for read grant
+                            @(posedge sram_vif.clk);
+                        end
+                        // got read grant, now wait one more cycle before checking hit status
                         @(posedge sram_vif.clk);
                     end
 
-                    // status changed to hit, revert changes in priority
+                    // status changed to hit, revert any changes in priority
                     msg.prio = msg.port_idx + 2;
                     if (msg.trans_type == WR_REQ) begin
                         msg.update_cache = 1'b1;
@@ -1762,16 +2396,14 @@ package tb_std_cache_subsystem_pkg;
                         msg.update_cache = 1'b0;
                     end
 
-                    $display("%t ns %s Cache status changed from miss to hit, abort waiting for AR for message : %s", $time, name, msg.print_me());
+                    $display("%t ns %s.do_miss.mon_hit: Cache status changed from miss to hit, abort waiting for AR for message : %s", $time, name, msg.print_me());
                 end
             join_any
             disable fork;
 
-            assert (ar_mbx.num() == 0) else $error("AR mailbox not empty");
-            assert (r_mbx.num() == 0) else $error("R mailbox not empty");
 
-            if (isHit(addr_v)) begin
-                $display("%t ns %s Cache status changed from miss to hit, calling hit routine for message : %s", $time, name, msg.print_me());
+            if (isHit(addr_v) || msg.redo_hit) begin
+                $display("%t ns %s.do_miss: Calling hit routine for message : %s", $time, name, msg.print_me());
                 do_hit(msg);
             end
 
@@ -1789,6 +2421,7 @@ package tb_std_cache_subsystem_pkg;
             bit timeout = 0;
 
             dcache_req_mbox_prio.get(msg);
+            dcache_req_mbox_fwd.put(msg);
 
             // default
             msg.prio         = msg.port_idx + 2;
@@ -1801,21 +2434,35 @@ package tb_std_cache_subsystem_pkg;
                 begin
                     // bypass
                     if (!is_inside_cacheable_regions(ArianeCfg, addr_v)) begin
+                        $display("%t ns %s message is outside cacheable region: %s", $time, name, msg.print_me());
                         if (msg.trans_type == WR_REQ) begin
                             b_beat_t b_beat = new();
                             w_beat_t w_beat = new();
+
                             if (is_inside_shareable_regions(ArianeCfg, addr_v)) begin
                                 ax_ace_beat_t aw_beat = new();
                                 aw_mbx.get(aw_beat);
+                                $display("%t ns %s.check_cache_msg: got AW beat for message : %s", $time, name, msg.print_me());
                                 if (!isWriteUnique(aw_beat))
                                     $error("%s.check_cache_msg : WRITE_UNIQUE request expected for message : %s", name, msg.print_me());
                             end else begin
                                 ax_ace_beat_t aw_beat = new();
+                                int cnt = 0;
+
                                 // wait for grant before checking AW, a snoop transaction may be active
+                                $display("%t ns %s.check_cache_msg: wait for miss handler bypass grant for message : %s", $time, name, msg.print_me());
                                 while (!gnt_vif.bypass_gnt[msg.port_idx]) begin
                                     @(posedge sram_vif.clk);
+                                    cnt++;
+                                    if (cnt > cache_msg_timeout) begin
+                                        $error("%s.check_cache_msg : Timeout while waiting for grant before checking AW for message : %s", name, msg.print_me());
+                                        break;
+                                    end
                                 end
+                                $display("%t ns %s.check_cache_msg: got miss handler bypass grant for message : %s", $time, name, msg.print_me());
+
                                 aw_mbx.get(aw_beat);
+                                $display("%t ns %s.check_cache_msg: got AW beat for message : %s", $time, name, msg.print_me());
                                 if (!isWriteNoSnoop(aw_beat))
                                     $error("%s.check_cache_msg : WRITE_NO_SNOOP request expected for message : %s", name, msg.print_me());
                             end
@@ -1832,12 +2479,37 @@ package tb_std_cache_subsystem_pkg;
                             b_mbx.get(b_beat);
                             a_empty_b : assert (b_mbx.num() == 0) else $error ("%S.check_cache_msg : B mailbox not empty", name);
                         end else begin
-                            ax_ace_beat_t ar_beat     = new();
-                            r_ace_beat_t  r_beat      = new();
-                            r_ace_beat_t  r_beat_peek = new();
+                            ax_ace_beat_t ar_beat      = new();
+                            ax_ace_beat_t ar_beat_peek = new();
+                            r_ace_beat_t  r_beat       = new();
+                            r_ace_beat_t  r_beat_peek  = new();
 
-                            ar_mbx.get(ar_beat);
+                            int cnt = 0;
+                            $display("%t ns %s.check_cache_msg: wait for miss handler bypass grant for message : %s", $time, name, msg.print_me());
+                            while (!gnt_vif.bypass_gnt[msg.port_idx]) begin
+                                @(posedge sram_vif.clk); // skip cycles without grant
+                                cnt++;
+                                if (cnt > cache_msg_timeout) begin
+                                    $error("%s.check_cache_msg : Timeout while waiting for miss handler bypass grant for message : %s", name, msg.print_me());
+                                    break;
+                                end
+                            end
+                            $display("%t ns %s.check_cache_msg: got miss handler bypass grant for message : %s", $time, name, msg.print_me());
+
+                            // wait for AR beat
+                            $display("%t ns %s.check_cache_msg: waiting for AR beat for message : %s", $time, name, msg.print_me());
+                            while (!isBypass(ar_beat)) begin
+                                ar_mbx.peek(ar_beat_peek);
+                                if (isBypass(ar_beat_peek)) begin
+                                    // this is our response
+                                    ar_mbx.get(ar_beat);
+                                end else begin
+                                    $display("%t ns %s.check_cache_msg: ignoring AR beat with ID 0x%0h for message : %s", $time, name, ar_beat_peek.ax_id, msg.print_me());
+                                    @(posedge sram_vif.clk);
+                                end
+                            end
                             $display("%t ns %s.check_cache_msg: got AR beat for message : %s", $time, name, msg.print_me());
+
                             if (is_inside_shareable_regions(ArianeCfg, addr_v)) begin
                                 if (!isReadOnce(ar_beat))
                                     $error("%s.check_cache_msg : READ_ONCE request expected for message : %s", name, msg.print_me());
@@ -1845,20 +2517,20 @@ package tb_std_cache_subsystem_pkg;
                                 if (!isReadNoSnoop(ar_beat))
                                     $error("%s.check_cache_msg : READ_NO_SNOOP request expected for message : %s", name, msg.print_me());
                             end
-                            a_empty_ar : assert (ar_mbx.num() == 0) else $error ("%S.check_cache_msg : AR mailbox not empty", name);
 
                             // wait for R beat
+                            $display("%t ns %s.check_cache_msg: waiting for R beat for message : %s", $time, name, msg.print_me());
                             while (!r_beat.r_last) begin
                                 r_mbx.peek(r_beat_peek);
                                 if (r_beat_peek.r_id == ar_beat.ax_id) begin
                                     // this is our response
                                     r_mbx.get(r_beat);
-                                    $display("%t ns %s.check_cache_msg: got R beat with last = %0d for message : %s", $time, name, r_beat.r_last, msg.print_me());
+                                    $display("%t ns %s.check_cache_msg: got R beat with last = %0d and ID 0x%0h for message : %s", $time, name, r_beat.r_last, r_beat.r_id, msg.print_me());
                                 end else begin
+                                    $display("%t ns %s.check_cache_msg: ignoring R beat with ID 0x%0h for message : %s", $time, name, r_beat_peek.r_id, msg.print_me());
                                     @(posedge sram_vif.clk);
                                 end
                             end
-                            a_empty_r : assert (r_mbx.num() == 0) else $error ("%S.check_cache_msg : R mailbox not empty", name);
 
                             msg.r_dirty  = r_beat.r_resp[2];
                             msg.r_shared = r_beat.r_resp[3];
@@ -1867,19 +2539,23 @@ package tb_std_cache_subsystem_pkg;
                     end
                     // cacheable
                     else begin
+                        logic mshr_match = 0;
+                        int cnt = 0;
 
+                        // go to hit or miss routine
                         if (isHit(addr_v)) begin
                             do_hit(msg);
                         end else begin
                             do_miss(msg);
                         end
 
-                    end
-
-                    if (is_inside_cacheable_regions(ArianeCfg, addr_v)) begin
-                        // send to cache update
+                        while (msg.redo_hit == 1) begin
+                            // call hit routine again if requested
+                            do_hit(msg);
+                        end
                         $display("%t ns %s Sending message to cache update : %s", $time, name, msg.print_me());
                         req_to_cache_update.put(msg);
+
                     end
 
                 end
@@ -1907,7 +2583,21 @@ package tb_std_cache_subsystem_pkg;
         // check behaviour when flushing cache
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         local task automatic flush_cache;
+            bit init     = 1;
+            int init_cnt = 0;
             $display("%t ns %s.flush_cache: Flushing started", $time, name);
+
+            // Wait for first grant before checking cache_status contents. Some other controller
+            // may be updating the cache while the flush is pending.
+            while (!gnt_vif.gnt[0]) begin
+                $display("%t ns %s.flush_cache : waiting for first flush grant ", $time, name);
+                @(posedge sram_vif.clk); // skip cycles without grant
+                    init_cnt++;
+                    if (init_cnt > 1000) begin
+                        $error("%s.flush_cache : timeout while waiting for first flush grant", name);
+                    break;
+                end
+            end
 
             for (int w = 0; w < DCACHE_NUM_WORDS; w++) begin
                 int w_cnt = 0;
@@ -1946,7 +2636,7 @@ package tb_std_cache_subsystem_pkg;
                                 automatic int ll  = l;
                                 automatic int ww  = w;
                                 automatic int cnt = 0;
-                                while (!gnt_vif.gnt[0]) begin
+                                while (!gnt_vif.gnt[0] && (init == 0)) begin
                                     $display("%t ns %s.flush_cache : skipping cycle without grant for flush of cache entry [%0d][%0d]", $time, name, ww, ll);
                                     @(posedge sram_vif.clk); // skip cycles without grant
                                     cnt++;
@@ -1955,6 +2645,7 @@ package tb_std_cache_subsystem_pkg;
                                         break;
                                     end
                                 end
+                                init = 0;
                                 @(posedge sram_vif.clk);
 
                                 // clear entry dirty bit in cache model
@@ -1965,10 +2656,9 @@ package tb_std_cache_subsystem_pkg;
                     end
                 end // l
 
-
-                // expect clear of cache entry
-                while (!gnt_vif.gnt[0]) begin
-                    $display("%t ns %s.flush_cache : skipping cycle without grant for cache set [%0d]", $time, name, w);
+                // wait for grant
+                while (!gnt_vif.gnt[0] && (init == 0)) begin
+                    $display("%t ns %s.flush_cache : skipping cycle without grant for clear of cache set [%0d]", $time, name, w);
                     @(posedge sram_vif.clk); // skip cycles without grant
                     w_cnt++;
                     if (w_cnt > 1000) begin
@@ -1976,6 +2666,7 @@ package tb_std_cache_subsystem_pkg;
                         break;
                     end
                 end
+                init = 0;
                 @(posedge sram_vif.clk);
 
             end // w
@@ -2076,7 +2767,7 @@ package tb_std_cache_subsystem_pkg;
 
                 amo_req_mbox.get(msg);
                 $display("%t ns %s.check_amo_msg: Got amo message %s", $time, name, msg.print_me());
-
+                amo_req_mbox_fwd.put(msg); // pass on to other checkers
                 fork
                     begin
                         invalidate(msg.addr);
@@ -2123,7 +2814,6 @@ package tb_std_cache_subsystem_pkg;
                                         @(posedge sram_vif.clk);
                                     end
                                 end
-                                a_empty_r : assert (r_mbx.num() == 0) else $error ("%S.check_amo_msg : R mailbox not empty", name);
                             end
 
                         end else begin
@@ -2140,7 +2830,6 @@ package tb_std_cache_subsystem_pkg;
                                 if (!isReadNoSnoop(ar_beat))
                                     $error("%s.check_amo_msg : READ_NO_SNOOP request expected for message %s", name, msg.print_me());
                             end
-                            a_empty_ar : assert (ar_mbx.num() == 0) else $error ("%S.check_amo_msg : AR mailbox not empty", name);
 
                             // wait for R beat
                             while (!r_beat.r_last) begin
@@ -2153,7 +2842,6 @@ package tb_std_cache_subsystem_pkg;
                                     @(posedge sram_vif.clk);
                                 end
                             end
-                            a_empty_r : assert (r_mbx.num() == 0) else $error ("%S.check_amo_msg : R mailbox not empty", name);
 
                         end
 
@@ -2174,6 +2862,16 @@ package tb_std_cache_subsystem_pkg;
             end
 
         endtask
+
+        // this task just forwards responses; no check done
+        local task automatic check_amo_resp;
+            forever begin
+                amo_resp msg;
+                amo_resp_mbox.get(msg);
+                amo_resp_mbox_fwd.put(msg); // pass on to other checkers
+            end
+        endtask
+
 
 
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2214,9 +2912,14 @@ package tb_std_cache_subsystem_pkg;
         task run;
             fork
                 get_cache_msg();
-                get_cache_msg_tmp();
+                get_cache_req_tmp();
+                get_cache_resp_tmp();
+                axi_ar_filter();
+                axi_r_filter();
+                axi_write_filter();
                 check_snoop();
                 check_amo_msg();
+                check_amo_resp();
                 check_mgmt_trans();
                 update_cache_from_req();
                 update_cache_from_snoop();
@@ -2237,10 +2940,17 @@ package tb_std_cache_subsystem_pkg;
 
         virtual dcache_sram_if                                                 dc_sram_vif [NB_CORES];
         virtual sram_intf #(DCACHE_SET_ASSOC, SRAM_DATA_WIDTH, SRAM_NUM_WORDS) sram_vif    [NB_CORES];
+        int verbosity;
 
         string       name;
         ariane_cfg_t ArianeCfg;
         bit          enable_mem_check = 1;
+
+        mailbox #(amo_req)  amo_req_mbox  [NB_CORES];
+        mailbox #(amo_resp) amo_resp_mbox [NB_CORES];
+
+        mailbox #(dcache_req)  dcache_req_mbox  [NB_CORES];
+        mailbox #(dcache_resp) dcache_resp_mbox [NB_CORES];
 
         function new (
             virtual sram_intf #(DCACHE_SET_ASSOC, SRAM_DATA_WIDTH, SRAM_NUM_WORDS) sram_vif    [NB_CORES],
@@ -2254,6 +2964,7 @@ package tb_std_cache_subsystem_pkg;
                 this.sram_vif[c]    = sram_vif[c];
                 this.dc_sram_vif[c] = dc_sram_vif[c];
             end
+            verbosity = 0;
         endfunction
 
         // check the cache contents vs main memory and other caches on every write to the cache status
@@ -2277,13 +2988,18 @@ package tb_std_cache_subsystem_pkg;
                                     logic                         cc_valid, cc_dirty, cc_shared;
                                     logic [DCACHE_TAG_WIDTH:0]    cc_tag;
                                     logic [DCACHE_LINE_WIDTH-1:0] cc_data;
-                                    cc_dirty  = dc_sram_vif[cc].vld_sram[index][8*cw];
-                                    cc_valid  = dc_sram_vif[cc].vld_sram[index][8*cw+1];
-                                    cc_shared = dc_sram_vif[cc].vld_sram[index][8*cw+2];
-                                    cc_tag    = dc_sram_vif[cc].tag_sram[cw][index][DCACHE_TAG_WIDTH-1:0];
-                                    cc_data   = {dc_sram_vif[cc].data_sram[1][cw][index], dc_sram_vif[cc].data_sram[0][cw][index]};
-                                    if (cc_valid) begin
+                                    logic [63:0]                  cc_addr;
+
+                                    cc_dirty  = dc_sram_vif[cc].get_dirty(.index(index), .way(cw));
+                                    cc_valid  = dc_sram_vif[cc].get_valid(.index(index), .way(cw));
+                                    cc_shared = dc_sram_vif[cc].get_shared(.index(index), .way(cw));
+                                    cc_tag    = dc_sram_vif[cc].tag_sram[cw][index];
+                                    cc_data   = dc_sram_vif[cc].data_sram[cw][index];
+                                    cc_addr   = tag_index2addr(.tag(cc_tag), .index(index << DCACHE_BYTE_OFFSET));
+
+                                    if (cc_valid && is_inside_shareable_regions(.Cfg(ArianeCfg), .address(cc_addr))) begin
                                         logic any_dirty;
+
                                         any_dirty = cc_dirty;
                                         // check entries in other caches
                                         for (int oc=0; oc < NB_CORES; oc++) begin
@@ -2292,18 +3008,20 @@ package tb_std_cache_subsystem_pkg;
                                                     logic                         oc_valid, oc_dirty, oc_shared;
                                                     logic [DCACHE_TAG_WIDTH:0]    oc_tag;
                                                     logic [DCACHE_LINE_WIDTH-1:0] oc_data;
-                                                    oc_dirty  = dc_sram_vif[oc].vld_sram[index][8*ow];
-                                                    oc_valid  = dc_sram_vif[oc].vld_sram[index][8*ow+1];
-                                                    oc_shared = dc_sram_vif[oc].vld_sram[index][8*ow+2];
-                                                    oc_tag    = dc_sram_vif[oc].tag_sram[ow][index][DCACHE_TAG_WIDTH-1:0];
-                                                    oc_data   = {dc_sram_vif[oc].data_sram[1][ow][index], dc_sram_vif[oc].data_sram[0][ow][index]};
+
+                                                    oc_dirty  = dc_sram_vif[oc].get_dirty(.index(index), .way(ow));
+                                                    oc_valid  = dc_sram_vif[oc].get_valid(.index(index), .way(ow));
+                                                    oc_shared = dc_sram_vif[oc].get_shared(.index(index), .way(ow));
+                                                    oc_tag    = dc_sram_vif[oc].tag_sram[ow][index];
+                                                    oc_data   = dc_sram_vif[oc].data_sram[ow][index];
+
                                                     if (oc_valid && (oc_tag == cc_tag)) begin
                                                         any_dirty = any_dirty | oc_dirty;
                                                         $display("%t ns %s.monitor: Cache match for index 0x%3h, tag 0x%16h between way %0d in core %0d and way %0d in core %0d",$time, name, index, cc_tag, cw, cc, ow, oc);
 
                                                         // check that data matches
                                                         a_data : assert (cc_data == oc_data) else
-                                                            $error("%s: Cache data mismatch for index %h, tag %h - core %0d, way %0d = 0x%16h_%16h, core %0d, way %0d = 0x%16h_%16h", name, index, cc_tag, cc, cw, cc_data[127:64], cc_data[63:0], oc, ow, oc_data[127:64], oc_data[63:0]);
+                                                            $error("%s.monitor: Cache data mismatch for index %h, tag %h - core %0d, way %0d = 0x%16h_%16h, core %0d, way %0d = 0x%16h_%16h", name, index, cc_tag, cc, cw, cc_data[127:64], cc_data[63:0], oc, ow, oc_data[127:64], oc_data[63:0]);
 
                                                         // If data is present in both caches they should be marked shared.
                                                         // This will also implicitly check that a unique data is not present in
@@ -2332,7 +3050,7 @@ package tb_std_cache_subsystem_pkg;
                                             sram_vif[cc].addr[cw] = (addr - (ArianeCfg.ExecuteRegionAddrBase[3] >> DCACHE_BYTE_OFFSET)) << 1;
                                             #0
                                             a_mem_data : assert (cc_data == sram_vif[cc].data[cw]) else
-                                                $error("%s: Cache vs Memory data mismatch for index %h, tag %h - core %0d, way %0d = 0x%16h_%16h, Memory[0x%16h] = 0x%16h_%16h", name, index, cc_tag, cc, cw, cc_data[127:64], cc_data[63:0], sram_vif[cc].addr[cw], sram_vif[cc].data[cw][1], sram_vif[cc].data[cw][0]);
+                                                $error("%s.monitor: Cache vs Memory data mismatch for index %h, tag %h - core %0d, way %0d = 0x%16h_%16h, Memory[0x%16h] = 0x%16h_%16h", name, index, cc_tag, cc, cw, cc_data[127:64], cc_data[63:0], sram_vif[cc].addr[cw], sram_vif[cc].data[cw][1], sram_vif[cc].data[cw][0]);
                                         end
                                     end
                                 end
@@ -2348,8 +3066,146 @@ package tb_std_cache_subsystem_pkg;
         endtask
 
 
+        // custom checker to verify lock / unlock using amoswap
+        task automatic check_amo_lock;
+
+            logic locks [ logic[63:0] ];
+            int ids [ logic[63:0] ];
+
+            for (int c=0; c < NB_CORES; c++) begin
+                fork
+                    automatic int cc = c;
+                    begin
+                        fork
+                            // AMO SWAP monitoring
+                            begin
+                                $display("%t ns %s.check_amo_lock: Monitoring AMO lock / unlock in core %0d", $time, name, cc);
+                                forever begin
+                                    automatic logic   attempt_lock    = 0;
+                                    automatic logic   attempt_release = 0;
+                                    automatic longint attempt_addr    = 0;
+                                    amo_req  req  = new();
+                                    amo_resp resp = new();
+
+                                    amo_req_mbox[cc].get(req);
+                                    if (req.op == AMO_SWAP) begin
+                                        $display("%t ns %s.check_amo_lock: Got amo request from core %0d: %s", $time, name, cc, req.print_me());
+                                        if (req.data == 1) begin
+                                            attempt_lock = 1;
+                                        end
+                                        if (req.data == 0) begin
+                                            attempt_release = 1;
+                                        end
+                                        attempt_addr = req.addr;
+                                    end
+
+                                    amo_resp_mbox[cc].get(resp);
+                                    if (req.op == AMO_SWAP) begin
+                                        $display("%t ns %s.check_amo_lock: Got amo response from core %0d: %s", $time, name, cc, resp.print_me());
+                                    end
+
+                                    if (attempt_lock) begin
+                                        // initialize lock
+                                        if (!locks.exists(attempt_addr)) begin
+                                            locks[attempt_addr] = 0;
+                                            ids[attempt_addr] = -1;
+                                        end
+
+                                        if (resp.data == 0) begin
+                                            // lock granted
+                                            $display("%t ns %s.check_amo_lock: Lock %8h granted to core %0d", $time, name, attempt_addr, cc);
+                                            assert (locks[attempt_addr] == 0) else $error("%s.check_amo_lock: Lock %8h granted to core %0d but was already held by core %0d", name, attempt_addr, cc, ids[attempt_addr]);
+                                            locks[attempt_addr] = 1;
+                                            ids[attempt_addr] = cc;
+                                        end else begin
+                                            $display("%t ns %s.check_amo_lock: Lock %8h denied to core %0d", $time, name, attempt_addr, cc);
+                                        end
+                                    end
+
+                                    if (attempt_release) begin
+                                        if (resp.data == 1) begin
+                                            // lock released
+                                            $display("%t ns %s.check_amo_lock: Lock %8h released by core %0d", $time, name, attempt_addr, cc);
+                                            assert ((locks[attempt_addr] == 1) && (ids[attempt_addr] == cc)) else
+                                                $error("%s.check_amo_lock: Lock %8h released by AMO from core %0d but was already held by core %0d", name, attempt_addr, cc, ids[attempt_addr]);
+                                            locks[attempt_addr] = 0;
+                                            ids[attempt_addr] = -1;
+                                        end else begin
+                                            $error("%s.check_amo_lock: Lock %8h release to core %0d failed", name, attempt_addr, cc);
+                                        end
+                                    end
+
+                                end
+                            end
+
+                            begin
+                                forever begin
+                                    automatic logic   attempt_lock    = 0;
+                                    automatic logic   attempt_release = 0;
+                                    automatic longint attempt_addr    = 0;
+                                    automatic logic   init_addr;
+                                    dcache_req  req;
+                                    dcache_resp resp;
+
+                                    init_addr = 0;
+                                    dcache_req_mbox[cc].get(req);
+                                    if (req.trans_type == WR_REQ) begin
+                                        attempt_addr = req.get_addr();
+
+                                        // initialize lock
+                                        if (!locks.exists(attempt_addr)) begin
+                                            locks[attempt_addr] = 0;
+                                            ids[attempt_addr] = -1;
+                                            init_addr = 1;
+                                        end
+
+                                        if (verbosity > 0) begin
+                                            $display("%t ns %s.check_amo_lock: Got dcache request from core %0d: %s", $time, name, cc, req.print_me());
+                                        end
+                                        if (req.data == 1) begin
+                                            attempt_lock = 1;
+                                        end
+                                        if (req.data == 0) begin
+                                            attempt_release = 1;
+                                        end
+
+                                        if (attempt_lock) begin
+                                            assert (locks[attempt_addr] == 0) else $error("%s.check_amo_lock: Core %0d write to locked address %8h",name, cc, attempt_addr);
+                                            locks[attempt_addr] = 1;
+                                            ids[attempt_addr] = cc;
+                                        end
+
+                                        do begin
+                                            dcache_resp_mbox[cc].get(resp);
+                                        end while (resp.trans_type != WR_RESP);
+                                        if (verbosity > 0) begin
+                                            $display("%t ns %s.check_amo_lock: Got dcache response from core %0d: %s", $time, name, cc, resp.print_me());
+                                        end
+
+                                        if (attempt_release) begin
+                                            // lock released
+                                            $display("%t ns %s.check_amo_lock: Lock %8h released by write from core %0d", $time, name, attempt_addr, cc);
+                                            if (!init_addr) begin
+                                                assert ((locks[attempt_addr] == 0) || ((locks[attempt_addr] == 1) && (ids[attempt_addr] == cc))) else $error("%s.check_amo_lock: Lock %8h released by write from core %0d but was already held by core %0d", name, attempt_addr, cc, ids[attempt_addr]);
+                                            end
+                                            locks[attempt_addr] = 0;
+                                            ids[attempt_addr] = -1;
+                                        end
+                                    end
+                                end
+                            end
+                        join_none
+                    end
+                join_none
+            end
+            wait fork;
+
+        endtask
+
+
         task monitor;
             mon_dcache();
+            // check_amo_lock() must be xplicitly started from the tests that require it
         endtask
 
     endclass
