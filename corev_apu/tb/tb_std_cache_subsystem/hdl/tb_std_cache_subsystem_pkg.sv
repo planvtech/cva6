@@ -212,7 +212,7 @@ package tb_std_cache_subsystem_pkg;
                     // increase chance for AMO_LR
                     op_int = AMO_LR;
                 end else begin
-                    op_int = amo_t'($urandom_range(AMO_MINU, AMO_LR)); // avoid sending AMO_NONE and unsupported AMO_CAS1,AMO_CAS2
+                    op_int = amo_t'($urandom_range(AMO_MINU, AMO_SWAP)); // avoid sending AMO_NONE, AMO_SC and unsupported AMO_CAS1,AMO_CAS2
                 end
             end else begin
                 op_int = op;
@@ -370,7 +370,7 @@ package tb_std_cache_subsystem_pkg;
         bit                                  r_dirty;
         bit                                  r_shared;
         int                                  data_offset; // data offset into cache line
-        logic [DCACHE_LINE_WIDTH-1:0]        cache_line;  // for carrying an entire cache line from read response
+        cache_line_t                         cache_line;  // for carrying an entire cache line from read response
         logic [$clog2(DCACHE_SET_ASSOC)-1:0] target_way;
         logic                                target_way_valid;
         logic                                redo_hit;
@@ -388,7 +388,7 @@ package tb_std_cache_subsystem_pkg;
         task add_to_cache_line (
             input riscv::xlen_t d
         );
-            cache_line = {d, cache_line} >> (riscv::XLEN);
+            cache_line.data = {d, cache_line.data} >> (riscv::XLEN);
 
         endtask
 
@@ -400,7 +400,7 @@ package tb_std_cache_subsystem_pkg;
             if ((trans_type == WR_REQ) || (trans_type == RD_RESP)) begin
                 return $sformatf("id %0d, type %0s, port idx %0d (prio %0d), tag 0x%11h, index 0x%3h, size %0d, be 0x%2h, data 0x%16h", id, trans_type.name(), port_idx, prio, address_tag, address_index, size, be, data);
             end else if (trans_type == READBACK) begin
-                return $sformatf("id %0d, type %0s, port idx %0d (prio %0d), tag 0x%11h, index 0x%3h, size %0d, be 0x%2h, data 0x%16h_%16h", id, trans_type.name(), port_idx, prio, address_tag, address_index, size, be, cache_line[127:64], cache_line[63:0]);
+                return $sformatf("id %0d, type %0s, port idx %0d (prio %0d), tag 0x%11h, index 0x%3h, size %0d, be 0x%2h, data 0x%16h_%16h", id, trans_type.name(), port_idx, prio, address_tag, address_index, size, be, cache_line.data[127:64], cache_line.data[63:0]);
             end else begin
                 return $sformatf("id %0d, type %0s, port idx %0d (prio %0d), tag 0x%11h, index 0x%3h, size %0d, be 0x%2h", id, trans_type.name(), port_idx, prio, address_tag, address_index, size, be);
             end
@@ -1004,6 +1004,154 @@ package tb_std_cache_subsystem_pkg;
 
     endclass
 
+    //--------------------------------------------------------------------------
+    // sram request
+    //--------------------------------------------------------------------------
+    typedef enum {WR, RD, WR_AMO} sram_trans_t;
+
+    class sram_trans #(
+        parameter int unsigned DATA_WIDTH = 0,
+        parameter int unsigned BYTE_WIDTH = 8,
+        parameter int unsigned NUM_WORDS  = 0
+    );
+
+        localparam int unsigned BE_WIDTH = (DATA_WIDTH+BYTE_WIDTH-1)/BYTE_WIDTH;
+        localparam int unsigned ADDR_WIDTH = $clog2(NUM_WORDS);
+
+        sram_trans_t            trans_type;
+        logic  [ADDR_WIDTH-1:0] addr;
+        logic  [DATA_WIDTH-1:0] data;
+        logic    [BE_WIDTH-1:0] be;
+
+        function string print_me();
+            return $sformatf("type %0s, addr 0x%h, be 0x%h, data 0x%h", trans_type.name(), addr, be, data);
+        endfunction
+
+        function logic compare (
+            input sram_trans #(.DATA_WIDTH(DATA_WIDTH), .BYTE_WIDTH(BYTE_WIDTH), .NUM_WORDS(NUM_WORDS)) other
+        );
+            logic OK = 1;
+
+            if ((other.trans_type == WR_AMO) || (this.trans_type == WR_AMO)) begin
+                // don't check data for AMO
+                return ((other.trans_type === WR_AMO || other.trans_type === WR) &&
+                        (this.trans_type == WR_AMO || this.trans_type == WR) &&
+                              other.addr === this.addr &&
+                                other.be === this.be);
+
+            end else begin
+                // all fields should match
+                return (other.trans_type === this.trans_type &&
+                              other.addr === this.addr &&
+                              other.data === this.data &&
+                                other.be === this.be);
+            end
+        endfunction
+    endclass
+
+    class sram_scoreboard #(
+        parameter int unsigned DATA_WIDTH = 0,
+        parameter int unsigned BYTE_WIDTH = 8,
+        parameter int unsigned NUM_WORDS  = 0
+    );
+        mailbox #(sram_trans #(.DATA_WIDTH(DATA_WIDTH), .BYTE_WIDTH(BYTE_WIDTH), .NUM_WORDS(NUM_WORDS))) mbox_actual, mbox_expected;
+        string name;
+        int    verbosity;
+
+        function new (string name="sram_scoreboard");
+            this.name = name;
+            verbosity = 1;
+        endfunction
+
+        task run();
+                sram_trans #(.DATA_WIDTH(DATA_WIDTH), .BYTE_WIDTH(BYTE_WIDTH), .NUM_WORDS(NUM_WORDS)) trans_actual, trans_expected;
+                $display("%t ns %s: checking sram transactions", $time, name);
+                forever begin
+
+                    fork 
+                        begin
+                            trans_expected = new();
+                            mbox_expected.get(trans_expected);
+                            if (verbosity > 0)
+                                $display("%t ns %s: got expected transaction %s", $time, name, trans_expected.print_me());
+                        end
+                        begin
+                            trans_actual = new();
+                            mbox_actual.get(trans_actual);
+                            if (verbosity > 0)
+                                $display("%t ns %s: got actual transaction %s", $time, name, trans_actual.print_me());
+                        end
+                    join
+
+                    assert (trans_actual.compare(trans_expected)) else
+                        $error("%s : Transactions differ! actual: %s, expected: %s", name, trans_actual.print_me(), trans_expected.print_me());
+                        #1;
+                end
+        endtask
+
+    endclass
+
+
+    //--------------------------------------------------------------------------
+    // Monitor for the main SRAM
+    //--------------------------------------------------------------------------
+    class sram_monitor #(
+        parameter int unsigned DATA_WIDTH = 0,
+        parameter int unsigned BYTE_WIDTH = 8,
+        parameter int unsigned NUM_WORDS  = 0
+    );
+
+        mailbox #(sram_trans #(.DATA_WIDTH(DATA_WIDTH), .BYTE_WIDTH(BYTE_WIDTH), .NUM_WORDS(NUM_WORDS))) trans_mbox, trans_bypass_mbox;
+
+        virtual sram_port_intf #(.DATA_WIDTH(DATA_WIDTH), .BYTE_WIDTH(BYTE_WIDTH), .NUM_WORDS(NUM_WORDS)) vif;
+        string                 name;
+        int                    verbosity;
+        ariane_cfg_t           ArianeCfg;
+
+
+        function new (virtual sram_port_intf #(.DATA_WIDTH(DATA_WIDTH), .BYTE_WIDTH(BYTE_WIDTH), .NUM_WORDS(NUM_WORDS)) vif, ariane_cfg_t cfg, string name="sram_monitor");
+            this.vif  = vif;
+            this.name = name;
+            this.ArianeCfg = cfg;
+            verbosity = 1;
+        endfunction
+
+        // get write transactions
+        local task automatic mon_wr_trans;
+            $display("%t ns %s: monitoring write transactions", $time, name);
+            forever begin
+                if (vif.req && vif.we) begin // got read request
+                    automatic sram_trans #(.DATA_WIDTH(DATA_WIDTH), .BYTE_WIDTH(BYTE_WIDTH), .NUM_WORDS(NUM_WORDS)) wr_trans;
+                    logic [63:0] addr_v;
+                    wr_trans = new();
+                    wr_trans.trans_type = WR;
+                    wr_trans.addr       = vif.addr;
+                    wr_trans.data       = vif.wdata;
+                    wr_trans.be         = vif.be;
+
+                    addr_v = (vif.addr << $clog2(DATA_WIDTH/8)) + ArianeCfg.ExecuteRegionAddrBase[2];
+
+                    if (verbosity > 0) begin
+                        $display("%t ns %s: got write transaction to addr %16h: %s", $time, name, addr_v, wr_trans.print_me());
+                    end
+
+                    if (is_inside_cacheable_regions(ArianeCfg, addr_v)) begin
+                        trans_mbox.put(wr_trans);
+                    end else begin
+                        trans_bypass_mbox.put(wr_trans);
+                    end
+                end
+                @(posedge vif.clk);
+            end
+        endtask
+
+        task monitor;
+            fork
+                mon_wr_trans();
+            join
+        endtask
+
+    endclass
 
 
     //--------------------------------------------------------------------------
@@ -1119,7 +1267,8 @@ package tb_std_cache_subsystem_pkg;
         parameter int unsigned AXI_ADDR_WIDTH = 0,
         parameter int unsigned AXI_DATA_WIDTH = 0,
         parameter int unsigned AXI_ID_WIDTH   = 0,
-        parameter int unsigned AXI_USER_WIDTH = 0
+        parameter int unsigned AXI_USER_WIDTH = 0,
+        parameter int unsigned NUM_WORDS      = 0
     );
 
         typedef ace_test::ace_driver #(
@@ -1151,13 +1300,18 @@ package tb_std_cache_subsystem_pkg;
 
         mailbox #(dcache_req)    req_to_cache_update;
 
-        mailbox #(dcache_req)    req_to_cache_check;
         mailbox #(ace_ac_beat_t) snoop_to_cache_update;
+        mailbox #(dcache_req)    req_from_cache_update;
 
         mailbox #(amo_req)       amo_req_mbox, amo_req_mbox_fwd;
         mailbox #(amo_resp)      amo_resp_mbox, amo_resp_mbox_fwd;
 
         mailbox #(dcache_mgmt_trans) mgmt_mbox;
+
+        mailbox #(sram_trans #(
+            .DATA_WIDTH (AXI_DATA_WIDTH),
+            .NUM_WORDS  (NUM_WORDS))
+        ) sram_trans_mbox, sram_trans_bypass_mbox;
 
         // ACE mailboxes
         mailbox aw_mbx = new, w_mbx = new, b_mbx = new, ar_mbx = new, r_mbx = new;
@@ -1206,10 +1360,10 @@ package tb_std_cache_subsystem_pkg;
             lfsr                      = '0;
 
             req_to_cache_update = new();
-            req_to_cache_check = new();
+            req_from_cache_update = new();
             snoop_to_cache_update = new();
 
-            verbosity = 0;
+            verbosity = 1;
 
         endfunction
 
@@ -1555,6 +1709,68 @@ package tb_std_cache_subsystem_pkg;
 
         endfunction
 
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // Add expected SRAM write transactions
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+        // based on dcache request
+        local task automatic req_to_sram_write (input dcache_req req);
+
+            sram_trans #(.DATA_WIDTH(AXI_DATA_WIDTH),.NUM_WORDS(NUM_WORDS)) st;
+            logic [63:0] addr_v;
+
+            if (req.trans_type == EVICT) begin
+                // write back cache line
+                addr_v = tag_index2addr(.tag(req.cache_line.tag), .index(req.address_index)) - ArianeCfg.ExecuteRegionAddrBase[2];
+
+                // send expected write transactions to queue
+                st = new();
+                st.trans_type = WR;
+                st.addr = addr_v >> $clog2(AXI_DATA_WIDTH/8);
+                st.data = req.cache_line.data;
+                st.be = req.cache_line.dirty;
+                if (verbosity > 0)
+                    $display("%t ns %s.req_to_sram_write: generating expected transaction %s", $time, name, st.print_me());
+                sram_trans_mbox.put(st);
+
+                st = new();
+                st.trans_type = WR;
+                st.addr = (addr_v >> $clog2(AXI_DATA_WIDTH/8)) + 1;
+                st.data = req.cache_line.data >> AXI_DATA_WIDTH;
+                st.be = req.cache_line.dirty >> (AXI_DATA_WIDTH/8);
+                if (verbosity > 0)
+                    $display("%t ns %s.req_to_sram_write: generating expected transaction %s", $time, name, st.print_me());
+                sram_trans_mbox.put(st);
+            end else if (req.trans_type == WR_REQ) begin
+                // write bypass cache
+                addr_v = req.get_addr() - ArianeCfg.ExecuteRegionAddrBase[2];
+
+                // send expected write transactions to queue
+                st = new();
+                st.trans_type = WR;
+                st.addr = addr_v >> $clog2(AXI_DATA_WIDTH/8);
+                st.data = req.data;
+                st.be = req.be;
+                if (verbosity > 0)
+                    $display("%t ns %s.req_to_sram_write: generating expected transaction %s", $time, name, st.print_me());
+                sram_trans_bypass_mbox.put(st);
+            end
+        endtask
+
+        // based on AMO request
+        local task automatic amo_to_sram_write (input amo_req req);
+            sram_trans #(.DATA_WIDTH(AXI_DATA_WIDTH),.NUM_WORDS(NUM_WORDS)) st;
+            // send expected write transactions to queue
+            st = new();
+            st.trans_type = WR_AMO;
+            st.addr = req.addr >> $clog2(AXI_DATA_WIDTH/8);
+            st.data = req.data; // unused for now
+            st.be = (req.size) > 2 ? 8'hFF : 8'h0F;
+            if (verbosity > 0)
+                $display("%t ns %s.amo_to_sram_write: generating expected transaction %s", $time, name, st.print_me());
+            sram_trans_mbox.put(st);
+        endtask
+
 
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         // update cache model contents when receiving snoop
@@ -1564,6 +1780,7 @@ package tb_std_cache_subsystem_pkg;
             logic [DCACHE_SET_ASSOC-1:0]                      valid_v;
             logic [DCACHE_INDEX_WIDTH-DCACHE_BYTE_OFFSET-1:0] mem_idx_v;
             logic                                             hit_v;
+            logic                                             dirty_v;
             bit                                               CheckOK;
             ace_ac_beat_t                                     ac;
             logic [$clog2(DCACHE_SET_ASSOC)-1:0]              hit_way;
@@ -1650,6 +1867,15 @@ package tb_std_cache_subsystem_pkg;
                         end
                         snoop_pkg::CLEAN_INVALID: begin
                             $display("Update mem [%0d][%0d] from CLEAN_INVALID", mem_idx_v, hit_way);
+                            if (isDirty(ac.ac_addr)) begin
+                                // evict old data
+                                dcache_req tmp = new();
+                                tmp.trans_type = EVICT;
+                                tmp.cache_line = cache_status[mem_idx_v][hit_way];
+                                tmp.cache_line.dirty = '1; // all bytes are written during snoop writeback
+                                tmp.address_index = addr2index(ac.ac_addr);
+                                req_from_cache_update.put(tmp);
+                            end
                             cache_status[mem_idx_v][hit_way].shared = 1'b0;
                             cache_status[mem_idx_v][hit_way].valid = 1'b0;
                             cache_status[mem_idx_v][hit_way].dirty = '0;
@@ -1683,6 +1909,8 @@ package tb_std_cache_subsystem_pkg;
 
             end
         endtask
+
+
 
 
 
@@ -1783,13 +2011,13 @@ package tb_std_cache_subsystem_pkg;
                                     cache_status[mem_idx_v][target_way].tag    = req.address_tag;
                                     cache_status[mem_idx_v][target_way].dirty  = req.r_dirty ? '1 : '0; // we got passDirty
                                     cache_status[mem_idx_v][target_way].shared = 1'b0;
-                                    cache_status[mem_idx_v][target_way].data   = req.cache_line;
+                                    cache_status[mem_idx_v][target_way].data   = req.cache_line.data;
                                     update_cache_line(cache_status[mem_idx_v][target_way], req.data, req.be, req.data_offset);
                                 end else  if (req.trans_type == READBACK || req.trans_type == RD_RESP) begin
                                     cache_status[mem_idx_v][target_way].tag    = req.address_tag;
                                     cache_status[mem_idx_v][target_way].dirty  = req.r_dirty ? '1 : '0;
                                     cache_status[mem_idx_v][target_way].shared = req.r_shared;
-                                    cache_status[mem_idx_v][target_way].data   = req.cache_line;
+                                    cache_status[mem_idx_v][target_way].data   = req.cache_line.data;
                                 end else begin
                                     $error("Didn't expect trans_type %s", req.trans_type.name());
                                 end
@@ -1817,14 +2045,14 @@ package tb_std_cache_subsystem_pkg;
                                     cache_status[mem_idx_v][target_way].dirty  = req.r_dirty ? '1 : '0; // we got passDirty
                                     cache_status[mem_idx_v][target_way].shared = 1'b0;
                                     cache_status[mem_idx_v][target_way].tag    = req.address_tag;
-                                    cache_status[mem_idx_v][target_way].data   = req.cache_line;
+                                    cache_status[mem_idx_v][target_way].data   = req.cache_line.data;
                                     update_cache_line(cache_status[mem_idx_v][target_way], req.data, req.be, req.data_offset);
                                 end else  if (req.trans_type == READBACK || req.trans_type == RD_RESP) begin
                                     cache_status[mem_idx_v][target_way].valid  = 1'b1;
                                     cache_status[mem_idx_v][target_way].dirty  = req.r_dirty ? '1 : '0;
                                     cache_status[mem_idx_v][target_way].shared = req.r_shared;
                                     cache_status[mem_idx_v][target_way].tag    = req.address_tag;
-                                    cache_status[mem_idx_v][target_way].data   = req.cache_line;
+                                    cache_status[mem_idx_v][target_way].data   = req.cache_line.data;
                                 end else begin
                                     $error("Didn't expect trans_type %s", req.trans_type.name());
                                 end
@@ -1905,12 +2133,22 @@ package tb_std_cache_subsystem_pkg;
 
                                 if (cr_exp.cr_resp.dataTransfer) begin
                                     ace_cd_beat_t cd;
+                                    dcache_req tmp = new();
                                     cd = new();
                                     cd.cd_last = 1'b0;
                                     while (!cd.cd_last) begin
                                         cd_mbx.get(cd);
+                                        $display("%t ns %s.check_snoop: got CD beat with last = %0d for address : %16h", $time, name, cd.cd_last, ac.ac_addr);
+
+
                                         $display("%t ns %s.check_snoop: Got snoop data 0x%16h, last = %0d", $time, name, cd.cd_data,cd.cd_last);
                                     end
+
+                                    if (ac.ac_snoop == snoop_pkg::CLEAN_INVALID) begin
+                                        req_from_cache_update.get(tmp);
+                                        req_to_sram_write(tmp);
+                                    end
+
                                 end
                                 // check that no unexpected CD response has been generated
                                 a_empty_cd : assert (cd_mbx.num() == 0) else $error ("%S.check_snoop : CD mailbox not empty", name);
@@ -2218,6 +2456,7 @@ package tb_std_cache_subsystem_pkg;
                     b_beat_t      b_beat  = new();
                     w_beat_t      w_beat  = new();
                     dcache_req    evict_msg;
+                    logic [DCACHE_INDEX_WIDTH-DCACHE_BYTE_OFFSET-1:0] mem_idx_v;
 
                     int cnt = 0;
                     while (!gnt_vif.wr_gnt[msg.port_idx]) begin
@@ -2260,6 +2499,8 @@ package tb_std_cache_subsystem_pkg;
 
                     $display("%t ns %s.do_miss.evict: sending evict message to cache update: %s", $time, name, evict_msg.print_me());
                     req_to_cache_update.put(evict_msg);
+                    mem_idx_v = addr2mem_idx(evict_msg.get_addr());
+                    evict_msg.cache_line = cache_status[mem_idx_v][evict_msg.target_way];
 
                     // wait for W beat
                     while (!w_beat.w_last) begin
@@ -2272,6 +2513,9 @@ package tb_std_cache_subsystem_pkg;
                     b_mbx.get(b_beat);
                     $display("%t ns %s.do_miss.evict : got B beat for message %s", $time, name, msg.print_me());
                     a_empty_b : assert (b_mbx.num() == 0) else $error ("%S.do_miss : B mailbox not empty", name);
+
+                    // add expected write of SRAM due to eviction
+                    req_to_sram_write(evict_msg);
 
                     wait (0); // avoid exiting fork
 
@@ -2495,9 +2739,14 @@ package tb_std_cache_subsystem_pkg;
                             end
                             a_empty_w : assert (w_mbx.num() == 0) else $error ("%S.check_cache_msg : W mailbox not empty", name);
 
+
                             // wait for B beat
                             b_mbx.get(b_beat);
                             a_empty_b : assert (b_mbx.num() == 0) else $error ("%S.check_cache_msg : B mailbox not empty", name);
+                            $display("%t ns %s.check_cache_msg: got B beat for message : %s", $time, name, msg.print_me());
+
+                            req_to_sram_write(msg);
+
                         end else begin
                             ax_ace_beat_t ar_beat      = new();
                             ax_ace_beat_t ar_beat_peek = new();
@@ -2826,6 +3075,8 @@ package tb_std_cache_subsystem_pkg;
                             $display("%t ns %s.check_amo_msg: got B beat for message %s", $time, name, msg.print_me());
                             a_empty_b : assert (b_mbx.num() == 0) else $error ("%S.check_amo_msg : B mailbox not empty", name);
 
+                            amo_to_sram_write(msg);
+
                             if (msg.op != AMO_SC) begin // AMO_SC has no data response, only OK/ not OK decoded from B beat
                                 // wait for R beat
                                 while (!r_beat.r_last) begin
@@ -3071,7 +3322,7 @@ package tb_std_cache_subsystem_pkg;
                                         if (enable_mem_check && (!any_dirty)) begin
                                             logic [63:0] addr;
                                             addr                  = {cc_tag, index};
-                                            sram_vif[cc].addr[cw] = (addr - (ArianeCfg.ExecuteRegionAddrBase[3] >> DCACHE_BYTE_OFFSET)) << 1;
+                                            sram_vif[cc].addr[cw] = (addr - (ArianeCfg.ExecuteRegionAddrBase[2] >> DCACHE_BYTE_OFFSET)) << 1;
                                             #0
                                             a_mem_data : assert (cc_data == sram_vif[cc].data[cw]) else
                                                 $error("%s.monitor: Cache vs Memory data mismatch for index %h, tag %h - core %0d, way %0d = 0x%16h_%16h, Memory[0x%16h] = 0x%16h_%16h", name, index, cc_tag, cc, cw, cc_data[127:64], cc_data[63:0], sram_vif[cc].addr[cw], sram_vif[cc].data[cw][1], sram_vif[cc].data[cw][0]);
