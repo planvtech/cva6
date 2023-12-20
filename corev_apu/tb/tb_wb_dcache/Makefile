@@ -12,31 +12,38 @@
 # Date: 15.08.2018
 # Description: Makefile for the dcache testbench.
 
-library      ?= work
-toplevel     ?= tb
-src-list     := tb.list
-inc-path     := $(shell pwd)/hdl/
-src          := $(shell xargs printf '\n%s' < $(src-list)  | cut -b 1-)
-compile_flag += +cover+i_dut -incr -64 -nologo -svinputport=compat -override_timescale 1ns/1ps -suppress 2583 -suppress 13262 -suppress 2986 +cover
-sim_opts     += -64 -coverage -classdebug -voptargs="+acc"
-questa_version ?= ${QUESTASIM_VERSION}
-incdir       += ../common/ ../../../vendor/pulp-platform/axi/include/ ../../../vendor/pulp-platform/common_cells/include/  ../../../vendor/planv/ace/include/
-wave         := wave.do
+library         ?= work
+toplevel        ?= tb
+src-list        := tb.list
+inc-path        := $(shell pwd)/hdl/
+src             := $(shell xargs printf '\n%s' < $(src-list)  | cut -b 1-)
+compile_flag    += +cover+i_dut -incr -64 -nologo -svinputport=compat -override_timescale 1ns/1ps -suppress 2583 -suppress 13262 -suppress 2986 +cover
+sim_opts        += -64 -coverage -classdebug -voptargs="+acc"
+questa_version  ?= ${QUESTASIM_VERSION}
+incdir          += ../common/ ../../../vendor/pulp-platform/axi/include/ ../../../vendor/pulp-platform/common_cells/include/  ../../../vendor/planv/ace/include/
+wave            := wave.do
+cva6_config_pkg := ../../../core/include/cv64a6_imafdc_sv39_config_pkg.sv
+
 ifeq ($(toplevel),tb_ace)
-	wave         := wave_ace.do
+	wave            := wave_ace.do
+	cva6_config_pkg := ../../../core/include/cv64a6_imafdc_sv39_wb_config_pkg.sv
 endif
 ifeq ($(toplevel),tb_ace_direct)
-	wave         := wave_ace_direct.do
+	wave            := wave_ace_direct.do
+	cva6_config_pkg := ../../../core/include/cv64a6_imafdc_sv39_wb_config_pkg.sv
 endif
+# add package to start of file list
+src  := $(cva6_config_pkg) $(src)
+
 
 # Iterate over all include directories and write them with +incdir+ prefixed
 # +incdir+ works for Verilator and QuestaSim
 list_incdir := $(foreach dir, ${incdir}, +incdir+$(dir))
 
 build: clean
-	vlib${questa_version} $(library)
-	vlog${questa_version} -work $(library) -pedanticerrors $(src) $(compile_flag) $(list_incdir)
-	touch $(library)/.build
+	@vlib${questa_version} $(library)
+	@vlog${questa_version} -work $(library) -pedanticerrors $(src) $(compile_flag) $(list_incdir)
+	@touch $(library)/.build
 
 # this starts modelsim with gui
 sim: build

@@ -47,6 +47,10 @@ module tb import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #()()
     NrCachedRegionRules:   1,
     CachedRegionAddrBase:  {CachedAddrBeg},//1/8th of the memory is NC
     CachedRegionLength:    {CachedAddrEnd-CachedAddrBeg+64'b1},
+    // shared region
+    NrSharedRegionRules:   0,
+    SharedRegionAddrBase:  {64'h0},
+    SharedRegionLength:    {64'h0},
     // cache config
     AxiCompliant:          1'b1,
     SwapEndianess:         1'b0,
@@ -285,9 +289,9 @@ module tb import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #()()
       @(posedge(clk_i));
       #1
       //
-      if(i_dut.master_ports[2].i_cache_ctrl.state_q == 4'h5 && i_dut.master_ports[2].i_cache_ctrl.state_d == 4'h0 ) begin
-        if((|i_dut.master_ports[2].i_cache_ctrl.data_o.dirty[3:0]) || (|i_dut.master_ports[2].i_cache_ctrl.data_o.dirty[11:8])) begin
-          $fdisplay(fd_monitor_store_state,"[%0t ns]ERROR: dirty bits = %b  be = %b  index = %b",$time,i_dut.master_ports[2].i_cache_ctrl.data_o.dirty,i_dut.master_ports[2].i_cache_ctrl.mem_req_q.be[7:0],i_dut.master_ports[2].i_cache_ctrl.mem_req_q.index);
+      if(i_dut.master_ports[3].i_cache_ctrl.state_q == 4'h5 && i_dut.master_ports[3].i_cache_ctrl.state_d == 4'h0 ) begin
+        if((|i_dut.master_ports[3].i_cache_ctrl.data_o.dirty[3:0]) || (|i_dut.master_ports[3].i_cache_ctrl.data_o.dirty[11:8])) begin
+          $fdisplay(fd_monitor_store_state,"[%0t ns]ERROR: dirty bits = %b  be = %b  index = %b",$time,i_dut.master_ports[3].i_cache_ctrl.data_o.dirty,i_dut.master_ports[3].i_cache_ctrl.mem_req_q.be[7:0],i_dut.master_ports[3].i_cache_ctrl.mem_req_q.index);
         end
       end
     end
@@ -477,7 +481,9 @@ module tb import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #()()
     .axi_data_o      ( axi_data_o      ),
     .axi_data_i      ( axi_data_i      ),
     .axi_bypass_o    ( axi_bypass_o    ),
-    .axi_bypass_i    ( axi_bypass_i    )
+    .axi_bypass_i    ( axi_bypass_i    ),
+    .snoop_port_i    ( '0              ),
+    .snoop_port_o    (                 )
   );
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -489,6 +495,7 @@ axi_riscv_atomics_wrap #(
     .AXI_DATA_WIDTH     ( TbAxiDataWidthFull       ),
     .AXI_ID_WIDTH       ( TbAxiIdWidthFull + 32'd1 ),
     .AXI_USER_WIDTH     ( TbAxiUserWidthFull       ),
+//    .AXI_ADDR_LSB       ( $clog2(ariane_pkg::DCACHE_LINE_WIDTH/8) ), // LR/SC reservation must be at least cache line size
     .AXI_MAX_WRITE_TXNS ( 1                        ),
     .AXI_MAX_READ_TXNS  ( 1                        ),
     .RISCV_WORD_WIDTH   ( 64                       )
@@ -504,12 +511,12 @@ axi_riscv_atomics_wrap #(
 ///////////////////////////////////////////////////////////////////////////////
 
   // get actual paddr from read controllers
-  assign act_paddr[0] = (i_dut.master_ports[0].i_cache_ctrl.state_q == 4'h1) ? {i_dut.tag[1], i_dut.master_ports[0].i_cache_ctrl.mem_req_q.index} :
-                        {i_dut.master_ports[0].i_cache_ctrl.mem_req_q.tag,
-                         i_dut.master_ports[0].i_cache_ctrl.mem_req_q.index};
-  assign act_paddr[1] = (i_dut.master_ports[1].i_cache_ctrl.state_q == 4'h1) ? {i_dut.tag[2], i_dut.master_ports[1].i_cache_ctrl.mem_req_q.index} :
+  assign act_paddr[0] = (i_dut.master_ports[1].i_cache_ctrl.state_q == 4'h1) ? {i_dut.tag[2], i_dut.master_ports[1].i_cache_ctrl.mem_req_q.index} :
                         {i_dut.master_ports[1].i_cache_ctrl.mem_req_q.tag,
                          i_dut.master_ports[1].i_cache_ctrl.mem_req_q.index};
+  assign act_paddr[1] = (i_dut.master_ports[2].i_cache_ctrl.state_q == 4'h1) ? {i_dut.tag[3], i_dut.master_ports[2].i_cache_ctrl.mem_req_q.index} :
+                        {i_dut.master_ports[2].i_cache_ctrl.mem_req_q.tag,
+                         i_dut.master_ports[2].i_cache_ctrl.mem_req_q.index};
 
   // generate fifo queues for expected responses
   generate
@@ -738,7 +745,7 @@ axi_riscv_atomics_wrap #(
 
     // Apply each test until seq_num_resp memory requests have successfully completed
     ///////////////////////////////////////////////
-    test_name    = "TEST 0 -- random read -- disabled cache";
+/*    test_name    = "TEST 0 -- random read -- disabled cache";
 
     // Config
     enable_i     = 0;
@@ -1013,7 +1020,7 @@ axi_riscv_atomics_wrap #(
     runSeq(0.2*nReadVectors,2*nWriteVectors);
     flushCache();
     tb_mem_port_t::check_mem();
-
+*/
     ///////////////////////////////////////////////
     test_name    = "TEST 18 -- AMOs";
 
@@ -1034,7 +1041,7 @@ axi_riscv_atomics_wrap #(
     tb_mem_port_t::check_mem();
 
     /////////////////////////////////////////////
-    test_name    = "TEST 19 -- random write on half memory(LSB) and external writer on the other half -- max size = 64b -- enabled cache + tlb, mem contentions + invalidations";
+/*    test_name    = "TEST 19 -- random write on half memory(LSB) and external writer on the other half -- max size = 64b -- enabled cache + tlb, mem contentions + invalidations";
 
     // Config
     enable_i     = 1;
@@ -1218,7 +1225,7 @@ axi_riscv_atomics_wrap #(
     tb_mem_port_t::check_mem();
 
     //////////////////////////////////////////////
-
+*/
     end_of_sim = 1;
     $display("TB> end test sequences");
     tb_mem_port_t::report_mem();

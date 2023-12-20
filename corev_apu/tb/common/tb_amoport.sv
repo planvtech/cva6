@@ -70,6 +70,8 @@ program tb_amoport import ariane_pkg::*; import tb_pkg::*; #(
     dut_amo_req_port_o.operand_a = 'x;
     dut_amo_req_port_o.operand_b = 'x;
 
+/*
+*/
     repeat (seq_num_amo_i) begin
       dut_amo_req_port_o.req       = '0;
       dut_amo_req_port_o.operand_a = 'x;
@@ -113,6 +115,7 @@ program tb_amoport import ariane_pkg::*; import tb_pkg::*; #(
       `APPL_WAIT_COMB_SIG(clk_i, dut_amo_resp_port_i.ack)
       `APPL_WAIT_CYC(clk_i, 1)
     end
+
 
     dut_amo_req_port_o.req       = '0;
     dut_amo_req_port_o.amo_op    = AMO_NONE;
