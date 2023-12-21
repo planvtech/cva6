@@ -407,15 +407,50 @@ module tb import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #()()
           end
 
           // AMOs
-          AMO_SWAP: amo_result = amo_op_b;
-          AMO_ADD:  amo_result = amo_op_a + amo_op_b;
-          AMO_AND:  amo_result = amo_op_a & amo_op_b;
-          AMO_OR:   amo_result = amo_op_a | amo_op_b;
-          AMO_XOR:  amo_result = amo_op_a ^ amo_op_b;
-          AMO_MAX:  amo_result = ($signed(amo_op_a) > $signed(amo_op_b)) ? amo_op_a : amo_op_b;
-          AMO_MIN:  amo_result = ($signed(amo_op_a) < $signed(amo_op_b)) ? amo_op_a : amo_op_b;
-          AMO_MAXU: amo_result = (amo_op_a_u > amo_op_b_u) ? amo_op_a : amo_op_b;
-          AMO_MINU: amo_result = (amo_op_a_u < amo_op_b_u) ? amo_op_a : amo_op_b;
+          AMO_SWAP: begin
+            reservation.valid = 1'b0; // any store operation will invalidate reservation
+            amo_result = amo_op_b;
+          end
+
+          AMO_ADD:  begin
+            reservation.valid = 1'b0; // any store operation will invalidate reservation
+            amo_result = amo_op_a + amo_op_b;
+          end
+
+          AMO_AND:  begin
+            reservation.valid = 1'b0; // any store operation will invalidate reservation
+            amo_result = amo_op_a & amo_op_b;
+          end
+
+          AMO_OR:   begin
+            reservation.valid = 1'b0; // any store operation will invalidate reservation
+            amo_result = amo_op_a | amo_op_b;
+          end
+
+          AMO_XOR:  begin
+            reservation.valid = 1'b0; // any store operation will invalidate reservation
+            amo_result = amo_op_a ^ amo_op_b;
+          end
+
+          AMO_MAX:  begin
+            reservation.valid = 1'b0; // any store operation will invalidate reservation
+            amo_result = ($signed(amo_op_a) > $signed(amo_op_b)) ? amo_op_a : amo_op_b;
+          end
+
+          AMO_MIN:  begin
+            reservation.valid = 1'b0; // any store operation will invalidate reservation
+            amo_result = ($signed(amo_op_a) < $signed(amo_op_b)) ? amo_op_a : amo_op_b;
+          end
+
+          AMO_MAXU: begin
+            reservation.valid = 1'b0; // any store operation will invalidate reservation
+            amo_result = (amo_op_a_u > amo_op_b_u) ? amo_op_a : amo_op_b;
+          end
+
+          AMO_MINU: begin
+            reservation.valid = 1'b0; // any store operation will invalidate reservation
+            amo_result = (amo_op_a_u < amo_op_b_u) ? amo_op_a : amo_op_b;
+          end
 
           // Default: Leave memory unchanged.
           default: amo_result = amo_shadow;
@@ -745,7 +780,7 @@ axi_riscv_atomics_wrap #(
 
     // Apply each test until seq_num_resp memory requests have successfully completed
     ///////////////////////////////////////////////
-/*    test_name    = "TEST 0 -- random read -- disabled cache";
+    test_name    = "TEST 0 -- random read -- disabled cache";
 
     // Config
     enable_i     = 0;
@@ -1020,7 +1055,7 @@ axi_riscv_atomics_wrap #(
     runSeq(0.2*nReadVectors,2*nWriteVectors);
     flushCache();
     tb_mem_port_t::check_mem();
-*/
+
     ///////////////////////////////////////////////
     test_name    = "TEST 18 -- AMOs";
 
@@ -1041,7 +1076,7 @@ axi_riscv_atomics_wrap #(
     tb_mem_port_t::check_mem();
 
     /////////////////////////////////////////////
-/*    test_name    = "TEST 19 -- random write on half memory(LSB) and external writer on the other half -- max size = 64b -- enabled cache + tlb, mem contentions + invalidations";
+    test_name    = "TEST 19 -- random write on half memory(LSB) and external writer on the other half -- max size = 64b -- enabled cache + tlb, mem contentions + invalidations";
 
     // Config
     enable_i     = 1;
@@ -1225,7 +1260,6 @@ axi_riscv_atomics_wrap #(
     tb_mem_port_t::check_mem();
 
     //////////////////////////////////////////////
-*/
     end_of_sim = 1;
     $display("TB> end test sequences");
     tb_mem_port_t::report_mem();
