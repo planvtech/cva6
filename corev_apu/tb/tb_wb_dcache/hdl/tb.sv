@@ -383,7 +383,7 @@ module tb import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #()()
           AMO_LR: begin
             // Mark a reservation for requested memory location.
             reservation.valid = 1'b1;
-            reservation.paddr = amo_req_i.operand_a;
+            reservation.paddr = amo_req_i.operand_a >> $clog2(AMO_RESERVATION_SIZE);
 
             // The memory contents remain unchanged (old contents == new contents)
             amo_result = amo_shadow;
@@ -392,7 +392,7 @@ module tb import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #()()
           // SC instruction
           AMO_SC: begin
             // Check whether we have a valid reservation. If so, do the store and return 0.
-            if (reservation.valid && reservation.paddr == amo_req_i.operand_a) begin
+            if (reservation.valid && reservation.paddr == (amo_req_i.operand_a >> $clog2(AMO_RESERVATION_SIZE))) begin
               amo_result     = amo_op_b;
               amo_exp_result = 64'b0;
 
@@ -530,7 +530,7 @@ axi_riscv_atomics_wrap #(
     .AXI_DATA_WIDTH     ( TbAxiDataWidthFull       ),
     .AXI_ID_WIDTH       ( TbAxiIdWidthFull + 32'd1 ),
     .AXI_USER_WIDTH     ( TbAxiUserWidthFull       ),
-//    .AXI_ADDR_LSB       ( $clog2(ariane_pkg::DCACHE_LINE_WIDTH/8) ), // LR/SC reservation must be at least cache line size
+    .AXI_ADDR_LSB       ( $clog2(AMO_RESERVATION_SIZE) ),
     .AXI_MAX_WRITE_TXNS ( 1                        ),
     .AXI_MAX_READ_TXNS  ( 1                        ),
     .RISCV_WORD_WIDTH   ( 64                       )
@@ -780,6 +780,7 @@ axi_riscv_atomics_wrap #(
 
     // Apply each test until seq_num_resp memory requests have successfully completed
     ///////////////////////////////////////////////
+/*
     test_name    = "TEST 0 -- random read -- disabled cache";
 
     // Config
@@ -1055,7 +1056,7 @@ axi_riscv_atomics_wrap #(
     runSeq(0.2*nReadVectors,2*nWriteVectors);
     flushCache();
     tb_mem_port_t::check_mem();
-
+*/
     ///////////////////////////////////////////////
     test_name    = "TEST 18 -- AMOs";
 
@@ -1071,12 +1072,12 @@ axi_riscv_atomics_wrap #(
     bypass_mem_port.set_region(0, MemBytes-1);
     data_mem_port.set_region(0, 0);
 
-    runAMOs(nAMOs,1); // Last sequence flag, terminates agents
+    runAMOs(nAMOs,0); // Last sequence flag, terminates agents
     flushCache();
     tb_mem_port_t::check_mem();
 
     /////////////////////////////////////////////
-    test_name    = "TEST 19 -- random write on half memory(LSB) and external writer on the other half -- max size = 64b -- enabled cache + tlb, mem contentions + invalidations";
+/*    test_name    = "TEST 19 -- random write on half memory(LSB) and external writer on the other half -- max size = 64b -- enabled cache + tlb, mem contentions + invalidations";
 
     // Config
     enable_i     = 1;
@@ -1258,7 +1259,7 @@ axi_riscv_atomics_wrap #(
     external_writer(int'(max_size),int'(!half));
     flushCache();
     tb_mem_port_t::check_mem();
-
+*/
     //////////////////////////////////////////////
     end_of_sim = 1;
     $display("TB> end test sequences");

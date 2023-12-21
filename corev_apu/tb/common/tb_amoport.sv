@@ -54,6 +54,9 @@ program tb_amoport import ariane_pkg::*; import tb_pkg::*; #(
 // Helper tasks
 ///////////////////////////////////////////////////////////////////////////////
 
+  // AMOs to address 0 are not supported in axi_riscv_atomics module
+  // so we start at the address that maps to reservation address 1 (for alignment purposes)
+  localparam AMO_START_ADDR = AMO_RESERVATION_SIZE;
   task automatic applyAtomics();
     automatic logic [63:0] paddr;
     automatic logic [63:0] data;
@@ -91,10 +94,8 @@ program tb_amoport import ariane_pkg::*; import tb_pkg::*; #(
 
       // For LRs/SCs, choose from only 4 adresses,
       // so that valid LR/SC combinations become more likely.
-      // Note: AMOs to address 0 are not supported in axi_riscv_atomics module
-      //       so we start at 8 (for alignment purposes)
       if (amo_op inside {AMO_LR, AMO_SC})
-        void'(randomize(paddr) with {paddr >= 8; paddr < 12;});
+        void'(randomize(paddr) with {paddr >= AMO_START_ADDR; paddr <= (AMO_START_ADDR*4);});
       else
         void'(randomize(paddr) with {paddr >= 8; paddr < (MemWords<<3);});
 
