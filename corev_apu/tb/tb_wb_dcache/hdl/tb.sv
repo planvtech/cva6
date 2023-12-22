@@ -14,8 +14,10 @@
 // Description: testbench for nonblocking write-back L1 dcache.
 
 `include "tb.svh"
-`include "assign.svh"
 `include "axi/typedef.svh"
+`include "axi/assign.svh"
+`include "ace/typedef.svh"
+`include "ace/assign.svh"
 
 module tb import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #()();
 
@@ -102,6 +104,13 @@ module tb import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #()()
                    logic [(TbAxiDataWidthFull/8)-1:0],
                    logic [    TbAxiUserWidthFull-1:0])
 
+  `ACE_TYPEDEF_ALL(ace,
+                   logic [    TbAxiAddrWidthFull-1:0],
+                   logic [      TbAxiIdWidthFull-1:0],
+                   logic [    TbAxiDataWidthFull-1:0],
+                   logic [(TbAxiDataWidthFull/8)-1:0],
+                   logic [    TbAxiUserWidthFull-1:0])
+
   logic                           enable_i;
   logic                           flush_i;
   logic                           flush_ack_o;
@@ -110,10 +119,26 @@ module tb import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #()()
   amo_resp_t                      amo_resp_o;
   dcache_req_i_t [2:0]            req_ports_i;
   dcache_req_o_t [2:0]            req_ports_o;
+
   axi_req_t                       axi_data_o;
   axi_resp_t                      axi_data_i;
   axi_req_t                       axi_bypass_o;
   axi_resp_t                      axi_bypass_i;
+
+  ace_req_t                       ace_data_o;
+  ace_resp_t                      ace_data_i;
+  ace_req_t                       ace_bypass_o;
+  ace_resp_t                      ace_bypass_i;
+
+  `AXI_ASSIGN_REQ_STRUCT(axi_bypass_o, ace_bypass_o)
+  `AXI_ASSIGN_REQ_STRUCT(axi_data_o, ace_data_o)
+  always_comb begin
+    ace_data_i   = '0;
+    ace_bypass_i = '0;
+    `AXI_SET_RESP_STRUCT(ace_data_i, axi_data_i)
+    `AXI_SET_RESP_STRUCT(ace_bypass_i, axi_bypass_i)
+  end
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // TB signal declarations
@@ -497,8 +522,8 @@ module tb import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #()()
     .AXI_ADDR_WIDTH ( TbAxiAddrWidthFull  ),
     .AXI_DATA_WIDTH ( TbAxiDataWidthFull  ),
     .AXI_ID_WIDTH   ( TbAxiIdWidthFull    ),
-    .axi_req_t      ( axi_req_t           ),
-    .axi_rsp_t      ( axi_resp_t          )
+    .axi_req_t      ( ace_req_t           ),
+    .axi_rsp_t      ( ace_resp_t          )
   ) i_dut (
     .clk_i           ( clk_i           ),
     .rst_ni          ( rst_ni          ),
@@ -513,10 +538,10 @@ module tb import ariane_pkg::*; import std_cache_pkg::*; import tb_pkg::*; #()()
     .amo_resp_o      ( amo_resp_o      ),
     .req_ports_i     ( req_ports_i     ),
     .req_ports_o     ( req_ports_o     ),
-    .axi_data_o      ( axi_data_o      ),
-    .axi_data_i      ( axi_data_i      ),
-    .axi_bypass_o    ( axi_bypass_o    ),
-    .axi_bypass_i    ( axi_bypass_i    ),
+    .axi_data_o      ( ace_data_o      ),
+    .axi_data_i      ( ace_data_i      ),
+    .axi_bypass_o    ( ace_bypass_o    ),
+    .axi_bypass_i    ( ace_bypass_i    ),
     .snoop_port_i    ( '0              ),
     .snoop_port_o    (                 )
   );
@@ -780,7 +805,6 @@ axi_riscv_atomics_wrap #(
 
     // Apply each test until seq_num_resp memory requests have successfully completed
     ///////////////////////////////////////////////
-/*
     test_name    = "TEST 0 -- random read -- disabled cache";
 
     // Config
@@ -1056,7 +1080,7 @@ axi_riscv_atomics_wrap #(
     runSeq(0.2*nReadVectors,2*nWriteVectors);
     flushCache();
     tb_mem_port_t::check_mem();
-*/
+
     ///////////////////////////////////////////////
     test_name    = "TEST 18 -- AMOs";
 
@@ -1077,7 +1101,7 @@ axi_riscv_atomics_wrap #(
     tb_mem_port_t::check_mem();
 
     /////////////////////////////////////////////
-/*    test_name    = "TEST 19 -- random write on half memory(LSB) and external writer on the other half -- max size = 64b -- enabled cache + tlb, mem contentions + invalidations";
+    test_name    = "TEST 19 -- random write on half memory(LSB) and external writer on the other half -- max size = 64b -- enabled cache + tlb, mem contentions + invalidations";
 
     // Config
     enable_i     = 1;
@@ -1259,7 +1283,7 @@ axi_riscv_atomics_wrap #(
     external_writer(int'(max_size),int'(!half));
     flushCache();
     tb_mem_port_t::check_mem();
-*/
+
     //////////////////////////////////////////////
     end_of_sim = 1;
     $display("TB> end test sequences");
