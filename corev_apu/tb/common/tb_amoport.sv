@@ -63,6 +63,7 @@ program tb_amoport import ariane_pkg::*; import tb_pkg::*; #(
     automatic logic [1:0]  size;
     automatic amo_t amo_op;
     automatic logic [63:0] delay;
+    automatic logic avoid_bug_32 = 0; // don't trigger https://github.com/pulp-platform/axi_riscv_atomics/issues/32 if set to 1
 
     void'($urandom(RndSeed));
 
@@ -73,8 +74,8 @@ program tb_amoport import ariane_pkg::*; import tb_pkg::*; #(
     dut_amo_req_port_o.operand_a = 'x;
     dut_amo_req_port_o.operand_b = 'x;
 
-/*
-*/
+    void'($value$plusargs("AVOID_BUG_32=%d", avoid_bug_32));
+
     repeat (seq_num_amo_i) begin
       dut_amo_req_port_o.req       = '0;
       dut_amo_req_port_o.operand_a = 'x;
@@ -85,7 +86,12 @@ program tb_amoport import ariane_pkg::*; import tb_pkg::*; #(
       `APPL_WAIT_CYC(clk_i, delay)
 
       // Apply random stimuli, choose random AMO operand
-      void'(randomize(amo_op) with {!(amo_op inside {AMO_NONE, AMO_CAS1, AMO_CAS2});});
+      if (avoid_bug_32 && amo_op == AMO_SC) begin
+        // avoid triggering bug 32 by not submitting two consecutive AMO_SC
+        void'(randomize(amo_op) with {!(amo_op inside {AMO_NONE, AMO_CAS1, AMO_CAS2, AMO_SC});});
+      end else begin
+        void'(randomize(amo_op) with {!(amo_op inside {AMO_NONE, AMO_CAS1, AMO_CAS2});});
+      end
       void'(randomize(data));
       if (riscv::XLEN == 64)
         void'(randomize(size) with {size >= 2; size <= 3;});

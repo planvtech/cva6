@@ -35,6 +35,8 @@ endif
 cva6_config_pkg := ../../../core/include/$(target)_config_pkg.sv
 src  := $(cva6_config_pkg) $(src)
 
+AVOID_BUG_32 = 1 # don't trigger https://github.com/pulp-platform/axi_riscv_atomics/issues/32
+sim_opts += +AVOID_BUG_32=$(AVOID_BUG_32)
 
 # Iterate over all include directories and write them with +incdir+ prefixed
 # +incdir+ works for Verilator and QuestaSim
