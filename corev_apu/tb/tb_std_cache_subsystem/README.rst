@@ -1,5 +1,5 @@
 ================================================================================
-Verifcation components for DCache with coherency
+Verifcation components for cache subsystem with coherency additions
 ================================================================================
 
 This folder contains verification components for verifying the
@@ -30,7 +30,7 @@ internal tasks that receives transactions.
 * Cache load and store requests are received by `get_cache_msg()`, which then
   calls the `check_cache_msg()` task.
 * Snoop transactions are received by the `check_snoop()` task.
-* AMO requests are received by the `check_amo_msg` task.
+* AMO requests are received by the `check_amo_msg()` task.
 * Management requests are received by the `check_mgmt_trans()` task.
 
 
@@ -42,9 +42,9 @@ actions:
 #. The address is checked to determine which memory region the request targets.
 #. For requests to a cached region, the cache model is queried to expect a hit
    or miss.
-#. The expected AXI transactions are collected. If the received transactions
-   don't match what is expected, or if no transaction is received before a
-   timeout limit, an error is raised.
+#. The expected AXI transactions are collected from the AXI monitors. If the
+   received transactions don't match what is expected, or if the expected
+   transaction is not received before a timeout limit, an error is raised.
 #. Under some circumstances, changes in the cache caused by other transactions
    (such as a `ClearInvalid` request to the snoop controller) causes the hit or
    miss subroutines to be run again to match the behaviour of the cache
@@ -87,7 +87,7 @@ check_amo_msg()
 This task receives dcache AMO requests and takes the following actions:
 
 #. The targeted cache entry is invalidated if it is a hit. If the cache entry is
-   dirty, a write back transaction is expecetd.
+   dirty, a write back transaction is expected.
 #. The address is checked to determine which memory region the request targets.
 #. The expected AXI transactions are collected. If the received transactions
    don't match what is expected, or if no transaction is received before a
@@ -111,13 +111,13 @@ When a flush request is received, the following actions are taken:
 std_dcache_checker
 ===============================================================================
 
-.. attention::
-   TODO: change name of std_cache_checker to something better, e.g.
-   `std_dcache_system_scoreboard`.
-
 This scoreboard checks cache behaviour on the system level, i.e. possibly
 involving more than one cache subsystem. The scoreboard has two main tasks,
 `mon_dcache()`, and `check_amo_lock()`.
+
+.. attention::
+   TODO: change name of std_cache_checker to something better, e.g.
+   `std_dcache_system_scoreboard`.
 
 
 mon_dcache()
@@ -128,11 +128,17 @@ and that they also match with the contents of the main memory.
 Upon each write to a data cache, the contents of all ways in the written set is
 checked against the corresponding ways in other data caches in the system:
 
-- If multiple entries are valid and have matching tags, then - verify that the
-  data also matches. - verify that all entries are marked as shared. - verify at
-  most one of the entries is marked as dirty.
-- If no entry for a given tag is marked dirty, then verify that the data matches
-  the data in main memory.
+- If multiple entries are valid and have matching tags, then
+
+  - verify that the data also matches.
+
+  - verify that all entries are marked as shared.
+
+  - verify that at most one of the entries is marked as dirty.
+
+- If no entry for a given tag is marked dirty, then
+
+  - verify that the data matches the data in main memory.
 
 The check against the main memory can be disabled by setting the internal
 variable `enable_mem_check` to 0, e.g. in case of a LLC present in the system.
@@ -155,80 +161,42 @@ Note that this task can only be used in specific directed tests that implement
 correct software lock mechanisms. It is disabled by default.
 
 
-amo_intf
-===============================================================================
-TBD
-
-
-dcache_intf
-===============================================================================
-TBD
-
-
-dcache_mgmt_intf
-===============================================================================
-TBD
-
-
-dcache_sram_if
-===============================================================================
-TBD
-
-
-dcache_gnt_if
-===============================================================================
-TBD
-
-
-icache_intf
-===============================================================================
-TBD
-
-
-sram_intf
-===============================================================================
-TBD
-
-
 amo_driver
 ===============================================================================
-TBD
+*TBD*
 
 
 amo_monitor
 ===============================================================================
-TBD
+*TBD*
 
 
 dcache_driver
 ===============================================================================
-TBD
+*TBD*
 
 
 dcache_monitor
 ===============================================================================
-TBD
+*TBD*
 
 
 icache_driver
 ===============================================================================
-TBD
+*TBD*
 
 
 icache_monitor
 ===============================================================================
-TBD
+*TBD*
 
 
 dcache_mgmt_driver
 ===============================================================================
-TBD
+*TBD*
 
 
 dcache_mgmt_monitor
 ===============================================================================
-TBD
-
-
-
+*TBD*
 
