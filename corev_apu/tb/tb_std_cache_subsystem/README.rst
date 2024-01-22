@@ -18,10 +18,11 @@ A test bench verifying the caches must drive the cache request ports.
 
 std_cache_scoreboard
 ===============================================================================
-This scoreboard receives transactions via a number of mailboxes and verifies
-that the received transactions match what is expected. The scoreboard maintains
-an internal model of the cache, `cache_status`, to be able to predict
-transactions and verify against the real memory.
+This scoreboard checks the behaviour of a single cache subsystem. The scoreboard
+receives transactions via a number of mailboxes and verifies that the received
+transactions match what is expected. The scoreboard maintains an internal model
+of the cache, `cache_status`, to be able to predict transactions and verify
+against the real memory.
 
 The scoreboard is activated by the task `run()` which in turn starts a number of
 internal tasks that receives transactions.
@@ -102,24 +103,67 @@ When a flush request is received, the following actions are taken:
 
 #. The cache model is traversed. For each entry:
     #. If the entry is dirty, a write-back transaction is expected.
-    #. If the entry is valid, wait for cache access to be granted (internal signal probed).
+    #. If the entry is valid, wait for cache access to be granted (internal
+       signal probed).
     #. Clear the cache entry.
 
 
 std_dcache_checker
 ===============================================================================
-TBD
+
+.. attention::
+   TODO: change name of std_cache_checker to something better, e.g.
+   `std_dcache_system_scoreboard`.
+
+This scoreboard checks cache behaviour on the system level, i.e. possibly
+involving more than one cache subsystem. The scoreboard has two main tasks,
+`mon_dcache()`, and `check_amo_lock()`.
+
+
+mon_dcache()
+-------------------------------------------------------------------------------
+This task verifies that the contents of the data caches in the systems match,
+and that they also match with the contents of the main memory.
+
+Upon each write to a data cache, the contents of all ways in the written set is
+checked against the corresponding ways in other data caches in the system:
+
+- If multiple entries are valid and have matching tags, then - verify that the
+  data also matches. - verify that all entries are marked as shared. - verify at
+  most one of the entries is marked as dirty.
+- If no entry for a given tag is marked dirty, then verify that the data matches
+  the data in main memory.
+
+The check against the main memory can be disabled by setting the internal
+variable `enable_mem_check` to 0, e.g. in case of a LLC present in the system.
+
+
+check_amo_lock()
+-------------------------------------------------------------------------------
+This task is only enabled in specific test cases. It verifies a lock mechanism
+using `AMO_SWAP` to set (lock) and clear (unlock) a data entry.
+
+The task keeps a local record of locked addresses. It flags an error if any of
+the following occurs:
+
+- A lock request succeeds to an address that is already locked.
+- An unlock request succeeds to an address that is not locked or is locked by
+  another core.
+- An unlock request fails.
+
+Note that this task can only be used in specific directed tests that implement
+correct software lock mechanisms. It is disabled by default.
 
 
 amo_intf
 ===============================================================================
-
 TBD
 
 
 dcache_intf
 ===============================================================================
 TBD
+
 
 dcache_mgmt_intf
 ===============================================================================
