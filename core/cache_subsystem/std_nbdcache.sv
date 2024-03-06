@@ -266,7 +266,7 @@ import std_cache_pkg::*;
         // cache_ctrl 0 and 1 can run in parallel but may not start
         // if cache_ctrl[2] is running
         start_ack[2] = 1'b1; //start_req[2] && !busy[3] && !start_req[4] && !ongoing_write_o;
-        start_ack[3] = i_miss_handler.state_q != 5'h11; //(master_ports[3].i_cache_ctrl.state_q < 4'h5 || master_ports[3].i_cache_ctrl.state_q > 4'h5) ; //start_req[3] && !busy[3] && !start_req[4];// && !ongoing_write_o;
+        start_ack[3] = 1'b1; //i_miss_handler.state_q != 5'h11; //(master_ports[3].i_cache_ctrl.state_q < 4'h5 || master_ports[3].i_cache_ctrl.state_q > 4'h5) ; //start_req[3] && !busy[3] && !start_req[4];// && !ongoing_write_o;
         //start_ack[3] = 1'b1; //!busy[3];
         // cache_ctrl 2 can only start if cache_ctrl 0 and 1 are idle
         start_ack[4] = 1'b1; //start_req[4] &&

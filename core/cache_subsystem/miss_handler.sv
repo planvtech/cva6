@@ -289,11 +289,12 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                         serve_amo_d  = 1'b0;
                         // save to MSHR
                         mshr_d.valid = 1'b1;
-                        mshr_d.we    = '0;
+                        mshr_d.we    = miss_req_we[i];
                         mshr_d.id    = i;
                         mshr_d.addr  = miss_req_addr[i][DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:0];
-                        mshr_d.wdata = '0;
-                        mshr_d.be    = '0;
+                        mshr_d.wdata = miss_req_wdata[i];
+                        mshr_d.be    = miss_req_be[i];
+                        mshr_d.make_unique    = 1'b1;
                         break;
                     end
                     // here comes the refill portion of code
@@ -308,9 +309,12 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                         mshr_d.addr  = miss_req_addr[i][DCACHE_TAG_WIDTH+DCACHE_INDEX_WIDTH-1:0];
                         mshr_d.wdata = miss_req_wdata[i];
                         mshr_d.be    = miss_req_be[i];
+                        mshr_d.make_unique    = 1'b0;
                         break;
                     end
                 end
+                colliding_clean_d = '0;
+
             end
 
             //  ~> we missed on the cache
@@ -365,7 +369,7 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                 end
                 if (gnt_miss_fsm) begin
                     state_d = SAVE_CACHELINE;
-                    miss_gnt_o[mshr_q.id] = 1'b1;
+                    miss_gnt_o[mshr_q.id] = state_q != REQ_CACHELINE_UNIQUE ? 1'b1 : 1'b0; //1'b1;
                     if (state_q == REQ_CACHELINE_UNIQUE) begin
                         // we have now handled the colliding invalidation
                         colliding_clean_d[mshr_q.id] = 1'b0;
@@ -408,7 +412,15 @@ module miss_handler import ariane_pkg::*; import std_cache_pkg::*; #(
                     // reset MSHR
                     mshr_d.valid = 1'b0;
                     // go back to idle
-                    state_d = IDLE;
+                    if (colliding_clean_q[mshr_q.id]) begin
+                        state_d = MISS;
+                        colliding_clean_d[mshr_q.id] = 1'b0;
+                    end
+                    else begin
+                        state_d = IDLE;
+                        miss_gnt_o[mshr_q.id] = mshr_q.make_unique;
+                        colliding_clean_d[mshr_q.id] = 1'b0;
+                    end
                 end
             end
 
