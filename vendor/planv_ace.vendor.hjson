@@ -14,8 +14,8 @@
     upstream: {
         // URL
         url: "https://github.com/planvtech/ace.git",
-        // revision
-        rev: "v0.0.7.2-pulp",
+        // revision: parallel AXI and snoop read
+        rev: "a49a23938849a2d32929d568406e77b653c3a956",
     }
 
     // Patch dir for local changes

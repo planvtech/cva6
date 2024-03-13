@@ -26,6 +26,7 @@ module axi_shim #(
   parameter int unsigned AxiDataWidth = 0,
   parameter int unsigned AxiIdWidth   = 0,
   parameter bit          AxiAce       = 0, // Add AMBA ACE signals
+  parameter ariane_pkg::ariane_cfg_t ArianeCfg        = ariane_pkg::ArianeDefaultConfig,
   parameter type axi_req_t = ariane_axi::req_t,
   parameter type axi_rsp_t = ariane_axi::resp_t
 ) (
@@ -309,7 +310,7 @@ module axi_shim #(
     assign axi_req_o.aw.awunique = '0;
     assign axi_req_o.ar.snoop = '0;
     assign axi_req_o.ar.bar = '0;
-    assign axi_req_o.ar.domain = 2'b01;
+    assign axi_req_o.ar.domain = ariane_pkg::is_inside_shareable_regions(ArianeCfg, axi_req_o.ar.addr) ? 2'b01 : 2'b00;
     assign axi_req_o.ac_ready = '0;
     assign axi_req_o.cr_valid = '0;
     assign axi_req_o.cr_resp = '0;

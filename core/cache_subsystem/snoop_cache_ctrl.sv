@@ -138,7 +138,7 @@ module snoop_cache_ctrl import ariane_pkg::*; import std_cache_pkg::*; #(
         cacheline_word_sel_d = 1'b0;
 
         // we receive a snooping request
-        if (snoop_port_i.ac_valid == 1'b1 && flushing_i == 1'b0 && !(amo_valid_i == 1'b1 && amo_addr_i[63:DCACHE_BYTE_OFFSET] == snoop_port_i.ac.addr[63:DCACHE_BYTE_OFFSET])) begin
+        if (snoop_port_i.ac_valid == 1'b1 ) begin
           snoop_port_o.ac_ready = 1'b1;
           // save the request details
           mem_req_d.index = snoop_port_i.ac.addr[DCACHE_INDEX_WIDTH-1:0];
