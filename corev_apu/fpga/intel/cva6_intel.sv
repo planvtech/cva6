@@ -20,9 +20,8 @@
 
 module cva6_intel (
 // WARNING: Do not define input parameters. This causes the FPGA build to fail.
- input  logic         sys_clk_p   , //100 MHz on agilex7
- input  logic         sys_clk_n   ,
- input wire           pll_ref_clk ,
+ input wire           pll_ref_clk_p , // 33.333 MHz on Agilex 7
+ input wire           pll_ref_clk_n ,
  input  logic         cpu_resetn  ,
 
  inout  wire  [15:0]  ddr4_dq     , //data
@@ -916,7 +915,7 @@ logic [4095:0] calbus_seq_param_tbl;
 emif inst_ddr4 (
     .local_reset_req           ('0),           //   input,     width = 1,           local_reset_req.local_reset_req
     // .local_reset_done          (ddr_rst_done),          //  output,     width = 1,        local_reset_status.local_reset_done
-    .pll_ref_clk               (pll_ref_clk),               //   input,     width = 1,               pll_ref_clk.clk
+    .pll_ref_clk               (pll_ref_clk_p),               //   input,     width = 1,               pll_ref_clk.clk
     .pll_locked                (ddr_pll_locked),                //  output,     width = 1,                pll_locked.pll_locked
     .oct_rzqin                 (oct_rzqin),                 //   input,     width = 1,                       oct.oct_rzqin
     .mem_ck                    (ddr4_ck_p),                    //  output,     width = 1,                       mem.mem_ck
@@ -944,8 +943,8 @@ emif inst_ddr4 (
     .calbus_rdata              (calbus_rdata),              //  output,    width = 32,                          .calbus_rdata
     .calbus_seq_param_tbl      (calbus_seq_param_tbl),      //  output,  width = 4096,                          .calbus_seq_param_tbl
     .calbus_clk                (calbus_clk),                //   input,     width = 1,           emif_calbus_clk.clk
-    // .emif_usr_reset_n          (_connected_to_emif_usr_reset_n_),          //  output,     width = 1,          emif_usr_reset_n.reset_n
-    .emif_usr_clk              (_connected_to_emif_usr_clk_),              //  output,     width = 1,              emif_usr_clk.clk
+    .emif_usr_reset_n          (ddr_sync_reset),          //  output,     width = 1,          emif_usr_reset_n.reset_n
+    .emif_usr_clk              (ddr_clock_out),              //  output,     width = 1,              emif_usr_clk.clk
     .amm_ready_0               (_connected_to_amm_ready_0_),               //  output,     width = 1,                ctrl_amm_0.waitrequest_n
     .amm_read_0                (_connected_to_amm_read_0_),                //   input,     width = 1,                          .read
     .amm_write_0               (_connected_to_amm_write_0_),               //   input,     width = 1,                          .write
@@ -973,14 +972,16 @@ emif_cal ddr_calibration (
 //
 //clocks
 io_pll clocks (
-    .refclk   (sys_clk_p),   //   input,  width = 1,  refclk.clk
+    .refclk   (ddr_clock_out),   // 300 MHz on Agilex 7  input,  width = 1,  refclk.clk
     .locked   (pll_locked),   //  output,  width = 1,  locked.export
     .rst      (cpu_reset),      //   input,  width = 1,   reset.reset
     .outclk_0 (clk), //  output,  width = 1, outclk0.clk 50 MHz
     .outclk_1 (sd_clk_sys), //  output,  width = 1, outclk1.clk 50 MHz
-    .outclk_2 (phy_tx_clk), //  output,  width = 1, outclk2.clk 125 MHz
-    .outclk_3 (eth_clk)  //  output,  width = 1, outclk3.clk 125 MHz
+    .outclk_2 (phy_tx_clk)  //  output,  width = 1, outclk2.clk 125 MHz
+    // .outclk_3 (eth_clk)  //  output,  width = 1, outclk3.clk 125 MHz
 );
+
+assign eth_clk = phy_tx_clk;
 //assign clk_200MHz_ref = ddr_clock_out;
 //
 //`endif

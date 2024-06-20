@@ -67,7 +67,7 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
   </table>
   <table class="blueBar">
    <tr>
-    <td class="l">2024.06.20.13:43:21</td>
+    <td class="l">2024.06.20.15:15:14</td>
     <td class="r">Datasheet</td>
    </tr>
   </table>
@@ -126,15 +126,15 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
        </tr>
        <tr>
         <td class="parametername">gui_location_type</td>
-        <td class="parametervalue">I/O Bank</td>
+        <td class="parametervalue">Fabric-Feeding</td>
        </tr>
        <tr>
         <td class="parametername">gui_reference_clock_frequency</td>
-        <td class="parametervalue">100.0</td>
+        <td class="parametervalue">300.0</td>
        </tr>
        <tr>
         <td class="parametername">gui_use_coreclk</td>
-        <td class="parametervalue">false</td>
+        <td class="parametervalue">true</td>
        </tr>
        <tr>
         <td class="parametername">gui_use_locked</td>
@@ -146,7 +146,7 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
        </tr>
        <tr>
         <td class="parametername">gui_pll_bandwidth_preset</td>
-        <td class="parametervalue">Low</td>
+        <td class="parametervalue">Medium</td>
        </tr>
        <tr>
         <td class="parametername">gui_lock_setting</td>
@@ -182,7 +182,7 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
        </tr>
        <tr>
         <td class="parametername">gui_number_of_clocks</td>
-        <td class="parametervalue">4</td>
+        <td class="parametervalue">3</td>
        </tr>
        <tr>
         <td class="parametername">gui_fix_vco_frequency</td>
@@ -321,6 +321,10 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
         <td class="parametervalue">outclk17</td>
        </tr>
        <tr>
+        <td class="parametername">gui_divide_factor_c3</td>
+        <td class="parametervalue">6</td>
+       </tr>
+       <tr>
         <td class="parametername">gui_divide_factor_c4</td>
         <td class="parametervalue">6</td>
        </tr>
@@ -375,6 +379,10 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
        <tr>
         <td class="parametername">gui_divide_factor_c17</td>
         <td class="parametervalue">6</td>
+       </tr>
+       <tr>
+        <td class="parametername">gui_cascade_counter3</td>
+        <td class="parametervalue">false</td>
        </tr>
        <tr>
         <td class="parametername">gui_cascade_counter4</td>
@@ -505,6 +513,10 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
         <td class="parametervalue">100.0</td>
        </tr>
        <tr>
+        <td class="parametername">gui_output_clock_frequency_ps3</td>
+        <td class="parametervalue">8000.0</td>
+       </tr>
+       <tr>
         <td class="parametername">gui_output_clock_frequency_ps4</td>
         <td class="parametervalue">10000.0</td>
        </tr>
@@ -574,7 +586,7 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
        </tr>
        <tr>
         <td class="parametername">gui_actual_output_clock_frequency3</td>
-        <td class="parametervalue">125.0</td>
+        <td class="parametervalue">100.0</td>
        </tr>
        <tr>
         <td class="parametername">gui_actual_output_clock_frequency4</td>
@@ -634,7 +646,7 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
        </tr>
        <tr>
         <td class="parametername">gui_actual_output_clock_frequency_range0</td>
-        <td class="parametervalue">49.758454,49.777778,49.794239,50.0,50.205761,50.222222</td>
+        <td class="parametervalue">49.92,49.925037,50.0,50.068966,50.086957,50.090744</td>
        </tr>
        <tr>
         <td class="parametername">gui_actual_output_clock_frequency_range1</td>
@@ -646,7 +658,7 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
        </tr>
        <tr>
         <td class="parametername">gui_actual_output_clock_frequency_range3</td>
-        <td class="parametervalue">107.142857,111.111111,113.636364,125.0,138.888889,142.857143</td>
+        <td class="parametervalue">100.0</td>
        </tr>
        <tr>
         <td class="parametername">gui_actual_output_clock_frequency_range4</td>
@@ -849,6 +861,10 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
         <td class="parametervalue">0.0</td>
        </tr>
        <tr>
+        <td class="parametername">gui_phase_shift_deg3</td>
+        <td class="parametervalue">0.0</td>
+       </tr>
+       <tr>
         <td class="parametername">gui_phase_shift_deg4</td>
         <td class="parametervalue">0.0</td>
        </tr>
@@ -990,7 +1006,7 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
        </tr>
        <tr>
         <td class="parametername">gui_actual_phase_shift_range3</td>
-        <td class="parametervalue">0.0,100.0,125.0,166.7,200.0,250.0</td>
+        <td class="parametervalue">0.0</td>
        </tr>
        <tr>
         <td class="parametername">gui_actual_phase_shift_range4</td>
@@ -1049,6 +1065,10 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
         <td class="parametervalue">0.0</td>
        </tr>
        <tr>
+        <td class="parametername">gui_actual_phase_shift_deg3</td>
+        <td class="parametervalue">0.0</td>
+       </tr>
+       <tr>
         <td class="parametername">gui_actual_phase_shift_deg4</td>
         <td class="parametervalue">0.0</td>
        </tr>
@@ -1102,6 +1122,10 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
        </tr>
        <tr>
         <td class="parametername">gui_actual_phase_shift_deg17</td>
+        <td class="parametervalue">0.0</td>
+       </tr>
+       <tr>
+        <td class="parametername">gui_actual_phase_shift_deg_range3</td>
         <td class="parametervalue">0.0</td>
        </tr>
        <tr>
@@ -1318,7 +1342,7 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
        </tr>
        <tr>
         <td class="parametername">gui_actual_duty_cycle_range3</td>
-        <td class="parametervalue">41.67,43.75,45.0,50.0,55.0,56.25</td>
+        <td class="parametervalue">50.0</td>
        </tr>
        <tr>
         <td class="parametername">gui_actual_duty_cycle_range4</td>
@@ -1382,7 +1406,7 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
        </tr>
        <tr>
         <td class="parametername">parameterTable_values</td>
-        <td class="parametervalue">25,2,1250.0 MHz,1,25,25,10,10,1,1,1,1,false,13,12,true,false,1,1,false,false,256,13,13,5,5,256,256,256,256,256,12,12,5,5,256,256,256,256,false,true,true,false,false,false,false,false,false,true,false,false,false,false,true,true,true,true,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,pll_cp_setting4,pll_bw_res_setting6</td>
+        <td class="parametervalue">25,6,1250.0 MHz,1,25,25,10,1,1,1,1,1,false,13,12,true,false,3,3,false,false,256,13,13,5,256,256,256,256,256,256,12,12,5,256,256,256,256,256,false,true,true,false,false,false,false,false,false,true,false,false,false,true,true,true,true,true,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,pll_cp_setting3,pll_bw_res_setting9</td>
        </tr>
        <tr>
         <td class="parametername">mifTable_names</td>

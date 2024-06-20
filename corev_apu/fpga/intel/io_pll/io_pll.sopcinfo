@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EnsembleReport name="io_pll" kind="io_pll" version="1.0" fabric="QSYS">
  <!-- Format version 24.1 115 (Future versions may contain additional information.) -->
- <!-- 2024.06.20.13:43:21 -->
+ <!-- 2024.06.20.15:15:14 -->
  <!-- A collection of modules and connections -->
  <parameter name="AUTO_GENERATION_ID">
   <type>java.lang.Integer</type>
@@ -108,7 +108,7 @@
    name="iopll_0"
    kind="altera_iopll"
    version="19.3.1"
-   entity="io_pll_altera_iopll_1931_tx6epia"
+   entity="io_pll_altera_iopll_1931_ptvu3ry"
    library="altera_iopll_1931"
    path="iopll_0"
    hpath="iopll_0"
@@ -464,7 +464,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="gui_location_type">
    <type>java.lang.String</type>
-   <value>I/O Bank</value>
+   <value>Fabric-Feeding</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>true</visible>
@@ -480,7 +480,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="gui_reference_clock_frequency">
    <type>double</type>
-   <value>100.0</value>
+   <value>300.0</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>true</visible>
@@ -488,7 +488,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="gui_reference_clock_frequency_ps">
    <type>double</type>
-   <value>10000.0</value>
+   <value>3333.333</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -496,7 +496,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="gui_use_coreclk">
    <type>boolean</type>
-   <value>false</value>
+   <value>true</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>true</visible>
@@ -552,7 +552,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="gui_pll_bandwidth_preset">
    <type>java.lang.String</type>
-   <value>Low</value>
+   <value>Medium</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>true</visible>
@@ -578,7 +578,7 @@ the requested settings for a module instance. -->
    <type>java.lang.String</type>
    <value>Disabled</value>
    <derived>false</derived>
-   <enabled>true</enabled>
+   <enabled>false</enabled>
    <visible>true</visible>
    <valid>true</valid>
   </parameter>
@@ -642,7 +642,7 @@ the requested settings for a module instance. -->
    <type>boolean</type>
    <value>false</value>
    <derived>false</derived>
-   <enabled>true</enabled>
+   <enabled>false</enabled>
    <visible>true</visible>
    <valid>true</valid>
   </parameter>
@@ -658,13 +658,13 @@ the requested settings for a module instance. -->
    <type>boolean</type>
    <value>false</value>
    <derived>false</derived>
-   <enabled>true</enabled>
+   <enabled>false</enabled>
    <visible>true</visible>
    <valid>true</valid>
   </parameter>
   <parameter name="gui_number_of_clocks">
    <type>int</type>
-   <value>4</value>
+   <value>3</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>true</visible>
@@ -672,7 +672,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="gui_multiply_factor">
    <type>int</type>
-   <value>6</value>
+   <value>25</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -680,7 +680,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="gui_divide_factor_n">
    <type>int</type>
-   <value>1</value>
+   <value>6</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -720,7 +720,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="gui_vco_frequency">
    <type>java.lang.String</type>
-   <value>600.0</value>
+   <value>1250.0</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -802,7 +802,7 @@ the requested settings for a module instance. -->
    <type>boolean</type>
    <value>false</value>
    <derived>false</derived>
-   <enabled>true</enabled>
+   <enabled>false</enabled>
    <visible>true</visible>
    <valid>true</valid>
   </parameter>
@@ -818,7 +818,7 @@ the requested settings for a module instance. -->
    <type>boolean</type>
    <value>false</value>
    <derived>false</derived>
-   <enabled>true</enabled>
+   <enabled>false</enabled>
    <visible>true</visible>
    <valid>true</valid>
   </parameter>
@@ -1056,7 +1056,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="gui_divide_factor_c0">
    <type>int</type>
-   <value>6</value>
+   <value>1</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -1064,7 +1064,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="gui_divide_factor_c1">
    <type>int</type>
-   <value>6</value>
+   <value>25</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -1072,7 +1072,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="gui_divide_factor_c2">
    <type>int</type>
-   <value>6</value>
+   <value>25</value>
    <derived>false</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -1083,7 +1083,7 @@ the requested settings for a module instance. -->
    <value>6</value>
    <derived>false</derived>
    <enabled>true</enabled>
-   <visible>false</visible>
+   <visible>true</visible>
    <valid>true</valid>
   </parameter>
   <parameter name="gui_divide_factor_c4">
@@ -1227,7 +1227,7 @@ the requested settings for a module instance. -->
    <value>false</value>
    <derived>false</derived>
    <enabled>true</enabled>
-   <visible>false</visible>
+   <visible>true</visible>
    <valid>true</valid>
   </parameter>
   <parameter name="gui_cascade_counter4">
@@ -1515,7 +1515,7 @@ the requested settings for a module instance. -->
    <value>8000.0</value>
    <derived>false</derived>
    <enabled>true</enabled>
-   <visible>false</visible>
+   <visible>true</visible>
    <valid>true</valid>
   </parameter>
   <parameter name="gui_output_clock_frequency_ps4">
@@ -1656,7 +1656,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="gui_actual_output_clock_frequency3">
    <type>java.lang.String</type>
-   <value>125.0</value>
+   <value>100.0</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>true</visible>
@@ -1776,7 +1776,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="gui_actual_output_clock_frequency_range0">
    <type>[Ljava.lang.String;</type>
-   <value>49.758454,49.777778,49.794239,50.0,50.205761,50.222222</value>
+   <value>49.92,49.925037,50.0,50.068966,50.086957,50.090744</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>true</visible>
@@ -1800,7 +1800,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="gui_actual_output_clock_frequency_range3">
    <type>[Ljava.lang.String;</type>
-   <value>107.142857,111.111111,113.636364,125.0,138.888889,142.857143</value>
+   <value>100.0</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>true</visible>
@@ -2235,7 +2235,7 @@ the requested settings for a module instance. -->
    <value>0.0</value>
    <derived>false</derived>
    <enabled>true</enabled>
-   <visible>false</visible>
+   <visible>true</visible>
    <valid>true</valid>
   </parameter>
   <parameter name="gui_phase_shift_deg4">
@@ -2520,7 +2520,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="gui_actual_phase_shift_range3">
    <type>[Ljava.lang.String;</type>
-   <value>0.0,100.0,125.0,166.7,200.0,250.0</value>
+   <value>0.0</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>true</visible>
@@ -2667,7 +2667,7 @@ the requested settings for a module instance. -->
    <value>0.0</value>
    <derived>true</derived>
    <enabled>true</enabled>
-   <visible>false</visible>
+   <visible>true</visible>
    <valid>true</valid>
   </parameter>
   <parameter name="gui_actual_phase_shift_deg4">
@@ -2808,10 +2808,10 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="gui_actual_phase_shift_deg_range3">
    <type>[Ljava.lang.String;</type>
-   <value>0.0,4.5,5.6,7.5,9.0,11.2</value>
+   <value>0.0</value>
    <derived>true</derived>
    <enabled>true</enabled>
-   <visible>false</visible>
+   <visible>true</visible>
    <valid>true</valid>
   </parameter>
   <parameter name="gui_actual_phase_shift_deg_range4">
@@ -3240,7 +3240,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="gui_actual_duty_cycle_range3">
    <type>[Ljava.lang.String;</type>
-   <value>41.67,43.75,45.0,50.0,55.0,56.25</value>
+   <value>50.0</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>true</visible>
@@ -3376,7 +3376,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="parameterTable_values">
    <type>[Ljava.lang.String;</type>
-   <value>25,2,1250.0 MHz,1,25,25,10,10,1,1,1,1,false,13,12,true,false,1,1,false,false,256,13,13,5,5,256,256,256,256,256,12,12,5,5,256,256,256,256,false,true,true,false,false,false,false,false,false,true,false,false,false,false,true,true,true,true,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,pll_cp_setting4,pll_bw_res_setting6</value>
+   <value>25,6,1250.0 MHz,1,25,25,10,1,1,1,1,1,false,13,12,true,false,3,3,false,false,256,13,13,5,256,256,256,256,256,256,12,12,5,256,256,256,256,256,false,true,true,false,false,false,false,false,false,true,false,false,false,true,true,true,true,true,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,pll_cp_setting3,pll_bw_res_setting9</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>true</visible>
@@ -3456,7 +3456,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="use_core_refclk">
    <type>boolean</type>
-   <value>false</value>
+   <value>true</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -3472,7 +3472,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="n_cnt_hi_div">
    <type>int</type>
-   <value>1</value>
+   <value>3</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -3480,7 +3480,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="n_cnt_lo_div">
    <type>int</type>
-   <value>1</value>
+   <value>3</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -3528,7 +3528,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="pll_cp_current">
    <type>java.lang.String</type>
-   <value>pll_cp_setting4</value>
+   <value>pll_cp_setting3</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -3536,7 +3536,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="pll_bwctrl">
    <type>java.lang.String</type>
-   <value>pll_bw_res_setting6</value>
+   <value>pll_bw_res_setting9</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -3544,7 +3544,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="pll_ripplecap_ctrl">
    <type>java.lang.String</type>
-   <value>pll_ripplecap_setting3</value>
+   <value>pll_ripplecap_setting1</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -3568,7 +3568,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="reference_clock_frequency">
    <type>java.lang.String</type>
-   <value>100.0 MHz</value>
+   <value>300.0 MHz</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -3600,7 +3600,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="number_of_clocks">
    <type>int</type>
-   <value>4</value>
+   <value>3</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -3608,7 +3608,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="number_of_outclks">
    <type>int</type>
-   <value>4</value>
+   <value>3</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -3624,7 +3624,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="pll_type">
    <type>java.lang.String</type>
-   <value>TOP_BOTTOM</value>
+   <value>CENTER</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -3664,7 +3664,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="pll_bw_sel">
    <type>java.lang.String</type>
-   <value>low_bw</value>
+   <value>mid_bw</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -3704,7 +3704,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="pll_clkin_0_src">
    <type>java.lang.String</type>
-   <value>ioclkin_0</value>
+   <value>coreclkin</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -4072,7 +4072,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="c_cnt_hi_div4">
    <type>int</type>
-   <value>5</value>
+   <value>256</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -4216,7 +4216,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="c_cnt_lo_div4">
    <type>int</type>
-   <value>5</value>
+   <value>256</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -4792,7 +4792,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="c_cnt_bypass_en4">
    <type>boolean</type>
-   <value>false</value>
+   <value>true</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -5080,7 +5080,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="output_clock_frequency4">
    <type>java.lang.String</type>
-   <value>125.0 MHz</value>
+   <value>0 ps</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -5512,7 +5512,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="clock_name_4">
    <type>java.lang.String</type>
-   <value>outclk3</value>
+   <value></value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -6296,7 +6296,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="hp_actual_output_clock_frequency_fp0">
    <type>double</type>
-   <value>50.0</value>
+   <value>49.99999999999999</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -6320,7 +6320,7 @@ the requested settings for a module instance. -->
   </parameter>
   <parameter name="hp_actual_output_clock_frequency_fp3">
    <type>double</type>
-   <value>125.0</value>
+   <value>100.0</value>
    <derived>true</derived>
    <enabled>true</enabled>
    <visible>false</visible>
@@ -6792,7 +6792,7 @@ parameters are a RESULT of the module parameters. -->
    </parameter>
    <parameter name="clockRate">
     <type>java.lang.Long</type>
-    <value>100000000</value>
+    <value>300000000</value>
     <derived>true</derived>
     <enabled>true</enabled>
     <visible>false</visible>
@@ -7138,80 +7138,6 @@ parameters are a RESULT of the module parameters. -->
     <role>clk</role>
    </port>
   </interface>
-  <interface name="outclk3" kind="clock_source" version="24.1">
-   <!-- The connection points exposed by a module instance for the
-particular module parameters. Connection points and their
-parameters are a RESULT of the module parameters. -->
-   <assignment>
-    <name>ui.blockdiagram.direction</name>
-    <value>output</value>
-   </assignment>
-   <parameter name="associatedDirectClock">
-    <type>java.lang.String</type>
-    <value></value>
-    <derived>false</derived>
-    <enabled>true</enabled>
-    <visible>true</visible>
-    <valid>true</valid>
-   </parameter>
-   <parameter name="clockRate">
-    <type>long</type>
-    <value>125000000</value>
-    <derived>false</derived>
-    <enabled>true</enabled>
-    <visible>false</visible>
-    <valid>true</valid>
-   </parameter>
-   <parameter name="clockRateKnown">
-    <type>boolean</type>
-    <value>true</value>
-    <derived>false</derived>
-    <enabled>true</enabled>
-    <visible>false</visible>
-    <valid>true</valid>
-   </parameter>
-   <parameter name="externallyDriven">
-    <type>boolean</type>
-    <value>false</value>
-    <derived>false</derived>
-    <enabled>true</enabled>
-    <visible>false</visible>
-    <valid>true</valid>
-   </parameter>
-   <parameter name="ptfSchematicName">
-    <type>java.lang.String</type>
-    <value></value>
-    <derived>false</derived>
-    <enabled>true</enabled>
-    <visible>false</visible>
-    <valid>true</valid>
-   </parameter>
-   <parameter name="deviceFamily">
-    <type>java.lang.String</type>
-    <value>UNKNOWN</value>
-    <derived>false</derived>
-    <enabled>true</enabled>
-    <visible>true</visible>
-    <valid>true</valid>
-   </parameter>
-   <parameter name="generateLegacySim">
-    <type>boolean</type>
-    <value>false</value>
-    <derived>false</derived>
-    <enabled>true</enabled>
-    <visible>true</visible>
-    <valid>true</valid>
-   </parameter>
-   <type>clock</type>
-   <span>0</span>
-   <isStart>true</isStart>
-   <port>
-    <name>outclk_3</name>
-    <direction>Output</direction>
-    <width>1</width>
-    <role>clk</role>
-   </port>
-  </interface>
  </module>
  <plugin>
   <instanceCount>1</instanceCount>
@@ -7246,7 +7172,7 @@ parameters are a RESULT of the module parameters. -->
   <version>24.1</version>
  </plugin>
  <plugin>
-  <instanceCount>4</instanceCount>
+  <instanceCount>3</instanceCount>
   <name>clock_source</name>
   <type>com.altera.entityinterfaces.IElementClass</type>
   <subtype>com.altera.entityinterfaces.IMutableConnectionPoint</subtype>

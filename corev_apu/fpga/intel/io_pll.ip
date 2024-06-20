@@ -41,7 +41,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="clockRate" type="longint">
           <ipxact:name>clockRate</ipxact:name>
           <ipxact:displayName>Clock rate</ipxact:displayName>
-          <ipxact:value>100000000</ipxact:value>
+          <ipxact:value>300000000</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="externallyDriven" type="bit">
           <ipxact:name>externallyDriven</ipxact:name>
@@ -325,63 +325,6 @@ https://fpgasoftware.intel.com/eula.-->
         </altera:altera_assignments>
       </ipxact:vendorExtensions>
     </ipxact:busInterface>
-    <ipxact:busInterface>
-      <ipxact:name>outclk3</ipxact:name>
-      <ipxact:busType vendor="intel" library="intel" name="clock" version="24.1"></ipxact:busType>
-      <ipxact:abstractionTypes>
-        <ipxact:abstractionType>
-          <ipxact:abstractionRef vendor="intel" library="intel" name="clock" version="24.1"></ipxact:abstractionRef>
-          <ipxact:portMaps>
-            <ipxact:portMap>
-              <ipxact:logicalPort>
-                <ipxact:name>clk</ipxact:name>
-              </ipxact:logicalPort>
-              <ipxact:physicalPort>
-                <ipxact:name>outclk_3</ipxact:name>
-              </ipxact:physicalPort>
-            </ipxact:portMap>
-          </ipxact:portMaps>
-        </ipxact:abstractionType>
-      </ipxact:abstractionTypes>
-      <ipxact:master></ipxact:master>
-      <ipxact:parameters>
-        <ipxact:parameter parameterId="associatedDirectClock" type="string">
-          <ipxact:name>associatedDirectClock</ipxact:name>
-          <ipxact:displayName>Associated direct clock</ipxact:displayName>
-          <ipxact:value></ipxact:value>
-        </ipxact:parameter>
-        <ipxact:parameter parameterId="clockRate" type="longint">
-          <ipxact:name>clockRate</ipxact:name>
-          <ipxact:displayName>Clock rate</ipxact:displayName>
-          <ipxact:value>125000000</ipxact:value>
-        </ipxact:parameter>
-        <ipxact:parameter parameterId="clockRateKnown" type="bit">
-          <ipxact:name>clockRateKnown</ipxact:name>
-          <ipxact:displayName>Clock rate known</ipxact:displayName>
-          <ipxact:value>true</ipxact:value>
-        </ipxact:parameter>
-        <ipxact:parameter parameterId="externallyDriven" type="bit">
-          <ipxact:name>externallyDriven</ipxact:name>
-          <ipxact:displayName>Externally driven</ipxact:displayName>
-          <ipxact:value>false</ipxact:value>
-        </ipxact:parameter>
-        <ipxact:parameter parameterId="ptfSchematicName" type="string">
-          <ipxact:name>ptfSchematicName</ipxact:name>
-          <ipxact:displayName>PTF schematic name</ipxact:displayName>
-          <ipxact:value></ipxact:value>
-        </ipxact:parameter>
-      </ipxact:parameters>
-      <ipxact:vendorExtensions>
-        <altera:altera_assignments>
-          <ipxact:parameters>
-            <ipxact:parameter parameterId="ui.blockdiagram.direction" type="string">
-              <ipxact:name>ui.blockdiagram.direction</ipxact:name>
-              <ipxact:value>output</ipxact:value>
-            </ipxact:parameter>
-          </ipxact:parameters>
-        </altera:altera_assignments>
-      </ipxact:vendorExtensions>
-    </ipxact:busInterface>
   </ipxact:busInterfaces>
   <ipxact:model>
     <ipxact:views>
@@ -463,18 +406,6 @@ https://fpgasoftware.intel.com/eula.-->
       </ipxact:port>
       <ipxact:port>
         <ipxact:name>outclk_2</ipxact:name>
-        <ipxact:wire>
-          <ipxact:direction>out</ipxact:direction>
-          <ipxact:wireTypeDefs>
-            <ipxact:wireTypeDef>
-              <ipxact:typeName>STD_LOGIC</ipxact:typeName>
-              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
-            </ipxact:wireTypeDef>
-          </ipxact:wireTypeDefs>
-        </ipxact:wire>
-      </ipxact:port>
-      <ipxact:port>
-        <ipxact:name>outclk_3</ipxact:name>
         <ipxact:wire>
           <ipxact:direction>out</ipxact:direction>
           <ipxact:wireTypeDefs>
@@ -684,7 +615,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="gui_location_type" type="string">
           <ipxact:name>gui_location_type</ipxact:name>
           <ipxact:displayName>IOPLL Type</ipxact:displayName>
-          <ipxact:value>I/O Bank</ipxact:value>
+          <ipxact:value>Fabric-Feeding</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="gui_use_logical" type="bit">
           <ipxact:name>gui_use_logical</ipxact:name>
@@ -694,17 +625,17 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="gui_reference_clock_frequency" type="real">
           <ipxact:name>gui_reference_clock_frequency</ipxact:name>
           <ipxact:displayName>Reference Clock Frequency</ipxact:displayName>
-          <ipxact:value>100.0</ipxact:value>
+          <ipxact:value>300.0</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="gui_reference_clock_frequency_ps" type="real">
           <ipxact:name>gui_reference_clock_frequency_ps</ipxact:name>
           <ipxact:displayName>Reference Clock Frequency</ipxact:displayName>
-          <ipxact:value>10000.0</ipxact:value>
+          <ipxact:value>3333.333</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="gui_use_coreclk" type="bit">
           <ipxact:name>gui_use_coreclk</ipxact:name>
           <ipxact:displayName>Refclk source is global clock</ipxact:displayName>
-          <ipxact:value>false</ipxact:value>
+          <ipxact:value>true</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="gui_refclk_might_change" type="bit">
           <ipxact:name>gui_refclk_might_change</ipxact:name>
@@ -739,7 +670,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="gui_pll_bandwidth_preset" type="string">
           <ipxact:name>gui_pll_bandwidth_preset</ipxact:name>
           <ipxact:displayName>PLL Bandwidth Preset</ipxact:displayName>
-          <ipxact:value>Low</ipxact:value>
+          <ipxact:value>Medium</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="gui_lock_setting" type="string">
           <ipxact:name>gui_lock_setting</ipxact:name>
@@ -809,17 +740,17 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="gui_number_of_clocks" type="int">
           <ipxact:name>gui_number_of_clocks</ipxact:name>
           <ipxact:displayName>Number Of Clocks</ipxact:displayName>
-          <ipxact:value>4</ipxact:value>
+          <ipxact:value>3</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="gui_multiply_factor" type="int">
           <ipxact:name>gui_multiply_factor</ipxact:name>
           <ipxact:displayName>Multiply Factor (M-Counter)</ipxact:displayName>
-          <ipxact:value>6</ipxact:value>
+          <ipxact:value>25</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="gui_divide_factor_n" type="int">
           <ipxact:name>gui_divide_factor_n</ipxact:name>
           <ipxact:displayName>Divide Factor (N-Counter)</ipxact:displayName>
-          <ipxact:value>1</ipxact:value>
+          <ipxact:value>6</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="gui_frac_multiply_factor" type="longint">
           <ipxact:name>gui_frac_multiply_factor</ipxact:name>
@@ -844,7 +775,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="gui_vco_frequency" type="string">
           <ipxact:name>gui_vco_frequency</ipxact:name>
           <ipxact:displayName>Actual VCO Frequency</ipxact:displayName>
-          <ipxact:value>600.0</ipxact:value>
+          <ipxact:value>1250.0</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="gui_enable_output_counter_cascading" type="bit">
           <ipxact:name>gui_enable_output_counter_cascading</ipxact:name>
@@ -1054,17 +985,17 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="gui_divide_factor_c0" type="int">
           <ipxact:name>gui_divide_factor_c0</ipxact:name>
           <ipxact:displayName>Divide Factor (C-Counter)</ipxact:displayName>
-          <ipxact:value>6</ipxact:value>
+          <ipxact:value>1</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="gui_divide_factor_c1" type="int">
           <ipxact:name>gui_divide_factor_c1</ipxact:name>
           <ipxact:displayName>Divide Factor (C-Counter)</ipxact:displayName>
-          <ipxact:value>6</ipxact:value>
+          <ipxact:value>25</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="gui_divide_factor_c2" type="int">
           <ipxact:name>gui_divide_factor_c2</ipxact:name>
           <ipxact:displayName>Divide Factor (C-Counter)</ipxact:displayName>
-          <ipxact:value>6</ipxact:value>
+          <ipxact:value>25</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="gui_divide_factor_c3" type="int">
           <ipxact:name>gui_divide_factor_c3</ipxact:name>
@@ -1896,19 +1827,6 @@ https://fpgasoftware.intel.com/eula.-->
                 &lt;/consumedSystemInfos&gt;
             &lt;/value&gt;
         &lt;/entry&gt;
-        &lt;entry&gt;
-            &lt;key&gt;outclk3&lt;/key&gt;
-            &lt;value&gt;
-                &lt;connectionPointName&gt;outclk3&lt;/connectionPointName&gt;
-                &lt;suppliedSystemInfos/&gt;
-                &lt;consumedSystemInfos&gt;
-                    &lt;entry&gt;
-                        &lt;key&gt;CLOCK_RATE&lt;/key&gt;
-                        &lt;value&gt;125000000&lt;/value&gt;
-                    &lt;/entry&gt;
-                &lt;/consumedSystemInfos&gt;
-            &lt;/value&gt;
-        &lt;/entry&gt;
     &lt;/connPtSystemInfos&gt;
 &lt;/systemInfosDefinition&gt;</ipxact:value>
         </ipxact:parameter>
@@ -1937,9 +1855,7 @@ https://fpgasoftware.intel.com/eula.-->
       <altera:interface_mapping altera:name="outclk2" altera:internal="iopll_0.outclk2" altera:type="clock" altera:dir="start">
         <altera:port_mapping altera:name="outclk_2" altera:internal="outclk_2"></altera:port_mapping>
       </altera:interface_mapping>
-      <altera:interface_mapping altera:name="outclk3" altera:internal="iopll_0.outclk3" altera:type="clock" altera:dir="start">
-        <altera:port_mapping altera:name="outclk_3" altera:internal="outclk_3"></altera:port_mapping>
-      </altera:interface_mapping>
+      <altera:interface_mapping altera:name="outclk3" altera:internal="iopll_0.outclk3"></altera:interface_mapping>
       <altera:interface_mapping altera:name="refclk" altera:internal="iopll_0.refclk" altera:type="clock" altera:dir="end">
         <altera:port_mapping altera:name="refclk" altera:internal="refclk"></altera:port_mapping>
       </altera:interface_mapping>
