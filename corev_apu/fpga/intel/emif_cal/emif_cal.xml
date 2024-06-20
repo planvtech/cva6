@@ -1,0 +1,910 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<deploy
+ date="2024.06.20.13:40:20"
+ outputDirectory="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/">
+ <perimeter>
+  <parameter
+     name="AUTO_GENERATION_ID"
+     type="Integer"
+     defaultValue="0"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_UNIQUE_ID"
+     type="String"
+     defaultValue=""
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE_FAMILY"
+     type="String"
+     defaultValue="Agilex 7"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE"
+     type="String"
+     defaultValue="AGFB014R24B2E2V"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE_SPEEDGRADE"
+     type="String"
+     defaultValue="2"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_BOARD"
+     type="String"
+     defaultValue="Intel Agilex 7 FPGA F-Series Development Kit P-Tile and E-Tile DK-DEV-AGF014EA"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_CAL_DEBUG_CLK_CLOCK_RATE"
+     type="Long"
+     defaultValue="-1"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_CAL_DEBUG_CLK_CLOCK_DOMAIN"
+     type="Integer"
+     defaultValue="-1"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_CAL_DEBUG_CLK_RESET_DOMAIN"
+     type="Integer"
+     defaultValue="-1"
+     onHdl="0"
+     affectsHdl="1" />
+  <interface name="emif_calbus_0" kind="conduit" start="0">
+   <property name="associatedClock" value="emif_calbus_clk" />
+   <property name="associatedReset" value="" />
+   <property name="prSafe" value="false" />
+   <port name="calbus_read_0" direction="output" role="calbus_read" width="1" />
+   <port
+       name="calbus_write_0"
+       direction="output"
+       role="calbus_write"
+       width="1" />
+   <port
+       name="calbus_address_0"
+       direction="output"
+       role="calbus_address"
+       width="20" />
+   <port
+       name="calbus_wdata_0"
+       direction="output"
+       role="calbus_wdata"
+       width="32" />
+   <port
+       name="calbus_rdata_0"
+       direction="input"
+       role="calbus_rdata"
+       width="32" />
+   <port
+       name="calbus_seq_param_tbl_0"
+       direction="input"
+       role="calbus_seq_param_tbl"
+       width="4096" />
+  </interface>
+  <interface name="emif_calbus_clk" kind="clock" start="1">
+   <property name="associatedDirectClock" value="" />
+   <property name="clockRate" value="0" />
+   <property name="clockRateKnown" value="false" />
+   <property name="externallyDriven" value="false" />
+   <property name="ptfSchematicName" value="" />
+   <port name="calbus_clk" direction="output" role="clk" width="1" />
+  </interface>
+  <interface name="cal_debug_clk" kind="clock" start="0">
+   <property name="clockRate" value="0" />
+   <property name="externallyDriven" value="false" />
+   <property name="ptfSchematicName" value="" />
+   <port name="cal_debug_clk_clk" direction="input" role="clk" width="1" />
+  </interface>
+  <interface name="cal_debug_reset_n" kind="reset" start="0">
+   <property name="associatedClock" value="cal_debug_clk" />
+   <property name="synchronousEdges" value="DEASSERT" />
+   <port
+       name="cal_debug_reset_n_reset"
+       direction="input"
+       role="reset"
+       width="1" />
+  </interface>
+ </perimeter>
+ <entity kind="emif_cal" version="1.0" name="emif_cal">
+  <parameter name="AUTO_CAL_DEBUG_CLK_CLOCK_RATE" value="-1" />
+  <parameter name="AUTO_CAL_DEBUG_CLK_RESET_DOMAIN" value="-1" />
+  <parameter name="AUTO_GENERATION_ID" value="0" />
+  <parameter name="AUTO_DEVICE" value="AGFB014R24B2E2V" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Agilex 7" />
+  <parameter
+     name="AUTO_BOARD"
+     value="Intel Agilex 7 FPGA F-Series Development Kit P-Tile and E-Tile DK-DEV-AGF014EA" />
+  <parameter name="AUTO_CAL_DEBUG_CLK_CLOCK_DOMAIN" value="-1" />
+  <parameter name="AUTO_UNIQUE_ID" value="" />
+  <parameter name="AUTO_DEVICE_SPEEDGRADE" value="2" />
+  <generatedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/synth/emif_cal.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/synth/emif_cal.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal.ip" />
+  </sourceFiles>
+  <childSourceFiles>
+   <file path="/opt/Quartus/ip/altera/emif/ip_emif_cal/altera_emif_cal_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/emif/ip_emif_cal_iossm/altera_emif_cal_iossm_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/alt_mem_if/alt_mem_if_jtag_master/alt_mem_if_jtag_master_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_jtag_phy/altera_avalon_st_jtag_interface_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/avalon_st/altera_avalon_st_timing_adapter/avalon-st_timing_adapter_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_sc_fifo/altera_avalon_sc_fifo_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_st_bytes_to_packets/altera_avalon_st_bytes_to_packets_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_st_packets_to_bytes/altera_avalon_st_packets_to_bytes_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_packets_to_master/altera_avalon_packets_to_master_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/avalon_st/altera_avalon_st_channel_adapter/avalon-st_channel_adapter_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/avalon_st/altera_avalon_st_channel_adapter/avalon-st_channel_adapter_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/merlin/altera_reset_controller/altera_reset_controller_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/merlin/altera_mm_interconnect/altera_mm_interconnect_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/merlin/altera_merlin_master_translator/altera_merlin_master_translator_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/merlin/altera_merlin_slave_translator/altera_merlin_slave_translator_hw.tcl" />
+  </childSourceFiles>
+  <messages>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_emif_cal_274_qortvxi"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_emif_cal_iossm_274_kxwbfsa"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_alt_mem_if_jtag_master_191_rksoe3i"</message>
+   <message level="Info" culprit="emif_cal">"Generating: altera_avalon_st_jtag_interface"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_timing_adapter_1940_5ju4ddy"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq"</message>
+   <message level="Info" culprit="emif_cal">"Generating: altera_avalon_st_bytes_to_packets"</message>
+   <message level="Info" culprit="emif_cal">"Generating: altera_avalon_st_packets_to_bytes"</message>
+   <message level="Info" culprit="emif_cal">"Generating: altera_avalon_packets_to_master"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_channel_adapter_1921_5wnzrci"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_channel_adapter_1921_fkajlia"</message>
+   <message level="Info" culprit="emif_cal">"Generating: altera_reset_controller"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_mm_interconnect_1920_pvpm4mq"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_merlin_master_translator_192_lykd4la"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_merlin_slave_translator_191_x56fcki"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="altera_emif_cal"
+   version="2.7.4"
+   name="emif_cal_altera_emif_cal_274_qortvxi">
+  <parameter
+     name="DIAG_EXPORT_SEQ_AVALON_SLAVE"
+     value="CAL_DEBUG_EXPORT_MODE_JTAG" />
+  <parameter name="DIAG_SYNTH_FOR_SIM" value="false" />
+  <parameter name="DIAG_SIM_CAL_MODE_ENUM" value="SIM_CAL_MODE_SKIP" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Agilex 7" />
+  <parameter
+     name="AUTO_BOARD"
+     value="Intel Agilex 7 FPGA F-Series Development Kit P-Tile and E-Tile DK-DEV-AGF014EA" />
+  <parameter name="SHORT_QSYS_INTERFACE_NAMES" value="true" />
+  <parameter name="DIAG_ENABLE_JTAG_UART" value="false" />
+  <parameter name="DIAG_EXTRA_CONFIGS" value="" />
+  <parameter name="AUTO_DEVICE_SPEEDGRADE" value="2" />
+  <parameter name="PHY_DDRT_EXPORT_CLK_STP_IF" value="false" />
+  <parameter name="AUTO_DEVICE" value="AGFB014R24B2E2V" />
+  <parameter name="AXM_ID_NUM" value="0" />
+  <parameter name="NUM_CALBUS_INTERFACE" value="1" />
+  <parameter name="DIAG_EXPORT_VJI" value="false" />
+  <parameter name="ENABLE_DDRT" value="false" />
+  <parameter name="DIAG_SIM_VERBOSE" value="false" />
+  <generatedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_274/synth/emif_cal_altera_emif_cal_274_qortvxi.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_274/synth/emif_cal_altera_emif_cal_274_qortvxi.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file path="/opt/Quartus/ip/altera/emif/ip_emif_cal/altera_emif_cal_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/emif/ip_emif_cal_iossm/altera_emif_cal_iossm_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/alt_mem_if/alt_mem_if_jtag_master/alt_mem_if_jtag_master_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_jtag_phy/altera_avalon_st_jtag_interface_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/avalon_st/altera_avalon_st_timing_adapter/avalon-st_timing_adapter_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_sc_fifo/altera_avalon_sc_fifo_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_st_bytes_to_packets/altera_avalon_st_bytes_to_packets_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_st_packets_to_bytes/altera_avalon_st_packets_to_bytes_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_packets_to_master/altera_avalon_packets_to_master_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/avalon_st/altera_avalon_st_channel_adapter/avalon-st_channel_adapter_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/avalon_st/altera_avalon_st_channel_adapter/avalon-st_channel_adapter_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/merlin/altera_reset_controller/altera_reset_controller_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/merlin/altera_mm_interconnect/altera_mm_interconnect_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/merlin/altera_merlin_master_translator/altera_merlin_master_translator_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/merlin/altera_merlin_slave_translator/altera_merlin_slave_translator_hw.tcl" />
+  </childSourceFiles>
+  <instantiator instantiator="emif_cal" as="emif_cal_0" />
+  <messages>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_emif_cal_274_qortvxi"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_emif_cal_iossm_274_kxwbfsa"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_alt_mem_if_jtag_master_191_rksoe3i"</message>
+   <message level="Info" culprit="emif_cal">"Generating: altera_avalon_st_jtag_interface"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_timing_adapter_1940_5ju4ddy"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq"</message>
+   <message level="Info" culprit="emif_cal">"Generating: altera_avalon_st_bytes_to_packets"</message>
+   <message level="Info" culprit="emif_cal">"Generating: altera_avalon_st_packets_to_bytes"</message>
+   <message level="Info" culprit="emif_cal">"Generating: altera_avalon_packets_to_master"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_channel_adapter_1921_5wnzrci"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_channel_adapter_1921_fkajlia"</message>
+   <message level="Info" culprit="emif_cal">"Generating: altera_reset_controller"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_mm_interconnect_1920_pvpm4mq"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_merlin_master_translator_192_lykd4la"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_merlin_slave_translator_191_x56fcki"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="altera_emif_cal_iossm"
+   version="2.7.4"
+   name="emif_cal_altera_emif_cal_iossm_274_kxwbfsa">
+  <parameter name="SEQ_GPT_GLOBAL_PAR_VER" value="2" />
+  <parameter name="SEQ_GPT_COLUMN_ID" value="1" />
+  <parameter name="PORT_CALBUS_RDATA_WIDTH" value="32" />
+  <parameter name="DIAG_SYNTH_FOR_SIM" value="false" />
+  <parameter name="PORT_VJI_IR_OUT_WIDTH" value="2" />
+  <parameter name="DIAG_SIM_CAL_MODE_ENUM" value="SIM_CAL_MODE_SKIP" />
+  <parameter name="SEQ_GPT_GLOBAL_CAL_CONFIG" value="5" />
+  <parameter name="IOSSM_SIM_NIOS_PERIOD_PS" value="800" />
+  <parameter name="USE_SYNTH_FOR_SIM" value="0" />
+  <parameter name="DIAG_ENABLE_JTAG_UART" value="false" />
+  <parameter name="SEQ_GPT_NUM_IOPACKS" value="16" />
+  <parameter name="PORT_CALBUS_WDATA_WIDTH" value="32" />
+  <parameter name="SEQ_GPT_GLOBAL_SKIP_STEPS" value="8" />
+  <parameter name="SIM_SEQ_GPT_NIOS_CLK_FREQ_KHZ" value="1250000" />
+  <parameter name="SEQ_GPT_NIOS_CLK_FREQ_KHZ" value="250000" />
+  <parameter name="ENABLE_DDRT" value="false" />
+  <parameter name="SEQ_GPT_PARAM_TABLE_SIZE" value="612" />
+  <parameter name="PORT_VJI_IR_IN_WIDTH" value="2" />
+  <parameter name="DIAG_SIM_VERBOSE" value="false" />
+  <parameter name="IOSSM_USE_MODEL" value="1" />
+  <parameter name="SEQ_GPT_NIOS_C_VER" value="1" />
+  <parameter
+     name="DIAG_EXPORT_SEQ_AVALON_SLAVE"
+     value="CAL_DEBUG_EXPORT_MODE_JTAG" />
+  <parameter name="SEQ_GPT_SLAVE_CLK_DIVIDER" value="28" />
+  <parameter name="PORT_CALBUS_ADDRESS_WIDTH" value="20" />
+  <parameter name="SIM_SEQ_GPT_GLOBAL_SKIP_STEPS" value="1631" />
+  <parameter name="SHORT_QSYS_INTERFACE_NAMES" value="true" />
+  <parameter name="USE_SOFT_NIOS" value="1" />
+  <parameter name="PORT_CALBUS_SEQ_PARAM_TBL_WIDTH" value="4096" />
+  <parameter name="PORT_CAL_DEBUG_BYTEEN_WIDTH" value="4" />
+  <parameter name="DIAG_EXTRA_CONFIGS" value="" />
+  <parameter name="PORT_CAL_DEBUG_RDATA_WIDTH" value="32" />
+  <parameter name="NUM_CALBUS_USED" value="1" />
+  <parameter name="PORT_CAL_DEBUG_ADDRESS_WIDTH" value="27" />
+  <parameter name="NUM_CALBUS_INTERFACE" value="1" />
+  <parameter name="DIAG_EXPORT_VJI" value="false" />
+  <parameter name="PORT_CAL_DEBUG_WDATA_WIDTH" value="32" />
+  <generatedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_iossm_274/synth/altera_emif_cal_iossm.sv"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_iossm_274/synth/altera_emif_f2c_gearbox.sv"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa_code.hex"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa_sim_global_param_tbl.hex"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa_sim_global_param_tbl.txt"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa_synth_global_param_tbl.hex"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa_synth_global_param_tbl.txt"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa_arch.sv"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa.sv"
+       attributes="" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_iossm_274/synth/altera_emif_cal_iossm.sv"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_iossm_274/synth/altera_emif_f2c_gearbox.sv"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa_code.hex"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa_sim_global_param_tbl.hex"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa_sim_global_param_tbl.txt"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa_synth_global_param_tbl.hex"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa_synth_global_param_tbl.txt"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa_arch.sv"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa.sv"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/emif/ip_emif_cal_iossm/altera_emif_cal_iossm_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator instantiator="emif_cal_altera_emif_cal_274_qortvxi" as="emif_cal" />
+  <messages>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_emif_cal_iossm_274_kxwbfsa"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="alt_mem_if_jtag_master"
+   version="19.1"
+   name="emif_cal_alt_mem_if_jtag_master_191_rksoe3i">
+  <parameter name="FAST_VER" value="0" />
+  <parameter name="AUTO_DEVICE" value="AGFB014R24B2E2V" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Agilex 7" />
+  <parameter
+     name="AUTO_BOARD"
+     value="Intel Agilex 7 FPGA F-Series Development Kit P-Tile and E-Tile DK-DEV-AGF014EA" />
+  <parameter name="USE_PLI" value="0" />
+  <parameter name="PLI_PORT" value="50000" />
+  <parameter name="COMPONENT_CLOCK" value="0" />
+  <parameter name="FIFO_DEPTHS" value="2" />
+  <parameter name="AUTO_DEVICE_SPEEDGRADE" value="2" />
+  <generatedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/alt_mem_if_jtag_master_191/synth/emif_cal_alt_mem_if_jtag_master_191_rksoe3i.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/alt_mem_if_jtag_master_191/synth/emif_cal_alt_mem_if_jtag_master_191_rksoe3i.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/alt_mem_if/alt_mem_if_jtag_master/alt_mem_if_jtag_master_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_jtag_phy/altera_avalon_st_jtag_interface_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/avalon_st/altera_avalon_st_timing_adapter/avalon-st_timing_adapter_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_sc_fifo/altera_avalon_sc_fifo_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_st_bytes_to_packets/altera_avalon_st_bytes_to_packets_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_st_packets_to_bytes/altera_avalon_st_packets_to_bytes_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_packets_to_master/altera_avalon_packets_to_master_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/avalon_st/altera_avalon_st_channel_adapter/avalon-st_channel_adapter_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/avalon_st/altera_avalon_st_channel_adapter/avalon-st_channel_adapter_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/merlin/altera_reset_controller/altera_reset_controller_hw.tcl" />
+  </childSourceFiles>
+  <instantiator instantiator="emif_cal_altera_emif_cal_274_qortvxi" as="jtag_master" />
+  <messages>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_alt_mem_if_jtag_master_191_rksoe3i"</message>
+   <message level="Info" culprit="emif_cal">"Generating: altera_avalon_st_jtag_interface"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_timing_adapter_1940_5ju4ddy"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq"</message>
+   <message level="Info" culprit="emif_cal">"Generating: altera_avalon_st_bytes_to_packets"</message>
+   <message level="Info" culprit="emif_cal">"Generating: altera_avalon_st_packets_to_bytes"</message>
+   <message level="Info" culprit="emif_cal">"Generating: altera_avalon_packets_to_master"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_channel_adapter_1921_5wnzrci"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_channel_adapter_1921_fkajlia"</message>
+   <message level="Info" culprit="emif_cal">"Generating: altera_reset_controller"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="altera_mm_interconnect"
+   version="19.2.0"
+   name="emif_cal_altera_mm_interconnect_1920_pvpm4mq">
+  <parameter name="AUTO_DEVICE" value="AGFB014R24B2E2V" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Agilex 7" />
+  <parameter
+     name="AUTO_BOARD"
+     value="Intel Agilex 7 FPGA F-Series Development Kit P-Tile and E-Tile DK-DEV-AGF014EA" />
+  <parameter name="AUTO_DEVICE_SPEEDGRADE" value="" />
+  <parameter
+     name="COMPOSE_CONTENTS"
+     value="add_instance {jtag_master_master_translator} {altera_merlin_master_translator};set_instance_parameter_value {jtag_master_master_translator} {AV_ADDRESS_W} {32};set_instance_parameter_value {jtag_master_master_translator} {AV_DATA_W} {32};set_instance_parameter_value {jtag_master_master_translator} {AV_BURSTCOUNT_W} {1};set_instance_parameter_value {jtag_master_master_translator} {AV_BYTEENABLE_W} {4};set_instance_parameter_value {jtag_master_master_translator} {UAV_ADDRESS_W} {32};set_instance_parameter_value {jtag_master_master_translator} {UAV_BURSTCOUNT_W} {3};set_instance_parameter_value {jtag_master_master_translator} {AV_READLATENCY} {0};set_instance_parameter_value {jtag_master_master_translator} {AV_WRITE_WAIT} {0};set_instance_parameter_value {jtag_master_master_translator} {AV_READ_WAIT} {1};set_instance_parameter_value {jtag_master_master_translator} {AV_DATA_HOLD} {0};set_instance_parameter_value {jtag_master_master_translator} {AV_SETUP_WAIT} {0};set_instance_parameter_value {jtag_master_master_translator} {USE_READDATA} {1};set_instance_parameter_value {jtag_master_master_translator} {USE_WRITEDATA} {1};set_instance_parameter_value {jtag_master_master_translator} {USE_READ} {1};set_instance_parameter_value {jtag_master_master_translator} {USE_WRITE} {1};set_instance_parameter_value {jtag_master_master_translator} {USE_BEGINBURSTTRANSFER} {0};set_instance_parameter_value {jtag_master_master_translator} {USE_BEGINTRANSFER} {0};set_instance_parameter_value {jtag_master_master_translator} {USE_BYTEENABLE} {1};set_instance_parameter_value {jtag_master_master_translator} {USE_CHIPSELECT} {0};set_instance_parameter_value {jtag_master_master_translator} {USE_ADDRESS} {1};set_instance_parameter_value {jtag_master_master_translator} {USE_BURSTCOUNT} {0};set_instance_parameter_value {jtag_master_master_translator} {USE_DEBUGACCESS} {0};set_instance_parameter_value {jtag_master_master_translator} {USE_CLKEN} {0};set_instance_parameter_value {jtag_master_master_translator} {USE_READDATAVALID} {1};set_instance_parameter_value {jtag_master_master_translator} {USE_WAITREQUEST} {1};set_instance_parameter_value {jtag_master_master_translator} {USE_LOCK} {0};set_instance_parameter_value {jtag_master_master_translator} {USE_READRESPONSE} {0};set_instance_parameter_value {jtag_master_master_translator} {USE_WRITERESPONSE} {0};set_instance_parameter_value {jtag_master_master_translator} {AV_SYMBOLS_PER_WORD} {4};set_instance_parameter_value {jtag_master_master_translator} {AV_ADDRESS_SYMBOLS} {1};set_instance_parameter_value {jtag_master_master_translator} {AV_BURSTCOUNT_SYMBOLS} {0};set_instance_parameter_value {jtag_master_master_translator} {AV_CONSTANT_BURST_BEHAVIOR} {0};set_instance_parameter_value {jtag_master_master_translator} {UAV_CONSTANT_BURST_BEHAVIOR} {0};set_instance_parameter_value {jtag_master_master_translator} {AV_LINEWRAPBURSTS} {0};set_instance_parameter_value {jtag_master_master_translator} {AV_MAX_PENDING_READ_TRANSACTIONS} {64};set_instance_parameter_value {jtag_master_master_translator} {AV_BURSTBOUNDARIES} {0};set_instance_parameter_value {jtag_master_master_translator} {AV_INTERLEAVEBURSTS} {0};set_instance_parameter_value {jtag_master_master_translator} {AV_BITS_PER_SYMBOL} {8};set_instance_parameter_value {jtag_master_master_translator} {AV_ISBIGENDIAN} {0};set_instance_parameter_value {jtag_master_master_translator} {AV_ADDRESSGROUP} {0};set_instance_parameter_value {jtag_master_master_translator} {UAV_ADDRESSGROUP} {0};set_instance_parameter_value {jtag_master_master_translator} {AV_REGISTEROUTGOINGSIGNALS} {0};set_instance_parameter_value {jtag_master_master_translator} {AV_REGISTERINCOMINGSIGNALS} {0};set_instance_parameter_value {jtag_master_master_translator} {AV_ALWAYSBURSTMAXBURST} {0};set_instance_parameter_value {jtag_master_master_translator} {SYNC_RESET} {0};set_instance_parameter_value {jtag_master_master_translator} {WAITREQUEST_ALLOWANCE} {0};set_instance_parameter_value {jtag_master_master_translator} {USE_OUTPUTENABLE} {0};add_instance {emif_cal_cal_debug_translator} {altera_merlin_slave_translator};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_ADDRESS_W} {27};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_DATA_W} {32};set_instance_parameter_value {emif_cal_cal_debug_translator} {UAV_DATA_W} {32};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_BURSTCOUNT_W} {1};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_BYTEENABLE_W} {4};set_instance_parameter_value {emif_cal_cal_debug_translator} {UAV_BYTEENABLE_W} {4};set_instance_parameter_value {emif_cal_cal_debug_translator} {UAV_ADDRESS_W} {32};set_instance_parameter_value {emif_cal_cal_debug_translator} {UAV_BURSTCOUNT_W} {3};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_READLATENCY} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_SETUP_WAIT} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_WRITE_WAIT} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_READ_WAIT} {1};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_DATA_HOLD} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_TIMING_UNITS} {1};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_READDATA} {1};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_WRITEDATA} {1};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_READ} {1};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_WRITE} {1};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_BEGINBURSTTRANSFER} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_BEGINTRANSFER} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_BYTEENABLE} {1};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_CHIPSELECT} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_ADDRESS} {1};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_BURSTCOUNT} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_READDATAVALID} {1};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_WAITREQUEST} {1};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_WRITEBYTEENABLE} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_LOCK} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_AV_CLKEN} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_UAV_CLKEN} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_OUTPUTENABLE} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_DEBUGACCESS} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_READRESPONSE} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {USE_WRITERESPONSE} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_SYMBOLS_PER_WORD} {4};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_ADDRESS_SYMBOLS} {1};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_BURSTCOUNT_SYMBOLS} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_CONSTANT_BURST_BEHAVIOR} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {UAV_CONSTANT_BURST_BEHAVIOR} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_REQUIRE_UNALIGNED_ADDRESSES} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_LINEWRAPBURSTS} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_MAX_PENDING_READ_TRANSACTIONS} {1};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_MAX_PENDING_WRITE_TRANSACTIONS} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_BURSTBOUNDARIES} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_INTERLEAVEBURSTS} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_BITS_PER_SYMBOL} {8};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_ISBIGENDIAN} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_ADDRESSGROUP} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {UAV_ADDRESSGROUP} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_REGISTEROUTGOINGSIGNALS} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_REGISTERINCOMINGSIGNALS} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {AV_ALWAYSBURSTMAXBURST} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {CHIPSELECT_THROUGH_READLATENCY} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {WAITREQUEST_ALLOWANCE} {0};set_instance_parameter_value {emif_cal_cal_debug_translator} {SYNC_RESET} {0};add_instance {emif_cal_cal_debug_reset_n_reset_bridge} {altera_reset_bridge};set_instance_parameter_value {emif_cal_cal_debug_reset_n_reset_bridge} {ACTIVE_LOW_RESET} {0};set_instance_parameter_value {emif_cal_cal_debug_reset_n_reset_bridge} {SYNCHRONOUS_EDGES} {deassert};set_instance_parameter_value {emif_cal_cal_debug_reset_n_reset_bridge} {NUM_RESET_OUTPUTS} {1};set_instance_parameter_value {emif_cal_cal_debug_reset_n_reset_bridge} {USE_RESET_REQUEST} {0};set_instance_parameter_value {emif_cal_cal_debug_reset_n_reset_bridge} {SYNC_RESET} {0};add_instance {clk_bridge_out_clk_clock_bridge} {altera_clock_bridge};set_instance_parameter_value {clk_bridge_out_clk_clock_bridge} {EXPLICIT_CLOCK_RATE} {0};set_instance_parameter_value {clk_bridge_out_clk_clock_bridge} {NUM_CLOCK_OUTPUTS} {1};add_connection {jtag_master_master_translator.avalon_universal_master_0} {emif_cal_cal_debug_translator.avalon_universal_slave_0} {avalon};set_connection_parameter_value {jtag_master_master_translator.avalon_universal_master_0/emif_cal_cal_debug_translator.avalon_universal_slave_0} {arbitrationPriority} {1};set_connection_parameter_value {jtag_master_master_translator.avalon_universal_master_0/emif_cal_cal_debug_translator.avalon_universal_slave_0} {baseAddress} {0x0000};set_connection_parameter_value {jtag_master_master_translator.avalon_universal_master_0/emif_cal_cal_debug_translator.avalon_universal_slave_0} {defaultConnection} {false};set_connection_parameter_value {jtag_master_master_translator.avalon_universal_master_0/emif_cal_cal_debug_translator.avalon_universal_slave_0} {domainAlias} {};set_connection_parameter_value {jtag_master_master_translator.avalon_universal_master_0/emif_cal_cal_debug_translator.avalon_universal_slave_0} {qsys_mm.piplineType} {PIPELINE_STAGE};set_connection_parameter_value {jtag_master_master_translator.avalon_universal_master_0/emif_cal_cal_debug_translator.avalon_universal_slave_0} {qsys_mm.enableAllPipelines} {FALSE};set_connection_parameter_value {jtag_master_master_translator.avalon_universal_master_0/emif_cal_cal_debug_translator.avalon_universal_slave_0} {qsys_mm.maxAdditionalLatency} {1};set_connection_parameter_value {jtag_master_master_translator.avalon_universal_master_0/emif_cal_cal_debug_translator.avalon_universal_slave_0} {qsys_mm.clockCrossingAdapter} {HANDSHAKE};set_connection_parameter_value {jtag_master_master_translator.avalon_universal_master_0/emif_cal_cal_debug_translator.avalon_universal_slave_0} {qsys_mm.insertDefaultSlave} {FALSE};set_connection_parameter_value {jtag_master_master_translator.avalon_universal_master_0/emif_cal_cal_debug_translator.avalon_universal_slave_0} {qsys_mm.enableInstrumentation} {FALSE};set_connection_parameter_value {jtag_master_master_translator.avalon_universal_master_0/emif_cal_cal_debug_translator.avalon_universal_slave_0} {qsys_mm.interconnectResetSource} {DEFAULT};set_connection_parameter_value {jtag_master_master_translator.avalon_universal_master_0/emif_cal_cal_debug_translator.avalon_universal_slave_0} {qsys_mm.burstAdapterImplementation} {GENERIC_CONVERTER};set_connection_parameter_value {jtag_master_master_translator.avalon_universal_master_0/emif_cal_cal_debug_translator.avalon_universal_slave_0} {qsys_mm.widthAdapterImplementation} {GENERIC_CONVERTER};set_connection_parameter_value {jtag_master_master_translator.avalon_universal_master_0/emif_cal_cal_debug_translator.avalon_universal_slave_0} {qsys_mm.enableEccProtection} {FALSE};set_connection_parameter_value {jtag_master_master_translator.avalon_universal_master_0/emif_cal_cal_debug_translator.avalon_universal_slave_0} {qsys_mm.interconnectType} {STANDARD};set_connection_parameter_value {jtag_master_master_translator.avalon_universal_master_0/emif_cal_cal_debug_translator.avalon_universal_slave_0} {qsys_mm.syncResets} {FALSE};set_connection_parameter_value {jtag_master_master_translator.avalon_universal_master_0/emif_cal_cal_debug_translator.avalon_universal_slave_0} {qsys_mm.optimizeRdFifoSize} {FALSE};set_connection_parameter_value {jtag_master_master_translator.avalon_universal_master_0/emif_cal_cal_debug_translator.avalon_universal_slave_0} {qsys_mm.responseFifoType} {REGISTER_BASED};set_connection_parameter_value {jtag_master_master_translator.avalon_universal_master_0/emif_cal_cal_debug_translator.avalon_universal_slave_0} {qsys_mm.enableOutOfOrderSupport} {FALSE};add_connection {emif_cal_cal_debug_reset_n_reset_bridge.out_reset} {jtag_master_master_translator.reset} {reset};add_connection {emif_cal_cal_debug_reset_n_reset_bridge.out_reset} {emif_cal_cal_debug_translator.reset} {reset};add_connection {clk_bridge_out_clk_clock_bridge.out_clk} {jtag_master_master_translator.clk} {clock};add_connection {clk_bridge_out_clk_clock_bridge.out_clk} {emif_cal_cal_debug_translator.clk} {clock};add_connection {clk_bridge_out_clk_clock_bridge.out_clk} {emif_cal_cal_debug_reset_n_reset_bridge.clk} {clock};add_interface {jtag_master_master} {avalon} {slave};set_interface_property {jtag_master_master} {EXPORT_OF} {jtag_master_master_translator.avalon_anti_master_0};add_interface {emif_cal_cal_debug} {avalon} {master};set_interface_property {emif_cal_cal_debug} {EXPORT_OF} {emif_cal_cal_debug_translator.avalon_anti_slave_0};add_interface {emif_cal_cal_debug_reset_n_reset_bridge_in_reset} {reset} {slave};set_interface_property {emif_cal_cal_debug_reset_n_reset_bridge_in_reset} {EXPORT_OF} {emif_cal_cal_debug_reset_n_reset_bridge.in_reset};add_interface {clk_bridge_out_clk} {clock} {slave};set_interface_property {clk_bridge_out_clk} {EXPORT_OF} {clk_bridge_out_clk_clock_bridge.in_clk};set_module_assignment {interconnect_id.emif_cal.cal_debug} {0};set_module_assignment {interconnect_id.jtag_master.master} {0};" />
+  <generatedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_mm_interconnect_1920/synth/emif_cal_altera_mm_interconnect_1920_pvpm4mq.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_mm_interconnect_1920/synth/emif_cal_altera_mm_interconnect_1920_pvpm4mq.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/merlin/altera_mm_interconnect/altera_mm_interconnect_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/merlin/altera_merlin_master_translator/altera_merlin_master_translator_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/merlin/altera_merlin_slave_translator/altera_merlin_slave_translator_hw.tcl" />
+  </childSourceFiles>
+  <instantiator
+     instantiator="emif_cal_altera_emif_cal_274_qortvxi"
+     as="mm_interconnect_0" />
+  <messages>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_mm_interconnect_1920_pvpm4mq"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_merlin_master_translator_192_lykd4la"</message>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_merlin_slave_translator_191_x56fcki"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="altera_jtag_dc_streaming"
+   version="19.1"
+   name="altera_avalon_st_jtag_interface">
+  <parameter name="UPSTREAM_FIFO_SIZE" value="0" />
+  <parameter name="USE_DOWNSTREAM_READY" value="0" />
+  <parameter name="FABRIC" value="2.0" />
+  <parameter name="DOWNSTREAM_FIFO_SIZE" value="64" />
+  <parameter name="MGMT_CHANNEL_WIDTH" value="-1" />
+  <parameter name="PURPOSE" value="1" />
+  <parameter name="USE_PLI" value="0" />
+  <parameter name="PLI_PORT" value="50000" />
+  <parameter name="COMPONENT_CLOCK" value="0" />
+  <parameter name="EXPORT_JTAG" value="0" />
+  <generatedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_avalon_st_jtag_interface.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_jtag_dc_streaming.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_jtag_sld_node.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_jtag_streaming.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_avalon_st_clock_crosser.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_reset_synchronizer.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_std_synchronizer_nocut.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_avalon_st_pipeline_base.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_avalon_st_idle_remover.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_avalon_st_idle_inserter.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_avalon_st_pipeline_stage.sv"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_avalon_st_jtag_interface.sdc"
+       attributes="NO_AUTO_INSTANCE_DISCOVERY NO_SDC_PROMOTION" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_avalon_st_jtag_interface.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_jtag_dc_streaming.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_jtag_sld_node.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_jtag_streaming.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_avalon_st_clock_crosser.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_reset_synchronizer.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_std_synchronizer_nocut.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_avalon_st_pipeline_base.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_avalon_st_idle_remover.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_avalon_st_idle_inserter.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_avalon_st_pipeline_stage.sv"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_jtag_dc_streaming_191/synth/altera_avalon_st_jtag_interface.sdc"
+       attributes="NO_AUTO_INSTANCE_DISCOVERY NO_SDC_PROMOTION" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_jtag_phy/altera_avalon_st_jtag_interface_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator
+     instantiator="emif_cal_alt_mem_if_jtag_master_191_rksoe3i"
+     as="jtag_phy_embedded_in_jtag_master" />
+  <messages>
+   <message level="Info" culprit="emif_cal">"Generating: altera_avalon_st_jtag_interface"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="timing_adapter"
+   version="19.4.0"
+   name="emif_cal_timing_adapter_1940_5ju4ddy">
+  <parameter name="inErrorWidth" value="0" />
+  <parameter name="inUseValid" value="true" />
+  <parameter name="inUseReady" value="false" />
+  <parameter name="inBitsPerSymbol" value="8" />
+  <parameter name="outReadyLatency" value="0" />
+  <parameter name="inChannelWidth" value="0" />
+  <parameter name="inSymbolsPerBeat" value="1" />
+  <parameter name="inUseEmptyPort" value="NO" />
+  <parameter name="outUseReady" value="true" />
+  <parameter name="outUseValid" value="true" />
+  <parameter name="inReadyLatency" value="0" />
+  <parameter name="inUseEmpty" value="false" />
+  <parameter name="SYNC_RESET" value="0" />
+  <parameter name="inUsePackets" value="false" />
+  <generatedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/timing_adapter_1940/synth/emif_cal_timing_adapter_1940_5ju4ddy.sv"
+       attributes="" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/timing_adapter_1940/synth/emif_cal_timing_adapter_1940_5ju4ddy.sv"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/avalon_st/altera_avalon_st_timing_adapter/avalon-st_timing_adapter_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator
+     instantiator="emif_cal_alt_mem_if_jtag_master_191_rksoe3i"
+     as="timing_adt" />
+  <messages>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_timing_adapter_1940_5ju4ddy"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="altera_avalon_sc_fifo"
+   version="19.3.2"
+   name="emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq">
+  <parameter name="EXPLICIT_MAXCHANNEL" value="0" />
+  <parameter name="EMPTY_WIDTH" value="1" />
+  <parameter name="SYNC_RESET" value="0" />
+  <parameter name="ENABLE_EXPLICIT_MAXCHANNEL" value="false" />
+  <generatedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_avalon_sc_fifo_1932/synth/emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq.v"
+       attributes="" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_avalon_sc_fifo_1932/synth/emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq.v"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_sc_fifo/altera_avalon_sc_fifo_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator instantiator="emif_cal_alt_mem_if_jtag_master_191_rksoe3i" as="fifo" />
+  <messages>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="altera_avalon_st_bytes_to_packets"
+   version="19.2.2"
+   name="altera_avalon_st_bytes_to_packets">
+  <parameter name="CHANNEL_WIDTH_DERIVED" value="8" />
+  <parameter name="ENCODING" value="0" />
+  <parameter name="CHANNEL_WIDTH" value="8" />
+  <generatedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_avalon_st_bytes_to_packets_1922/synth/altera_avalon_st_bytes_to_packets.v"
+       attributes="" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_avalon_st_bytes_to_packets_1922/synth/altera_avalon_st_bytes_to_packets.v"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_st_bytes_to_packets/altera_avalon_st_bytes_to_packets_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator instantiator="emif_cal_alt_mem_if_jtag_master_191_rksoe3i" as="b2p" />
+  <messages>
+   <message level="Info" culprit="emif_cal">"Generating: altera_avalon_st_bytes_to_packets"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="altera_avalon_st_packets_to_bytes"
+   version="19.2.2"
+   name="altera_avalon_st_packets_to_bytes">
+  <parameter name="CHANNEL_WIDTH_DERIVED" value="8" />
+  <parameter name="ENCODING" value="0" />
+  <parameter name="CHANNEL_WIDTH" value="8" />
+  <generatedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_avalon_st_packets_to_bytes_1922/synth/altera_avalon_st_packets_to_bytes.v"
+       attributes="" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_avalon_st_packets_to_bytes_1922/synth/altera_avalon_st_packets_to_bytes.v"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_st_packets_to_bytes/altera_avalon_st_packets_to_bytes_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator instantiator="emif_cal_alt_mem_if_jtag_master_191_rksoe3i" as="p2b" />
+  <messages>
+   <message level="Info" culprit="emif_cal">"Generating: altera_avalon_st_packets_to_bytes"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="altera_avalon_packets_to_master"
+   version="19.2.2"
+   name="altera_avalon_packets_to_master">
+  <parameter name="EXPORT_MASTER_SIGNALS" value="0" />
+  <parameter name="FAST_VER" value="0" />
+  <parameter name="FIFO_WIDTHU" value="1" />
+  <parameter name="FIFO_DEPTHS" value="2" />
+  <generatedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_avalon_packets_to_master_1922/synth/altera_avalon_packets_to_master.v"
+       attributes="" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_avalon_packets_to_master_1922/synth/altera_avalon_packets_to_master.v"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/sopc_builder_ip/altera_avalon_packets_to_master/altera_avalon_packets_to_master_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator
+     instantiator="emif_cal_alt_mem_if_jtag_master_191_rksoe3i"
+     as="transacto" />
+  <messages>
+   <message level="Info" culprit="emif_cal">"Generating: altera_avalon_packets_to_master"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="channel_adapter"
+   version="19.2.1"
+   name="emif_cal_channel_adapter_1921_5wnzrci">
+  <parameter name="inErrorWidth" value="0" />
+  <parameter name="inUseReady" value="true" />
+  <parameter name="inMaxChannel" value="255" />
+  <parameter name="inBitsPerSymbol" value="8" />
+  <parameter name="outMaxChannel" value="0" />
+  <parameter name="inUseEmpty" value="false" />
+  <parameter name="inChannelWidth" value="8" />
+  <parameter name="inSymbolsPerBeat" value="1" />
+  <parameter name="outChannelWidth" value="0" />
+  <parameter name="inUsePackets" value="true" />
+  <parameter name="inUseEmptyPort" value="AUTO" />
+  <generatedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/channel_adapter_1921/synth/emif_cal_channel_adapter_1921_5wnzrci.sv"
+       attributes="" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/channel_adapter_1921/synth/emif_cal_channel_adapter_1921_5wnzrci.sv"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/avalon_st/altera_avalon_st_channel_adapter/avalon-st_channel_adapter_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator
+     instantiator="emif_cal_alt_mem_if_jtag_master_191_rksoe3i"
+     as="b2p_adapter" />
+  <messages>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_channel_adapter_1921_5wnzrci"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="channel_adapter"
+   version="19.2.1"
+   name="emif_cal_channel_adapter_1921_fkajlia">
+  <parameter name="inErrorWidth" value="0" />
+  <parameter name="inUseReady" value="true" />
+  <parameter name="inMaxChannel" value="0" />
+  <parameter name="inBitsPerSymbol" value="8" />
+  <parameter name="outMaxChannel" value="255" />
+  <parameter name="inUseEmpty" value="false" />
+  <parameter name="inChannelWidth" value="0" />
+  <parameter name="inSymbolsPerBeat" value="1" />
+  <parameter name="outChannelWidth" value="8" />
+  <parameter name="inUsePackets" value="true" />
+  <parameter name="inUseEmptyPort" value="AUTO" />
+  <generatedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/channel_adapter_1921/synth/emif_cal_channel_adapter_1921_fkajlia.sv"
+       attributes="" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/channel_adapter_1921/synth/emif_cal_channel_adapter_1921_fkajlia.sv"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/avalon_st/altera_avalon_st_channel_adapter/avalon-st_channel_adapter_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator
+     instantiator="emif_cal_alt_mem_if_jtag_master_191_rksoe3i"
+     as="p2b_adapter" />
+  <messages>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_channel_adapter_1921_fkajlia"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="altera_reset_controller"
+   version="19.2.2"
+   name="altera_reset_controller">
+  <generatedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_reset_controller_1922/synth/altera_reset_controller.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_reset_controller_1922/synth/altera_reset_synchronizer.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_reset_controller_1922/synth/altera_reset_controller.sdc"
+       attributes="NO_SDC_PROMOTION" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_reset_controller_1922/synth/altera_reset_controller.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_reset_controller_1922/synth/altera_reset_synchronizer.v"
+       attributes="" />
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_reset_controller_1922/synth/altera_reset_controller.sdc"
+       attributes="NO_SDC_PROMOTION" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/merlin/altera_reset_controller/altera_reset_controller_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator
+     instantiator="emif_cal_alt_mem_if_jtag_master_191_rksoe3i"
+     as="rst_controller" />
+  <messages>
+   <message level="Info" culprit="emif_cal">"Generating: altera_reset_controller"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="altera_merlin_master_translator"
+   version="19.2"
+   name="emif_cal_altera_merlin_master_translator_192_lykd4la">
+  <parameter name="WAITREQUEST_ALLOWANCE" value="0" />
+  <generatedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_merlin_master_translator_192/synth/emif_cal_altera_merlin_master_translator_192_lykd4la.sv"
+       attributes="" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_merlin_master_translator_192/synth/emif_cal_altera_merlin_master_translator_192_lykd4la.sv"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/merlin/altera_merlin_master_translator/altera_merlin_master_translator_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator
+     instantiator="emif_cal_altera_mm_interconnect_1920_pvpm4mq"
+     as="jtag_master_master_translator" />
+  <messages>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_merlin_master_translator_192_lykd4la"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="altera_merlin_slave_translator"
+   version="19.1"
+   name="emif_cal_altera_merlin_slave_translator_191_x56fcki">
+  <generatedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_merlin_slave_translator_191/synth/emif_cal_altera_merlin_slave_translator_191_x56fcki.sv"
+       attributes="" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal/altera_merlin_slave_translator_191/synth/emif_cal_altera_merlin_slave_translator_191_x56fcki.sv"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/merlin/altera_merlin_slave_translator/altera_merlin_slave_translator_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator
+     instantiator="emif_cal_altera_mm_interconnect_1920_pvpm4mq"
+     as="emif_cal_cal_debug_translator" />
+  <messages>
+   <message level="Info" culprit="emif_cal">"Generating: emif_cal_altera_merlin_slave_translator_191_x56fcki"</message>
+  </messages>
+ </entity>
+</deploy>
