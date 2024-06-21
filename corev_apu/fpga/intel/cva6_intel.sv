@@ -981,7 +981,15 @@ io_pll clocks (
     // .outclk_3 (eth_clk)  //  output,  width = 1, outclk3.clk 125 MHz
 );
 
-assign eth_clk = phy_tx_clk; // 125 MHz
+pll_90_phase clk_90deg (
+    .refclk   (phy_tx_clk),   // 300 MHz on Agilex 7  input,  width = 1,  refclk.clk
+    // .locked   (pll_locked),   //  output,  width = 1,  locked.export
+    .rst      (cpu_reset),      //   input,  width = 1,   reset.reset
+    .permit_cal(pll_locked),
+    .outclk_0 (eth_clk) //  output,  width = 1, outclk0.clk 125 MHz, 90 degrees
+   );
+
+
 assign sd_clk_sys = clk;     //  50 MHz
 
 //

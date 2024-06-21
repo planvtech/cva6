@@ -1,0 +1,93 @@
+/*
+WARNING: Do NOT edit the input and output ports in this file in a text
+editor if you plan to continue editing the block that represents it in
+the Block Editor! File corruption is VERY likely to occur.
+*/
+/*
+Copyright (C) 2024  Intel Corporation. All rights reserved.
+Your use of Intel Corporation's design tools, logic functions 
+and other software and tools, and any partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Intel Program License 
+Subscription Agreement, the Intel Quartus Prime License Agreement,
+the Intel FPGA IP License Agreement, or other applicable license
+agreement, including, without limitation, that your use is for
+the sole purpose of programming logic devices manufactured by
+Intel and sold by Intel or its authorized distributors.  Please
+refer to the Intel FPGA Software License Subscription Agreements 
+on the Quartus Prime software download page.
+*/
+(header "symbol" (version "1.1"))
+(symbol
+	(rect 0 0 216 216)
+	(text "pll_90_phase" (rect 67 0 118 12)(font "SansSerif" (font_size 11)))
+	(text "inst" (rect 8 200 20 212)(font "Arial" ))
+	(port
+		(pt 0 76)
+		(input)
+		(text "refclk" (rect 0 0 22 12)(font "SansSerif" (font_size 8)))
+		(text "refclk" (rect 4 65 40 76)(font "SansSerif" (font_size 8)))
+		(line (pt 0 76)(pt 68 76)(line_width 1))
+	)
+	(port
+		(pt 0 126)
+		(input)
+		(text "rst" (rect 0 0 10 12)(font "SansSerif" (font_size 8)))
+		(text "rst" (rect 4 115 22 126)(font "SansSerif" (font_size 8)))
+		(line (pt 0 126)(pt 68 126)(line_width 1))
+	)
+	(port
+		(pt 0 176)
+		(input)
+		(text "permit_cal" (rect 0 0 41 12)(font "SansSerif" (font_size 8)))
+		(text "permit_cal" (rect 4 165 64 176)(font "SansSerif" (font_size 8)))
+		(line (pt 0 176)(pt 68 176)(line_width 1))
+	)
+	(port
+		(pt 216 76)
+		(output)
+		(text "locked" (rect 0 0 24 12)(font "SansSerif" (font_size 8)))
+		(text "locked" (rect 188 65 224 76)(font "SansSerif" (font_size 8)))
+		(line (pt 216 76)(pt 153 76)(line_width 1))
+	)
+	(port
+		(pt 216 126)
+		(output)
+		(text "outclk_0" (rect 0 0 33 12)(font "SansSerif" (font_size 8)))
+		(text "outclk_0" (rect 178 115 226 126)(font "SansSerif" (font_size 8)))
+		(line (pt 216 126)(pt 153 126)(line_width 1))
+	)
+	(drawing
+		(text "refclk" (rect 36 46 108 105)(font "SansSerif" (color 128 0 0)(font_size 9)))
+		(text "clk" (rect 73 71 164 152)(font "SansSerif" (color 0 0 0)))
+		(text "locked" (rect 154 46 344 105)(font "SansSerif" (color 128 0 0)(font_size 9)))
+		(text "export" (rect 123 71 282 152)(font "SansSerif" (color 0 0 0)))
+		(text "reset" (rect 39 96 108 205)(font "SansSerif" (color 128 0 0)(font_size 9)))
+		(text "reset" (rect 73 121 176 252)(font "SansSerif" (color 0 0 0)))
+		(text "permit_cal" (rect 8 146 76 305)(font "SansSerif" (color 128 0 0)(font_size 9)))
+		(text "export" (rect 73 171 182 352)(font "SansSerif" (color 0 0 0)))
+		(text "outclk0" (rect 154 96 350 205)(font "SansSerif" (color 128 0 0)(font_size 9)))
+		(text "clk" (rect 138 121 294 252)(font "SansSerif" (color 0 0 0)))
+		(text " pll_90_phase " (rect 162 201 408 412)(font "SansSerif" ))
+		(line (pt 68 34)(pt 153 34)(line_width 1))
+		(line (pt 153 34)(pt 153 201)(line_width 1))
+		(line (pt 68 201)(pt 153 201)(line_width 1))
+		(line (pt 68 34)(pt 68 201)(line_width 1))
+		(line (pt 69 55)(pt 69 80)(line_width 1))
+		(line (pt 70 55)(pt 70 80)(line_width 1))
+		(line (pt 152 55)(pt 152 80)(line_width 1))
+		(line (pt 151 55)(pt 151 80)(line_width 1))
+		(line (pt 69 105)(pt 69 130)(line_width 1))
+		(line (pt 70 105)(pt 70 130)(line_width 1))
+		(line (pt 69 155)(pt 69 180)(line_width 1))
+		(line (pt 70 155)(pt 70 180)(line_width 1))
+		(line (pt 152 105)(pt 152 130)(line_width 1))
+		(line (pt 151 105)(pt 151 130)(line_width 1))
+		(line (pt 0 0)(pt 216 0)(line_width 1))
+		(line (pt 216 0)(pt 216 218)(line_width 1))
+		(line (pt 0 218)(pt 216 218)(line_width 1))
+		(line (pt 0 0)(pt 0 218)(line_width 1))
+	)
+)
