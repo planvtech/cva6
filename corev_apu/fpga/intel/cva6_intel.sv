@@ -976,13 +976,14 @@ io_pll clocks (
     .locked   (pll_locked),   //  output,  width = 1,  locked.export
     .rst      (cpu_reset),      //   input,  width = 1,   reset.reset
     .outclk_0 (clk), //  output,  width = 1, outclk0.clk 50 MHz
-    .outclk_1 (sd_clk_sys), //  output,  width = 1, outclk1.clk 50 MHz
-    .outclk_2 (phy_tx_clk)  //  output,  width = 1, outclk2.clk 125 MHz
+    .outclk_1 (phy_tx_clk), //  output,  width = 1, outclk1.clk 125 MHz
+    .outclk_2 (clk_200MHz_ref)  //  output,  width = 1, outclk2.clk 200 MHz
     // .outclk_3 (eth_clk)  //  output,  width = 1, outclk3.clk 125 MHz
 );
 
-assign eth_clk = phy_tx_clk;
-//assign clk_200MHz_ref = ddr_clock_out;
+assign eth_clk = phy_tx_clk; // 125 MHz
+assign sd_clk_sys = clk;     //  50 MHz
+
 //
 //`endif
 
