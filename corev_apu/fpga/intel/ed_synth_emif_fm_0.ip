@@ -14,7 +14,7 @@ refer to the applicable agreement for further details, at
 https://fpgasoftware.intel.com/eula.-->
 <ipxact:component xmlns:altera="http://www.altera.com/XMLSchema/IPXact2014/extensions" xmlns:ipxact="http://www.accellera.org/XMLSchema/IPXACT/1685-2014">
   <ipxact:vendor>Intel Corporation</ipxact:vendor>
-  <ipxact:library>emif</ipxact:library>
+  <ipxact:library>ed_synth_emif_fm_0</ipxact:library>
   <ipxact:name>emif_fm_0</ipxact:name>
   <ipxact:version>2.7.4</ipxact:version>
   <ipxact:busInterfaces>
@@ -104,7 +104,7 @@ https://fpgasoftware.intel.com/eula.-->
                 <ipxact:name>clk</ipxact:name>
               </ipxact:logicalPort>
               <ipxact:physicalPort>
-                <ipxact:name>emif_fm_0_pll_ref_clk_clk</ipxact:name>
+                <ipxact:name>pll_ref_clk</ipxact:name>
               </ipxact:physicalPort>
             </ipxact:portMap>
           </ipxact:portMaps>
@@ -130,6 +130,43 @@ https://fpgasoftware.intel.com/eula.-->
       </ipxact:parameters>
     </ipxact:busInterface>
     <ipxact:busInterface>
+      <ipxact:name>pll_locked</ipxact:name>
+      <ipxact:busType vendor="intel" library="intel" name="conduit" version="24.1"></ipxact:busType>
+      <ipxact:abstractionTypes>
+        <ipxact:abstractionType>
+          <ipxact:abstractionRef vendor="intel" library="intel" name="conduit" version="24.1"></ipxact:abstractionRef>
+          <ipxact:portMaps>
+            <ipxact:portMap>
+              <ipxact:logicalPort>
+                <ipxact:name>pll_locked</ipxact:name>
+              </ipxact:logicalPort>
+              <ipxact:physicalPort>
+                <ipxact:name>pll_locked</ipxact:name>
+              </ipxact:physicalPort>
+            </ipxact:portMap>
+          </ipxact:portMaps>
+        </ipxact:abstractionType>
+      </ipxact:abstractionTypes>
+      <ipxact:slave></ipxact:slave>
+      <ipxact:parameters>
+        <ipxact:parameter parameterId="associatedClock" type="string">
+          <ipxact:name>associatedClock</ipxact:name>
+          <ipxact:displayName>associatedClock</ipxact:displayName>
+          <ipxact:value></ipxact:value>
+        </ipxact:parameter>
+        <ipxact:parameter parameterId="associatedReset" type="string">
+          <ipxact:name>associatedReset</ipxact:name>
+          <ipxact:displayName>associatedReset</ipxact:displayName>
+          <ipxact:value></ipxact:value>
+        </ipxact:parameter>
+        <ipxact:parameter parameterId="prSafe" type="bit">
+          <ipxact:name>prSafe</ipxact:name>
+          <ipxact:displayName>Partial Reconfiguration Safe</ipxact:displayName>
+          <ipxact:value>false</ipxact:value>
+        </ipxact:parameter>
+      </ipxact:parameters>
+    </ipxact:busInterface>
+    <ipxact:busInterface>
       <ipxact:name>oct</ipxact:name>
       <ipxact:busType vendor="intel" library="intel" name="conduit" version="24.1"></ipxact:busType>
       <ipxact:abstractionTypes>
@@ -141,7 +178,7 @@ https://fpgasoftware.intel.com/eula.-->
                 <ipxact:name>oct_rzqin</ipxact:name>
               </ipxact:logicalPort>
               <ipxact:physicalPort>
-                <ipxact:name>emif_fm_0_oct_oct_rzqin</ipxact:name>
+                <ipxact:name>oct_rzqin</ipxact:name>
               </ipxact:physicalPort>
             </ipxact:portMap>
           </ipxact:portMaps>
@@ -178,7 +215,7 @@ https://fpgasoftware.intel.com/eula.-->
                 <ipxact:name>mem_ck</ipxact:name>
               </ipxact:logicalPort>
               <ipxact:physicalPort>
-                <ipxact:name>emif_fm_0_mem_mem_ck</ipxact:name>
+                <ipxact:name>mem_ck</ipxact:name>
               </ipxact:physicalPort>
             </ipxact:portMap>
             <ipxact:portMap>
@@ -186,7 +223,7 @@ https://fpgasoftware.intel.com/eula.-->
                 <ipxact:name>mem_ck_n</ipxact:name>
               </ipxact:logicalPort>
               <ipxact:physicalPort>
-                <ipxact:name>emif_fm_0_mem_mem_ck_n</ipxact:name>
+                <ipxact:name>mem_ck_n</ipxact:name>
               </ipxact:physicalPort>
             </ipxact:portMap>
             <ipxact:portMap>
@@ -194,7 +231,7 @@ https://fpgasoftware.intel.com/eula.-->
                 <ipxact:name>mem_a</ipxact:name>
               </ipxact:logicalPort>
               <ipxact:physicalPort>
-                <ipxact:name>emif_fm_0_mem_mem_a</ipxact:name>
+                <ipxact:name>mem_a</ipxact:name>
               </ipxact:physicalPort>
             </ipxact:portMap>
             <ipxact:portMap>
@@ -202,7 +239,7 @@ https://fpgasoftware.intel.com/eula.-->
                 <ipxact:name>mem_act_n</ipxact:name>
               </ipxact:logicalPort>
               <ipxact:physicalPort>
-                <ipxact:name>emif_fm_0_mem_mem_act_n</ipxact:name>
+                <ipxact:name>mem_act_n</ipxact:name>
               </ipxact:physicalPort>
             </ipxact:portMap>
             <ipxact:portMap>
@@ -210,7 +247,7 @@ https://fpgasoftware.intel.com/eula.-->
                 <ipxact:name>mem_ba</ipxact:name>
               </ipxact:logicalPort>
               <ipxact:physicalPort>
-                <ipxact:name>emif_fm_0_mem_mem_ba</ipxact:name>
+                <ipxact:name>mem_ba</ipxact:name>
               </ipxact:physicalPort>
             </ipxact:portMap>
             <ipxact:portMap>
@@ -218,7 +255,7 @@ https://fpgasoftware.intel.com/eula.-->
                 <ipxact:name>mem_bg</ipxact:name>
               </ipxact:logicalPort>
               <ipxact:physicalPort>
-                <ipxact:name>emif_fm_0_mem_mem_bg</ipxact:name>
+                <ipxact:name>mem_bg</ipxact:name>
               </ipxact:physicalPort>
             </ipxact:portMap>
             <ipxact:portMap>
@@ -226,7 +263,7 @@ https://fpgasoftware.intel.com/eula.-->
                 <ipxact:name>mem_cke</ipxact:name>
               </ipxact:logicalPort>
               <ipxact:physicalPort>
-                <ipxact:name>emif_fm_0_mem_mem_cke</ipxact:name>
+                <ipxact:name>mem_cke</ipxact:name>
               </ipxact:physicalPort>
             </ipxact:portMap>
             <ipxact:portMap>
@@ -234,7 +271,7 @@ https://fpgasoftware.intel.com/eula.-->
                 <ipxact:name>mem_cs_n</ipxact:name>
               </ipxact:logicalPort>
               <ipxact:physicalPort>
-                <ipxact:name>emif_fm_0_mem_mem_cs_n</ipxact:name>
+                <ipxact:name>mem_cs_n</ipxact:name>
               </ipxact:physicalPort>
             </ipxact:portMap>
             <ipxact:portMap>
@@ -242,7 +279,7 @@ https://fpgasoftware.intel.com/eula.-->
                 <ipxact:name>mem_odt</ipxact:name>
               </ipxact:logicalPort>
               <ipxact:physicalPort>
-                <ipxact:name>emif_fm_0_mem_mem_odt</ipxact:name>
+                <ipxact:name>mem_odt</ipxact:name>
               </ipxact:physicalPort>
             </ipxact:portMap>
             <ipxact:portMap>
@@ -250,7 +287,7 @@ https://fpgasoftware.intel.com/eula.-->
                 <ipxact:name>mem_reset_n</ipxact:name>
               </ipxact:logicalPort>
               <ipxact:physicalPort>
-                <ipxact:name>emif_fm_0_mem_mem_reset_n</ipxact:name>
+                <ipxact:name>mem_reset_n</ipxact:name>
               </ipxact:physicalPort>
             </ipxact:portMap>
             <ipxact:portMap>
@@ -258,7 +295,7 @@ https://fpgasoftware.intel.com/eula.-->
                 <ipxact:name>mem_par</ipxact:name>
               </ipxact:logicalPort>
               <ipxact:physicalPort>
-                <ipxact:name>emif_fm_0_mem_mem_par</ipxact:name>
+                <ipxact:name>mem_par</ipxact:name>
               </ipxact:physicalPort>
             </ipxact:portMap>
             <ipxact:portMap>
@@ -266,7 +303,7 @@ https://fpgasoftware.intel.com/eula.-->
                 <ipxact:name>mem_alert_n</ipxact:name>
               </ipxact:logicalPort>
               <ipxact:physicalPort>
-                <ipxact:name>emif_fm_0_mem_mem_alert_n</ipxact:name>
+                <ipxact:name>mem_alert_n</ipxact:name>
               </ipxact:physicalPort>
             </ipxact:portMap>
             <ipxact:portMap>
@@ -274,7 +311,7 @@ https://fpgasoftware.intel.com/eula.-->
                 <ipxact:name>mem_dqs</ipxact:name>
               </ipxact:logicalPort>
               <ipxact:physicalPort>
-                <ipxact:name>emif_fm_0_mem_mem_dqs</ipxact:name>
+                <ipxact:name>mem_dqs</ipxact:name>
               </ipxact:physicalPort>
             </ipxact:portMap>
             <ipxact:portMap>
@@ -282,7 +319,7 @@ https://fpgasoftware.intel.com/eula.-->
                 <ipxact:name>mem_dqs_n</ipxact:name>
               </ipxact:logicalPort>
               <ipxact:physicalPort>
-                <ipxact:name>emif_fm_0_mem_mem_dqs_n</ipxact:name>
+                <ipxact:name>mem_dqs_n</ipxact:name>
               </ipxact:physicalPort>
             </ipxact:portMap>
             <ipxact:portMap>
@@ -290,7 +327,7 @@ https://fpgasoftware.intel.com/eula.-->
                 <ipxact:name>mem_dq</ipxact:name>
               </ipxact:logicalPort>
               <ipxact:physicalPort>
-                <ipxact:name>emif_fm_0_mem_mem_dq</ipxact:name>
+                <ipxact:name>mem_dq</ipxact:name>
               </ipxact:physicalPort>
             </ipxact:portMap>
             <ipxact:portMap>
@@ -298,7 +335,7 @@ https://fpgasoftware.intel.com/eula.-->
                 <ipxact:name>mem_dbi_n</ipxact:name>
               </ipxact:logicalPort>
               <ipxact:physicalPort>
-                <ipxact:name>emif_fm_0_mem_mem_dbi_n</ipxact:name>
+                <ipxact:name>mem_dbi_n</ipxact:name>
               </ipxact:physicalPort>
             </ipxact:portMap>
           </ipxact:portMaps>
@@ -365,6 +402,120 @@ https://fpgasoftware.intel.com/eula.-->
           <ipxact:name>prSafe</ipxact:name>
           <ipxact:displayName>Partial Reconfiguration Safe</ipxact:displayName>
           <ipxact:value>false</ipxact:value>
+        </ipxact:parameter>
+      </ipxact:parameters>
+    </ipxact:busInterface>
+    <ipxact:busInterface>
+      <ipxact:name>emif_calbus</ipxact:name>
+      <ipxact:busType vendor="intel" library="intel" name="conduit" version="24.1"></ipxact:busType>
+      <ipxact:abstractionTypes>
+        <ipxact:abstractionType>
+          <ipxact:abstractionRef vendor="intel" library="intel" name="conduit" version="24.1"></ipxact:abstractionRef>
+          <ipxact:portMaps>
+            <ipxact:portMap>
+              <ipxact:logicalPort>
+                <ipxact:name>calbus_read</ipxact:name>
+              </ipxact:logicalPort>
+              <ipxact:physicalPort>
+                <ipxact:name>calbus_read</ipxact:name>
+              </ipxact:physicalPort>
+            </ipxact:portMap>
+            <ipxact:portMap>
+              <ipxact:logicalPort>
+                <ipxact:name>calbus_write</ipxact:name>
+              </ipxact:logicalPort>
+              <ipxact:physicalPort>
+                <ipxact:name>calbus_write</ipxact:name>
+              </ipxact:physicalPort>
+            </ipxact:portMap>
+            <ipxact:portMap>
+              <ipxact:logicalPort>
+                <ipxact:name>calbus_address</ipxact:name>
+              </ipxact:logicalPort>
+              <ipxact:physicalPort>
+                <ipxact:name>calbus_address</ipxact:name>
+              </ipxact:physicalPort>
+            </ipxact:portMap>
+            <ipxact:portMap>
+              <ipxact:logicalPort>
+                <ipxact:name>calbus_wdata</ipxact:name>
+              </ipxact:logicalPort>
+              <ipxact:physicalPort>
+                <ipxact:name>calbus_wdata</ipxact:name>
+              </ipxact:physicalPort>
+            </ipxact:portMap>
+            <ipxact:portMap>
+              <ipxact:logicalPort>
+                <ipxact:name>calbus_rdata</ipxact:name>
+              </ipxact:logicalPort>
+              <ipxact:physicalPort>
+                <ipxact:name>calbus_rdata</ipxact:name>
+              </ipxact:physicalPort>
+            </ipxact:portMap>
+            <ipxact:portMap>
+              <ipxact:logicalPort>
+                <ipxact:name>calbus_seq_param_tbl</ipxact:name>
+              </ipxact:logicalPort>
+              <ipxact:physicalPort>
+                <ipxact:name>calbus_seq_param_tbl</ipxact:name>
+              </ipxact:physicalPort>
+            </ipxact:portMap>
+          </ipxact:portMaps>
+        </ipxact:abstractionType>
+      </ipxact:abstractionTypes>
+      <ipxact:slave></ipxact:slave>
+      <ipxact:parameters>
+        <ipxact:parameter parameterId="associatedClock" type="string">
+          <ipxact:name>associatedClock</ipxact:name>
+          <ipxact:displayName>associatedClock</ipxact:displayName>
+          <ipxact:value>emif_calbus_clk</ipxact:value>
+        </ipxact:parameter>
+        <ipxact:parameter parameterId="associatedReset" type="string">
+          <ipxact:name>associatedReset</ipxact:name>
+          <ipxact:displayName>associatedReset</ipxact:displayName>
+          <ipxact:value></ipxact:value>
+        </ipxact:parameter>
+        <ipxact:parameter parameterId="prSafe" type="bit">
+          <ipxact:name>prSafe</ipxact:name>
+          <ipxact:displayName>Partial Reconfiguration Safe</ipxact:displayName>
+          <ipxact:value>false</ipxact:value>
+        </ipxact:parameter>
+      </ipxact:parameters>
+    </ipxact:busInterface>
+    <ipxact:busInterface>
+      <ipxact:name>emif_calbus_clk</ipxact:name>
+      <ipxact:busType vendor="intel" library="intel" name="clock" version="24.1"></ipxact:busType>
+      <ipxact:abstractionTypes>
+        <ipxact:abstractionType>
+          <ipxact:abstractionRef vendor="intel" library="intel" name="clock" version="24.1"></ipxact:abstractionRef>
+          <ipxact:portMaps>
+            <ipxact:portMap>
+              <ipxact:logicalPort>
+                <ipxact:name>clk</ipxact:name>
+              </ipxact:logicalPort>
+              <ipxact:physicalPort>
+                <ipxact:name>calbus_clk</ipxact:name>
+              </ipxact:physicalPort>
+            </ipxact:portMap>
+          </ipxact:portMaps>
+        </ipxact:abstractionType>
+      </ipxact:abstractionTypes>
+      <ipxact:slave></ipxact:slave>
+      <ipxact:parameters>
+        <ipxact:parameter parameterId="clockRate" type="longint">
+          <ipxact:name>clockRate</ipxact:name>
+          <ipxact:displayName>Clock rate</ipxact:displayName>
+          <ipxact:value>0</ipxact:value>
+        </ipxact:parameter>
+        <ipxact:parameter parameterId="externallyDriven" type="bit">
+          <ipxact:name>externallyDriven</ipxact:name>
+          <ipxact:displayName>Externally driven</ipxact:displayName>
+          <ipxact:value>false</ipxact:value>
+        </ipxact:parameter>
+        <ipxact:parameter parameterId="ptfSchematicName" type="string">
+          <ipxact:name>ptfSchematicName</ipxact:name>
+          <ipxact:displayName>PTF schematic name</ipxact:displayName>
+          <ipxact:value></ipxact:value>
         </ipxact:parameter>
       </ipxact:parameters>
     </ipxact:busInterface>
@@ -454,6 +605,43 @@ https://fpgasoftware.intel.com/eula.-->
           <ipxact:name>ptfSchematicName</ipxact:name>
           <ipxact:displayName>PTF schematic name</ipxact:displayName>
           <ipxact:value></ipxact:value>
+        </ipxact:parameter>
+      </ipxact:parameters>
+    </ipxact:busInterface>
+    <ipxact:busInterface>
+      <ipxact:name>ctrl_ecc_user_interrupt_0</ipxact:name>
+      <ipxact:busType vendor="intel" library="intel" name="conduit" version="24.1"></ipxact:busType>
+      <ipxact:abstractionTypes>
+        <ipxact:abstractionType>
+          <ipxact:abstractionRef vendor="intel" library="intel" name="conduit" version="24.1"></ipxact:abstractionRef>
+          <ipxact:portMaps>
+            <ipxact:portMap>
+              <ipxact:logicalPort>
+                <ipxact:name>ctrl_ecc_user_interrupt</ipxact:name>
+              </ipxact:logicalPort>
+              <ipxact:physicalPort>
+                <ipxact:name>ctrl_ecc_user_interrupt_0</ipxact:name>
+              </ipxact:physicalPort>
+            </ipxact:portMap>
+          </ipxact:portMaps>
+        </ipxact:abstractionType>
+      </ipxact:abstractionTypes>
+      <ipxact:slave></ipxact:slave>
+      <ipxact:parameters>
+        <ipxact:parameter parameterId="associatedClock" type="string">
+          <ipxact:name>associatedClock</ipxact:name>
+          <ipxact:displayName>associatedClock</ipxact:displayName>
+          <ipxact:value></ipxact:value>
+        </ipxact:parameter>
+        <ipxact:parameter parameterId="associatedReset" type="string">
+          <ipxact:name>associatedReset</ipxact:name>
+          <ipxact:displayName>associatedReset</ipxact:displayName>
+          <ipxact:value></ipxact:value>
+        </ipxact:parameter>
+        <ipxact:parameter parameterId="prSafe" type="bit">
+          <ipxact:name>prSafe</ipxact:name>
+          <ipxact:displayName>Partial Reconfiguration Safe</ipxact:displayName>
+          <ipxact:value>false</ipxact:value>
         </ipxact:parameter>
       </ipxact:parameters>
     </ipxact:busInterface>
@@ -554,7 +742,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="addressSpan" type="string">
           <ipxact:name>addressSpan</ipxact:name>
           <ipxact:displayName>Address span</ipxact:displayName>
-          <ipxact:value>2147483648</ipxact:value>
+          <ipxact:value>8589934592</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="addressUnits" type="string">
           <ipxact:name>addressUnits</ipxact:name>
@@ -825,120 +1013,6 @@ https://fpgasoftware.intel.com/eula.-->
         </altera:altera_assignments>
       </ipxact:vendorExtensions>
     </ipxact:busInterface>
-    <ipxact:busInterface>
-      <ipxact:name>emif_calbus</ipxact:name>
-      <ipxact:busType vendor="intel" library="intel" name="conduit" version="24.1"></ipxact:busType>
-      <ipxact:abstractionTypes>
-        <ipxact:abstractionType>
-          <ipxact:abstractionRef vendor="intel" library="intel" name="conduit" version="24.1"></ipxact:abstractionRef>
-          <ipxact:portMaps>
-            <ipxact:portMap>
-              <ipxact:logicalPort>
-                <ipxact:name>calbus_read</ipxact:name>
-              </ipxact:logicalPort>
-              <ipxact:physicalPort>
-                <ipxact:name>calbus_read</ipxact:name>
-              </ipxact:physicalPort>
-            </ipxact:portMap>
-            <ipxact:portMap>
-              <ipxact:logicalPort>
-                <ipxact:name>calbus_write</ipxact:name>
-              </ipxact:logicalPort>
-              <ipxact:physicalPort>
-                <ipxact:name>calbus_write</ipxact:name>
-              </ipxact:physicalPort>
-            </ipxact:portMap>
-            <ipxact:portMap>
-              <ipxact:logicalPort>
-                <ipxact:name>calbus_address</ipxact:name>
-              </ipxact:logicalPort>
-              <ipxact:physicalPort>
-                <ipxact:name>calbus_address</ipxact:name>
-              </ipxact:physicalPort>
-            </ipxact:portMap>
-            <ipxact:portMap>
-              <ipxact:logicalPort>
-                <ipxact:name>calbus_wdata</ipxact:name>
-              </ipxact:logicalPort>
-              <ipxact:physicalPort>
-                <ipxact:name>calbus_wdata</ipxact:name>
-              </ipxact:physicalPort>
-            </ipxact:portMap>
-            <ipxact:portMap>
-              <ipxact:logicalPort>
-                <ipxact:name>calbus_rdata</ipxact:name>
-              </ipxact:logicalPort>
-              <ipxact:physicalPort>
-                <ipxact:name>calbus_rdata</ipxact:name>
-              </ipxact:physicalPort>
-            </ipxact:portMap>
-            <ipxact:portMap>
-              <ipxact:logicalPort>
-                <ipxact:name>calbus_seq_param_tbl</ipxact:name>
-              </ipxact:logicalPort>
-              <ipxact:physicalPort>
-                <ipxact:name>calbus_seq_param_tbl</ipxact:name>
-              </ipxact:physicalPort>
-            </ipxact:portMap>
-          </ipxact:portMaps>
-        </ipxact:abstractionType>
-      </ipxact:abstractionTypes>
-      <ipxact:slave></ipxact:slave>
-      <ipxact:parameters>
-        <ipxact:parameter parameterId="associatedClock" type="string">
-          <ipxact:name>associatedClock</ipxact:name>
-          <ipxact:displayName>associatedClock</ipxact:displayName>
-          <ipxact:value>emif_calbus_clk</ipxact:value>
-        </ipxact:parameter>
-        <ipxact:parameter parameterId="associatedReset" type="string">
-          <ipxact:name>associatedReset</ipxact:name>
-          <ipxact:displayName>associatedReset</ipxact:displayName>
-          <ipxact:value></ipxact:value>
-        </ipxact:parameter>
-        <ipxact:parameter parameterId="prSafe" type="bit">
-          <ipxact:name>prSafe</ipxact:name>
-          <ipxact:displayName>Partial Reconfiguration Safe</ipxact:displayName>
-          <ipxact:value>false</ipxact:value>
-        </ipxact:parameter>
-      </ipxact:parameters>
-    </ipxact:busInterface>
-    <ipxact:busInterface>
-      <ipxact:name>emif_calbus_clk</ipxact:name>
-      <ipxact:busType vendor="intel" library="intel" name="clock" version="24.1"></ipxact:busType>
-      <ipxact:abstractionTypes>
-        <ipxact:abstractionType>
-          <ipxact:abstractionRef vendor="intel" library="intel" name="clock" version="24.1"></ipxact:abstractionRef>
-          <ipxact:portMaps>
-            <ipxact:portMap>
-              <ipxact:logicalPort>
-                <ipxact:name>clk</ipxact:name>
-              </ipxact:logicalPort>
-              <ipxact:physicalPort>
-                <ipxact:name>calbus_clk</ipxact:name>
-              </ipxact:physicalPort>
-            </ipxact:portMap>
-          </ipxact:portMaps>
-        </ipxact:abstractionType>
-      </ipxact:abstractionTypes>
-      <ipxact:slave></ipxact:slave>
-      <ipxact:parameters>
-        <ipxact:parameter parameterId="clockRate" type="longint">
-          <ipxact:name>clockRate</ipxact:name>
-          <ipxact:displayName>Clock rate</ipxact:displayName>
-          <ipxact:value>0</ipxact:value>
-        </ipxact:parameter>
-        <ipxact:parameter parameterId="externallyDriven" type="bit">
-          <ipxact:name>externallyDriven</ipxact:name>
-          <ipxact:displayName>Externally driven</ipxact:displayName>
-          <ipxact:value>false</ipxact:value>
-        </ipxact:parameter>
-        <ipxact:parameter parameterId="ptfSchematicName" type="string">
-          <ipxact:name>ptfSchematicName</ipxact:name>
-          <ipxact:displayName>PTF schematic name</ipxact:displayName>
-          <ipxact:value></ipxact:value>
-        </ipxact:parameter>
-      </ipxact:parameters>
-    </ipxact:busInterface>
   </ipxact:busInterfaces>
   <ipxact:model>
     <ipxact:views>
@@ -986,6 +1060,18 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:name>pll_ref_clk</ipxact:name>
         <ipxact:wire>
           <ipxact:direction>in</ipxact:direction>
+          <ipxact:wireTypeDefs>
+            <ipxact:wireTypeDef>
+              <ipxact:typeName>STD_LOGIC</ipxact:typeName>
+              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
+            </ipxact:wireTypeDef>
+          </ipxact:wireTypeDefs>
+        </ipxact:wire>
+      </ipxact:port>
+      <ipxact:port>
+        <ipxact:name>pll_locked</ipxact:name>
+        <ipxact:wire>
+          <ipxact:direction>out</ipxact:direction>
           <ipxact:wireTypeDefs>
             <ipxact:wireTypeDef>
               <ipxact:typeName>STD_LOGIC</ipxact:typeName>
@@ -1175,7 +1261,7 @@ https://fpgasoftware.intel.com/eula.-->
           <ipxact:vectors>
             <ipxact:vector>
               <ipxact:left>0</ipxact:left>
-              <ipxact:right>1</ipxact:right>
+              <ipxact:right>8</ipxact:right>
             </ipxact:vector>
           </ipxact:vectors>
           <ipxact:wireTypeDefs>
@@ -1193,7 +1279,7 @@ https://fpgasoftware.intel.com/eula.-->
           <ipxact:vectors>
             <ipxact:vector>
               <ipxact:left>0</ipxact:left>
-              <ipxact:right>1</ipxact:right>
+              <ipxact:right>8</ipxact:right>
             </ipxact:vector>
           </ipxact:vectors>
           <ipxact:wireTypeDefs>
@@ -1211,7 +1297,7 @@ https://fpgasoftware.intel.com/eula.-->
           <ipxact:vectors>
             <ipxact:vector>
               <ipxact:left>0</ipxact:left>
-              <ipxact:right>15</ipxact:right>
+              <ipxact:right>71</ipxact:right>
             </ipxact:vector>
           </ipxact:vectors>
           <ipxact:wireTypeDefs>
@@ -1229,7 +1315,7 @@ https://fpgasoftware.intel.com/eula.-->
           <ipxact:vectors>
             <ipxact:vector>
               <ipxact:left>0</ipxact:left>
-              <ipxact:right>1</ipxact:right>
+              <ipxact:right>8</ipxact:right>
             </ipxact:vector>
           </ipxact:vectors>
           <ipxact:wireTypeDefs>
@@ -1254,168 +1340,6 @@ https://fpgasoftware.intel.com/eula.-->
       </ipxact:port>
       <ipxact:port>
         <ipxact:name>local_cal_fail</ipxact:name>
-        <ipxact:wire>
-          <ipxact:direction>out</ipxact:direction>
-          <ipxact:wireTypeDefs>
-            <ipxact:wireTypeDef>
-              <ipxact:typeName>STD_LOGIC</ipxact:typeName>
-              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
-            </ipxact:wireTypeDef>
-          </ipxact:wireTypeDefs>
-        </ipxact:wire>
-      </ipxact:port>
-      <ipxact:port>
-        <ipxact:name>emif_usr_reset_n</ipxact:name>
-        <ipxact:wire>
-          <ipxact:direction>out</ipxact:direction>
-          <ipxact:wireTypeDefs>
-            <ipxact:wireTypeDef>
-              <ipxact:typeName>STD_LOGIC</ipxact:typeName>
-              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
-            </ipxact:wireTypeDef>
-          </ipxact:wireTypeDefs>
-        </ipxact:wire>
-      </ipxact:port>
-      <ipxact:port>
-        <ipxact:name>emif_usr_clk</ipxact:name>
-        <ipxact:wire>
-          <ipxact:direction>out</ipxact:direction>
-          <ipxact:wireTypeDefs>
-            <ipxact:wireTypeDef>
-              <ipxact:typeName>STD_LOGIC</ipxact:typeName>
-              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
-            </ipxact:wireTypeDef>
-          </ipxact:wireTypeDefs>
-        </ipxact:wire>
-      </ipxact:port>
-      <ipxact:port>
-        <ipxact:name>amm_ready_0</ipxact:name>
-        <ipxact:wire>
-          <ipxact:direction>out</ipxact:direction>
-          <ipxact:wireTypeDefs>
-            <ipxact:wireTypeDef>
-              <ipxact:typeName>STD_LOGIC</ipxact:typeName>
-              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
-            </ipxact:wireTypeDef>
-          </ipxact:wireTypeDefs>
-        </ipxact:wire>
-      </ipxact:port>
-      <ipxact:port>
-        <ipxact:name>amm_read_0</ipxact:name>
-        <ipxact:wire>
-          <ipxact:direction>in</ipxact:direction>
-          <ipxact:wireTypeDefs>
-            <ipxact:wireTypeDef>
-              <ipxact:typeName>STD_LOGIC</ipxact:typeName>
-              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
-            </ipxact:wireTypeDef>
-          </ipxact:wireTypeDefs>
-        </ipxact:wire>
-      </ipxact:port>
-      <ipxact:port>
-        <ipxact:name>amm_write_0</ipxact:name>
-        <ipxact:wire>
-          <ipxact:direction>in</ipxact:direction>
-          <ipxact:wireTypeDefs>
-            <ipxact:wireTypeDef>
-              <ipxact:typeName>STD_LOGIC</ipxact:typeName>
-              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
-            </ipxact:wireTypeDef>
-          </ipxact:wireTypeDefs>
-        </ipxact:wire>
-      </ipxact:port>
-      <ipxact:port>
-        <ipxact:name>amm_address_0</ipxact:name>
-        <ipxact:wire>
-          <ipxact:direction>in</ipxact:direction>
-          <ipxact:vectors>
-            <ipxact:vector>
-              <ipxact:left>0</ipxact:left>
-              <ipxact:right>26</ipxact:right>
-            </ipxact:vector>
-          </ipxact:vectors>
-          <ipxact:wireTypeDefs>
-            <ipxact:wireTypeDef>
-              <ipxact:typeName>STD_LOGIC_VECTOR</ipxact:typeName>
-              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
-            </ipxact:wireTypeDef>
-          </ipxact:wireTypeDefs>
-        </ipxact:wire>
-      </ipxact:port>
-      <ipxact:port>
-        <ipxact:name>amm_readdata_0</ipxact:name>
-        <ipxact:wire>
-          <ipxact:direction>out</ipxact:direction>
-          <ipxact:vectors>
-            <ipxact:vector>
-              <ipxact:left>0</ipxact:left>
-              <ipxact:right>127</ipxact:right>
-            </ipxact:vector>
-          </ipxact:vectors>
-          <ipxact:wireTypeDefs>
-            <ipxact:wireTypeDef>
-              <ipxact:typeName>STD_LOGIC_VECTOR</ipxact:typeName>
-              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
-            </ipxact:wireTypeDef>
-          </ipxact:wireTypeDefs>
-        </ipxact:wire>
-      </ipxact:port>
-      <ipxact:port>
-        <ipxact:name>amm_writedata_0</ipxact:name>
-        <ipxact:wire>
-          <ipxact:direction>in</ipxact:direction>
-          <ipxact:vectors>
-            <ipxact:vector>
-              <ipxact:left>0</ipxact:left>
-              <ipxact:right>127</ipxact:right>
-            </ipxact:vector>
-          </ipxact:vectors>
-          <ipxact:wireTypeDefs>
-            <ipxact:wireTypeDef>
-              <ipxact:typeName>STD_LOGIC_VECTOR</ipxact:typeName>
-              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
-            </ipxact:wireTypeDef>
-          </ipxact:wireTypeDefs>
-        </ipxact:wire>
-      </ipxact:port>
-      <ipxact:port>
-        <ipxact:name>amm_burstcount_0</ipxact:name>
-        <ipxact:wire>
-          <ipxact:direction>in</ipxact:direction>
-          <ipxact:vectors>
-            <ipxact:vector>
-              <ipxact:left>0</ipxact:left>
-              <ipxact:right>6</ipxact:right>
-            </ipxact:vector>
-          </ipxact:vectors>
-          <ipxact:wireTypeDefs>
-            <ipxact:wireTypeDef>
-              <ipxact:typeName>STD_LOGIC_VECTOR</ipxact:typeName>
-              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
-            </ipxact:wireTypeDef>
-          </ipxact:wireTypeDefs>
-        </ipxact:wire>
-      </ipxact:port>
-      <ipxact:port>
-        <ipxact:name>amm_byteenable_0</ipxact:name>
-        <ipxact:wire>
-          <ipxact:direction>in</ipxact:direction>
-          <ipxact:vectors>
-            <ipxact:vector>
-              <ipxact:left>0</ipxact:left>
-              <ipxact:right>15</ipxact:right>
-            </ipxact:vector>
-          </ipxact:vectors>
-          <ipxact:wireTypeDefs>
-            <ipxact:wireTypeDef>
-              <ipxact:typeName>STD_LOGIC_VECTOR</ipxact:typeName>
-              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
-            </ipxact:wireTypeDef>
-          </ipxact:wireTypeDefs>
-        </ipxact:wire>
-      </ipxact:port>
-      <ipxact:port>
-        <ipxact:name>amm_readdatavalid_0</ipxact:name>
         <ipxact:wire>
           <ipxact:direction>out</ipxact:direction>
           <ipxact:wireTypeDefs>
@@ -1534,12 +1458,186 @@ https://fpgasoftware.intel.com/eula.-->
           </ipxact:wireTypeDefs>
         </ipxact:wire>
       </ipxact:port>
+      <ipxact:port>
+        <ipxact:name>emif_usr_reset_n</ipxact:name>
+        <ipxact:wire>
+          <ipxact:direction>out</ipxact:direction>
+          <ipxact:wireTypeDefs>
+            <ipxact:wireTypeDef>
+              <ipxact:typeName>STD_LOGIC</ipxact:typeName>
+              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
+            </ipxact:wireTypeDef>
+          </ipxact:wireTypeDefs>
+        </ipxact:wire>
+      </ipxact:port>
+      <ipxact:port>
+        <ipxact:name>emif_usr_clk</ipxact:name>
+        <ipxact:wire>
+          <ipxact:direction>out</ipxact:direction>
+          <ipxact:wireTypeDefs>
+            <ipxact:wireTypeDef>
+              <ipxact:typeName>STD_LOGIC</ipxact:typeName>
+              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
+            </ipxact:wireTypeDef>
+          </ipxact:wireTypeDefs>
+        </ipxact:wire>
+      </ipxact:port>
+      <ipxact:port>
+        <ipxact:name>ctrl_ecc_user_interrupt_0</ipxact:name>
+        <ipxact:wire>
+          <ipxact:direction>out</ipxact:direction>
+          <ipxact:wireTypeDefs>
+            <ipxact:wireTypeDef>
+              <ipxact:typeName>STD_LOGIC</ipxact:typeName>
+              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
+            </ipxact:wireTypeDef>
+          </ipxact:wireTypeDefs>
+        </ipxact:wire>
+      </ipxact:port>
+      <ipxact:port>
+        <ipxact:name>amm_ready_0</ipxact:name>
+        <ipxact:wire>
+          <ipxact:direction>out</ipxact:direction>
+          <ipxact:wireTypeDefs>
+            <ipxact:wireTypeDef>
+              <ipxact:typeName>STD_LOGIC</ipxact:typeName>
+              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
+            </ipxact:wireTypeDef>
+          </ipxact:wireTypeDefs>
+        </ipxact:wire>
+      </ipxact:port>
+      <ipxact:port>
+        <ipxact:name>amm_read_0</ipxact:name>
+        <ipxact:wire>
+          <ipxact:direction>in</ipxact:direction>
+          <ipxact:wireTypeDefs>
+            <ipxact:wireTypeDef>
+              <ipxact:typeName>STD_LOGIC</ipxact:typeName>
+              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
+            </ipxact:wireTypeDef>
+          </ipxact:wireTypeDefs>
+        </ipxact:wire>
+      </ipxact:port>
+      <ipxact:port>
+        <ipxact:name>amm_write_0</ipxact:name>
+        <ipxact:wire>
+          <ipxact:direction>in</ipxact:direction>
+          <ipxact:wireTypeDefs>
+            <ipxact:wireTypeDef>
+              <ipxact:typeName>STD_LOGIC</ipxact:typeName>
+              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
+            </ipxact:wireTypeDef>
+          </ipxact:wireTypeDefs>
+        </ipxact:wire>
+      </ipxact:port>
+      <ipxact:port>
+        <ipxact:name>amm_address_0</ipxact:name>
+        <ipxact:wire>
+          <ipxact:direction>in</ipxact:direction>
+          <ipxact:vectors>
+            <ipxact:vector>
+              <ipxact:left>0</ipxact:left>
+              <ipxact:right>26</ipxact:right>
+            </ipxact:vector>
+          </ipxact:vectors>
+          <ipxact:wireTypeDefs>
+            <ipxact:wireTypeDef>
+              <ipxact:typeName>STD_LOGIC_VECTOR</ipxact:typeName>
+              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
+            </ipxact:wireTypeDef>
+          </ipxact:wireTypeDefs>
+        </ipxact:wire>
+      </ipxact:port>
+      <ipxact:port>
+        <ipxact:name>amm_readdata_0</ipxact:name>
+        <ipxact:wire>
+          <ipxact:direction>out</ipxact:direction>
+          <ipxact:vectors>
+            <ipxact:vector>
+              <ipxact:left>0</ipxact:left>
+              <ipxact:right>511</ipxact:right>
+            </ipxact:vector>
+          </ipxact:vectors>
+          <ipxact:wireTypeDefs>
+            <ipxact:wireTypeDef>
+              <ipxact:typeName>STD_LOGIC_VECTOR</ipxact:typeName>
+              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
+            </ipxact:wireTypeDef>
+          </ipxact:wireTypeDefs>
+        </ipxact:wire>
+      </ipxact:port>
+      <ipxact:port>
+        <ipxact:name>amm_writedata_0</ipxact:name>
+        <ipxact:wire>
+          <ipxact:direction>in</ipxact:direction>
+          <ipxact:vectors>
+            <ipxact:vector>
+              <ipxact:left>0</ipxact:left>
+              <ipxact:right>511</ipxact:right>
+            </ipxact:vector>
+          </ipxact:vectors>
+          <ipxact:wireTypeDefs>
+            <ipxact:wireTypeDef>
+              <ipxact:typeName>STD_LOGIC_VECTOR</ipxact:typeName>
+              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
+            </ipxact:wireTypeDef>
+          </ipxact:wireTypeDefs>
+        </ipxact:wire>
+      </ipxact:port>
+      <ipxact:port>
+        <ipxact:name>amm_burstcount_0</ipxact:name>
+        <ipxact:wire>
+          <ipxact:direction>in</ipxact:direction>
+          <ipxact:vectors>
+            <ipxact:vector>
+              <ipxact:left>0</ipxact:left>
+              <ipxact:right>6</ipxact:right>
+            </ipxact:vector>
+          </ipxact:vectors>
+          <ipxact:wireTypeDefs>
+            <ipxact:wireTypeDef>
+              <ipxact:typeName>STD_LOGIC_VECTOR</ipxact:typeName>
+              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
+            </ipxact:wireTypeDef>
+          </ipxact:wireTypeDefs>
+        </ipxact:wire>
+      </ipxact:port>
+      <ipxact:port>
+        <ipxact:name>amm_byteenable_0</ipxact:name>
+        <ipxact:wire>
+          <ipxact:direction>in</ipxact:direction>
+          <ipxact:vectors>
+            <ipxact:vector>
+              <ipxact:left>0</ipxact:left>
+              <ipxact:right>63</ipxact:right>
+            </ipxact:vector>
+          </ipxact:vectors>
+          <ipxact:wireTypeDefs>
+            <ipxact:wireTypeDef>
+              <ipxact:typeName>STD_LOGIC_VECTOR</ipxact:typeName>
+              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
+            </ipxact:wireTypeDef>
+          </ipxact:wireTypeDefs>
+        </ipxact:wire>
+      </ipxact:port>
+      <ipxact:port>
+        <ipxact:name>amm_readdatavalid_0</ipxact:name>
+        <ipxact:wire>
+          <ipxact:direction>out</ipxact:direction>
+          <ipxact:wireTypeDefs>
+            <ipxact:wireTypeDef>
+              <ipxact:typeName>STD_LOGIC</ipxact:typeName>
+              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
+            </ipxact:wireTypeDef>
+          </ipxact:wireTypeDefs>
+        </ipxact:wire>
+      </ipxact:port>
     </ipxact:ports>
   </ipxact:model>
   <ipxact:vendorExtensions>
     <altera:entity_info>
       <ipxact:vendor>Intel Corporation</ipxact:vendor>
-      <ipxact:library>emif</ipxact:library>
+      <ipxact:library>ed_synth_emif_fm_0</ipxact:library>
       <ipxact:name>altera_emif_fm</ipxact:name>
       <ipxact:version>2.7.4</ipxact:version>
     </altera:entity_info>
@@ -1608,7 +1706,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="SYS_INFO_UNIQUE_ID" type="string">
           <ipxact:name>SYS_INFO_UNIQUE_ID</ipxact:name>
           <ipxact:displayName>PARAM_SYS_INFO_UNIQUE_ID_NAME</ipxact:displayName>
-          <ipxact:value>emif_emif_fm_0</ipxact:value>
+          <ipxact:value>ed_synth_emif_fm_0_emif_fm_0</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="PLL_ADD_EXTRA_CLKS" type="bit">
           <ipxact:name>PLL_ADD_EXTRA_CLKS</ipxact:name>
@@ -2263,7 +2361,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="PHY_DDR4_DEFAULT_IO" type="bit">
           <ipxact:name>PHY_DDR4_DEFAULT_IO</ipxact:name>
           <ipxact:displayName>Use default I/O settings</ipxact:displayName>
-          <ipxact:value>true</ipxact:value>
+          <ipxact:value>false</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="PHY_DDR4_HPS_ENABLE_EARLY_RELEASE" type="bit">
           <ipxact:name>PHY_DDR4_HPS_ENABLE_EARLY_RELEASE</ipxact:name>
@@ -2288,12 +2386,12 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="PHY_DDR4_USER_AC_IO_STD_ENUM" type="string">
           <ipxact:name>PHY_DDR4_USER_AC_IO_STD_ENUM</ipxact:name>
           <ipxact:displayName>I/O standard</ipxact:displayName>
-          <ipxact:value>unset</ipxact:value>
+          <ipxact:value>IO_STD_SSTL_12</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="PHY_DDR4_USER_AC_MODE_ENUM" type="string">
           <ipxact:name>PHY_DDR4_USER_AC_MODE_ENUM</ipxact:name>
           <ipxact:displayName>Output mode</ipxact:displayName>
-          <ipxact:value>unset</ipxact:value>
+          <ipxact:value>OUT_OCT_40_CAL</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="PHY_DDR4_USER_AC_SLEW_RATE_ENUM" type="string">
           <ipxact:name>PHY_DDR4_USER_AC_SLEW_RATE_ENUM</ipxact:name>
@@ -2308,12 +2406,12 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="PHY_DDR4_USER_CK_IO_STD_ENUM" type="string">
           <ipxact:name>PHY_DDR4_USER_CK_IO_STD_ENUM</ipxact:name>
           <ipxact:displayName>I/O standard</ipxact:displayName>
-          <ipxact:value>unset</ipxact:value>
+          <ipxact:value>IO_STD_SSTL_12</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="PHY_DDR4_USER_CK_MODE_ENUM" type="string">
           <ipxact:name>PHY_DDR4_USER_CK_MODE_ENUM</ipxact:name>
           <ipxact:displayName>Output mode</ipxact:displayName>
-          <ipxact:value>unset</ipxact:value>
+          <ipxact:value>OUT_OCT_40_CAL</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="PHY_DDR4_USER_CK_SLEW_RATE_ENUM" type="string">
           <ipxact:name>PHY_DDR4_USER_CK_SLEW_RATE_ENUM</ipxact:name>
@@ -2328,12 +2426,12 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="PHY_DDR4_USER_DATA_IO_STD_ENUM" type="string">
           <ipxact:name>PHY_DDR4_USER_DATA_IO_STD_ENUM</ipxact:name>
           <ipxact:displayName>I/O standard</ipxact:displayName>
-          <ipxact:value>unset</ipxact:value>
+          <ipxact:value>IO_STD_POD_12</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="PHY_DDR4_USER_DATA_OUT_MODE_ENUM" type="string">
           <ipxact:name>PHY_DDR4_USER_DATA_OUT_MODE_ENUM</ipxact:name>
           <ipxact:displayName>Output mode</ipxact:displayName>
-          <ipxact:value>unset</ipxact:value>
+          <ipxact:value>OUT_OCT_40_CAL</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="PHY_DDR4_USER_DATA_OUT_SLEW_RATE_ENUM" type="string">
           <ipxact:name>PHY_DDR4_USER_DATA_OUT_SLEW_RATE_ENUM</ipxact:name>
@@ -2348,7 +2446,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="PHY_DDR4_USER_DATA_IN_MODE_ENUM" type="string">
           <ipxact:name>PHY_DDR4_USER_DATA_IN_MODE_ENUM</ipxact:name>
           <ipxact:displayName>Input mode</ipxact:displayName>
-          <ipxact:value>unset</ipxact:value>
+          <ipxact:value>IN_OCT_60_CAL</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="PHY_DDR4_USER_AUTO_STARTING_VREFIN_EN" type="bit">
           <ipxact:name>PHY_DDR4_USER_AUTO_STARTING_VREFIN_EN</ipxact:name>
@@ -2363,12 +2461,12 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="PHY_DDR4_USER_PLL_REF_CLK_IO_STD_ENUM" type="string">
           <ipxact:name>PHY_DDR4_USER_PLL_REF_CLK_IO_STD_ENUM</ipxact:name>
           <ipxact:displayName>PLL reference clock I/O standard</ipxact:displayName>
-          <ipxact:value>unset</ipxact:value>
+          <ipxact:value>IO_STD_TRUE_DIFF_SIGNALING</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="PHY_DDR4_USER_RZQ_IO_STD_ENUM" type="string">
           <ipxact:name>PHY_DDR4_USER_RZQ_IO_STD_ENUM</ipxact:name>
           <ipxact:displayName>RZQ I/O standard</ipxact:displayName>
-          <ipxact:value>unset</ipxact:value>
+          <ipxact:value>IO_STD_CMOS_12</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="PHY_QDR2_CONFIG_ENUM" type="string">
           <ipxact:name>PHY_QDR2_CONFIG_ENUM</ipxact:name>
@@ -2438,7 +2536,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="PHY_QDR2_USER_DLL_CORE_UPDN_EN" type="bit">
           <ipxact:name>PHY_QDR2_USER_DLL_CORE_UPDN_EN</ipxact:name>
           <ipxact:displayName>Use linear search for DLL lock</ipxact:displayName>
-          <ipxact:value>true</ipxact:value>
+          <ipxact:value>false</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="PHY_QDR2_MIMIC_HPS_EMIF" type="bit">
           <ipxact:name>PHY_QDR2_MIMIC_HPS_EMIF</ipxact:name>
@@ -2758,7 +2856,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="PHY_RLD2_USER_DLL_CORE_UPDN_EN" type="bit">
           <ipxact:name>PHY_RLD2_USER_DLL_CORE_UPDN_EN</ipxact:name>
           <ipxact:displayName>Use linear search for DLL lock</ipxact:displayName>
-          <ipxact:value>true</ipxact:value>
+          <ipxact:value>false</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="PHY_RLD2_MIMIC_HPS_EMIF" type="bit">
           <ipxact:name>PHY_RLD2_MIMIC_HPS_EMIF</ipxact:name>
@@ -2918,7 +3016,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="PHY_RLD3_USER_DLL_CORE_UPDN_EN" type="bit">
           <ipxact:name>PHY_RLD3_USER_DLL_CORE_UPDN_EN</ipxact:name>
           <ipxact:displayName>Use linear search for DLL lock</ipxact:displayName>
-          <ipxact:value>true</ipxact:value>
+          <ipxact:value>false</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="PHY_RLD3_MIMIC_HPS_EMIF" type="bit">
           <ipxact:name>PHY_RLD3_MIMIC_HPS_EMIF</ipxact:name>
@@ -3078,7 +3176,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="PHY_LPDDR3_USER_DLL_CORE_UPDN_EN" type="bit">
           <ipxact:name>PHY_LPDDR3_USER_DLL_CORE_UPDN_EN</ipxact:name>
           <ipxact:displayName>Use linear search for DLL lock</ipxact:displayName>
-          <ipxact:value>true</ipxact:value>
+          <ipxact:value>false</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="PHY_LPDDR3_MIMIC_HPS_EMIF" type="bit">
           <ipxact:name>PHY_LPDDR3_MIMIC_HPS_EMIF</ipxact:name>
@@ -3818,7 +3916,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="MEM_DDR4_DQ_WIDTH" type="int">
           <ipxact:name>MEM_DDR4_DQ_WIDTH</ipxact:name>
           <ipxact:displayName>DQ width</ipxact:displayName>
-          <ipxact:value>16</ipxact:value>
+          <ipxact:value>72</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="MEM_DDR4_DQ_PER_DQS" type="int">
           <ipxact:name>MEM_DDR4_DQ_PER_DQS</ipxact:name>
@@ -3898,12 +3996,12 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="MEM_DDR4_ALERT_N_AC_LANE" type="int">
           <ipxact:name>MEM_DDR4_ALERT_N_AC_LANE</ipxact:name>
           <ipxact:displayName>Address/command I/O lane of ALERT#</ipxact:displayName>
-          <ipxact:value>0</ipxact:value>
+          <ipxact:value>3</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="MEM_DDR4_ALERT_N_AC_PIN" type="int">
           <ipxact:name>MEM_DDR4_ALERT_N_AC_PIN</ipxact:name>
           <ipxact:displayName>Pin index of ALERT#</ipxact:displayName>
-          <ipxact:value>0</ipxact:value>
+          <ipxact:value>8</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="MEM_DDR4_DISCRETE_MIRROR_ADDRESSING_EN" type="bit">
           <ipxact:name>MEM_DDR4_DISCRETE_MIRROR_ADDRESSING_EN</ipxact:name>
@@ -4218,7 +4316,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="MEM_DDR4_LRDIMM_ODT_LESS_BS" type="bit">
           <ipxact:name>MEM_DDR4_LRDIMM_ODT_LESS_BS</ipxact:name>
           <ipxact:displayName>PARAM_MEM_DDR4_LRDIMM_ODT_LESS_BS_NAME</ipxact:displayName>
-          <ipxact:value>false</ipxact:value>
+          <ipxact:value>true</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="MEM_DDR4_LRDIMM_ODT_LESS_BS_PARK_OHM" type="int">
           <ipxact:name>MEM_DDR4_LRDIMM_ODT_LESS_BS_PARK_OHM</ipxact:name>
@@ -4368,7 +4466,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="MEM_DDR4_TIS_PS" type="int">
           <ipxact:name>MEM_DDR4_TIS_PS</ipxact:name>
           <ipxact:displayName>tIS (base)</ipxact:displayName>
-          <ipxact:value>60</ipxact:value>
+          <ipxact:value>62</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="MEM_DDR4_TIS_AC_MV" type="int">
           <ipxact:name>MEM_DDR4_TIS_AC_MV</ipxact:name>
@@ -4378,7 +4476,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="MEM_DDR4_TIH_PS" type="int">
           <ipxact:name>MEM_DDR4_TIH_PS</ipxact:name>
           <ipxact:displayName>tIH (base)</ipxact:displayName>
-          <ipxact:value>95</ipxact:value>
+          <ipxact:value>87</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="MEM_DDR4_TIH_DC_MV" type="int">
           <ipxact:name>MEM_DDR4_TIH_DC_MV</ipxact:name>
@@ -4393,17 +4491,17 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="MEM_DDR4_VDIVW_TOTAL" type="int">
           <ipxact:name>MEM_DDR4_VDIVW_TOTAL</ipxact:name>
           <ipxact:displayName>VdiVW_total</ipxact:displayName>
-          <ipxact:value>136</ipxact:value>
+          <ipxact:value>130</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="MEM_DDR4_TDQSQ_UI" type="real">
           <ipxact:name>MEM_DDR4_TDQSQ_UI</ipxact:name>
           <ipxact:displayName>tDQSQ</ipxact:displayName>
-          <ipxact:value>0.16</ipxact:value>
+          <ipxact:value>0.14</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="MEM_DDR4_TQH_UI" type="real">
           <ipxact:name>MEM_DDR4_TQH_UI</ipxact:name>
           <ipxact:displayName>tQH</ipxact:displayName>
-          <ipxact:value>0.76</ipxact:value>
+          <ipxact:value>0.74</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="MEM_DDR4_TDVWP_UI" type="real">
           <ipxact:name>MEM_DDR4_TDVWP_UI</ipxact:name>
@@ -4413,7 +4511,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="MEM_DDR4_TDQSCK_PS" type="int">
           <ipxact:name>MEM_DDR4_TDQSCK_PS</ipxact:name>
           <ipxact:displayName>tDQSCK</ipxact:displayName>
-          <ipxact:value>165</ipxact:value>
+          <ipxact:value>175</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="MEM_DDR4_TDQSS_CYC" type="real">
           <ipxact:name>MEM_DDR4_TDQSS_CYC</ipxact:name>
@@ -4423,7 +4521,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="MEM_DDR4_TQSH_CYC" type="real">
           <ipxact:name>MEM_DDR4_TQSH_CYC</ipxact:name>
           <ipxact:displayName>tQSH</ipxact:displayName>
-          <ipxact:value>0.38</ipxact:value>
+          <ipxact:value>0.4</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="MEM_DDR4_TDSH_CYC" type="real">
           <ipxact:name>MEM_DDR4_TDSH_CYC</ipxact:name>
@@ -4463,12 +4561,12 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="MEM_DDR4_TRCD_NS" type="real">
           <ipxact:name>MEM_DDR4_TRCD_NS</ipxact:name>
           <ipxact:displayName>tRCD</ipxact:displayName>
-          <ipxact:value>15.0</ipxact:value>
+          <ipxact:value>14.16</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="MEM_DDR4_TRP_NS" type="real">
           <ipxact:name>MEM_DDR4_TRP_NS</ipxact:name>
           <ipxact:displayName>tRP</ipxact:displayName>
-          <ipxact:value>15.0</ipxact:value>
+          <ipxact:value>14.16</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="MEM_DDR4_TREFI_US" type="real">
           <ipxact:name>MEM_DDR4_TREFI_US</ipxact:name>
@@ -4478,7 +4576,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="MEM_DDR4_TRFC_NS" type="real">
           <ipxact:name>MEM_DDR4_TRFC_NS</ipxact:name>
           <ipxact:displayName>tRFC</ipxact:displayName>
-          <ipxact:value>260.0</ipxact:value>
+          <ipxact:value>350.0</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="MEM_DDR4_TWR_NS" type="real">
           <ipxact:name>MEM_DDR4_TWR_NS</ipxact:name>
@@ -7148,7 +7246,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="CTRL_DDR4_ECC_EN" type="bit">
           <ipxact:name>CTRL_DDR4_ECC_EN</ipxact:name>
           <ipxact:displayName>Enable Error Detection and Correction Logic with ECC</ipxact:displayName>
-          <ipxact:value>false</ipxact:value>
+          <ipxact:value>true</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="CTRL_DDR4_ECC_AUTO_CORRECTION_EN" type="bit">
           <ipxact:name>CTRL_DDR4_ECC_AUTO_CORRECTION_EN</ipxact:name>
@@ -7188,7 +7286,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="CTRL_DDR4_POST_REFRESH_EN" type="bit">
           <ipxact:name>CTRL_DDR4_POST_REFRESH_EN</ipxact:name>
           <ipxact:displayName>Enable controller post-pay refresh</ipxact:displayName>
-          <ipxact:value>false</ipxact:value>
+          <ipxact:value>true</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="CTRL_DDR4_POST_REFRESH_LOWER_LIMIT" type="int">
           <ipxact:name>CTRL_DDR4_POST_REFRESH_LOWER_LIMIT</ipxact:name>
@@ -7738,7 +7836,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="DIAG_EXPORT_PLL_LOCKED" type="bit">
           <ipxact:name>DIAG_EXPORT_PLL_LOCKED</ipxact:name>
           <ipxact:displayName>Export PLL lock signal</ipxact:displayName>
-          <ipxact:value>false</ipxact:value>
+          <ipxact:value>true</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="DIAG_HMC_HRC" type="string">
           <ipxact:name>DIAG_HMC_HRC</ipxact:name>
@@ -7848,7 +7946,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="DIAG_DDR3_EXPORT_TG_CFG_AVALON_SLAVE" type="string">
           <ipxact:name>DIAG_DDR3_EXPORT_TG_CFG_AVALON_SLAVE</ipxact:name>
           <ipxact:displayName>TG2 Configuration Interface Mode</ipxact:displayName>
-          <ipxact:value>TG_CFG_AMM_EXPORT_MODE_JTAG</ipxact:value>
+          <ipxact:value>TG_CFG_AMM_EXPORT_MODE_EXPORT</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="DIAG_DDR3_TG2_TEST_DURATION" type="string">
           <ipxact:name>DIAG_DDR3_TG2_TEST_DURATION</ipxact:name>
@@ -7923,7 +8021,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="DIAG_DDR4_EXPORT_SEQ_AVALON_SLAVE" type="string">
           <ipxact:name>DIAG_DDR4_EXPORT_SEQ_AVALON_SLAVE</ipxact:name>
           <ipxact:displayName>Quartus Prime EMIF Debug Toolkit/On-Chip Debug Port</ipxact:displayName>
-          <ipxact:value>CAL_DEBUG_EXPORT_MODE_DISABLED</ipxact:value>
+          <ipxact:value>CAL_DEBUG_EXPORT_MODE_JTAG</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="DIAG_DDR4_EXPORT_SEQ_AVALON_MASTER" type="bit">
           <ipxact:name>DIAG_DDR4_EXPORT_SEQ_AVALON_MASTER</ipxact:name>
@@ -8008,7 +8106,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="DIAG_DDR4_EXPORT_TG_CFG_AVALON_SLAVE" type="string">
           <ipxact:name>DIAG_DDR4_EXPORT_TG_CFG_AVALON_SLAVE</ipxact:name>
           <ipxact:displayName>TG2 Configuration Interface Mode</ipxact:displayName>
-          <ipxact:value>TG_CFG_AMM_EXPORT_MODE_JTAG</ipxact:value>
+          <ipxact:value>TG_CFG_AMM_EXPORT_MODE_EXPORT</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="DIAG_DDR4_TG2_TEST_DURATION" type="string">
           <ipxact:name>DIAG_DDR4_TG2_TEST_DURATION</ipxact:name>
@@ -8173,7 +8271,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="DIAG_QDR2_EXPORT_TG_CFG_AVALON_SLAVE" type="string">
           <ipxact:name>DIAG_QDR2_EXPORT_TG_CFG_AVALON_SLAVE</ipxact:name>
           <ipxact:displayName>TG2 Configuration Interface Mode</ipxact:displayName>
-          <ipxact:value>TG_CFG_AMM_EXPORT_MODE_JTAG</ipxact:value>
+          <ipxact:value>TG_CFG_AMM_EXPORT_MODE_EXPORT</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="DIAG_QDR2_TG2_TEST_DURATION" type="string">
           <ipxact:name>DIAG_QDR2_TG2_TEST_DURATION</ipxact:name>
@@ -8298,7 +8396,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="DIAG_QDR4_EXPORT_TG_CFG_AVALON_SLAVE" type="string">
           <ipxact:name>DIAG_QDR4_EXPORT_TG_CFG_AVALON_SLAVE</ipxact:name>
           <ipxact:displayName>TG2 Configuration Interface Mode</ipxact:displayName>
-          <ipxact:value>TG_CFG_AMM_EXPORT_MODE_JTAG</ipxact:value>
+          <ipxact:value>TG_CFG_AMM_EXPORT_MODE_EXPORT</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="DIAG_QDR4_TG2_TEST_DURATION" type="string">
           <ipxact:name>DIAG_QDR4_TG2_TEST_DURATION</ipxact:name>
@@ -8428,7 +8526,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="DIAG_RLD2_EXPORT_TG_CFG_AVALON_SLAVE" type="string">
           <ipxact:name>DIAG_RLD2_EXPORT_TG_CFG_AVALON_SLAVE</ipxact:name>
           <ipxact:displayName>TG2 Configuration Interface Mode</ipxact:displayName>
-          <ipxact:value>TG_CFG_AMM_EXPORT_MODE_JTAG</ipxact:value>
+          <ipxact:value>TG_CFG_AMM_EXPORT_MODE_EXPORT</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="DIAG_RLD2_TG2_TEST_DURATION" type="string">
           <ipxact:name>DIAG_RLD2_TG2_TEST_DURATION</ipxact:name>
@@ -8553,7 +8651,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="DIAG_RLD3_EXPORT_TG_CFG_AVALON_SLAVE" type="string">
           <ipxact:name>DIAG_RLD3_EXPORT_TG_CFG_AVALON_SLAVE</ipxact:name>
           <ipxact:displayName>TG2 Configuration Interface Mode</ipxact:displayName>
-          <ipxact:value>TG_CFG_AMM_EXPORT_MODE_JTAG</ipxact:value>
+          <ipxact:value>TG_CFG_AMM_EXPORT_MODE_EXPORT</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="DIAG_RLD3_TG2_TEST_DURATION" type="string">
           <ipxact:name>DIAG_RLD3_TG2_TEST_DURATION</ipxact:name>
@@ -8688,7 +8786,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="DIAG_LPDDR3_EXPORT_TG_CFG_AVALON_SLAVE" type="string">
           <ipxact:name>DIAG_LPDDR3_EXPORT_TG_CFG_AVALON_SLAVE</ipxact:name>
           <ipxact:displayName>TG2 Configuration Interface Mode</ipxact:displayName>
-          <ipxact:value>TG_CFG_AMM_EXPORT_MODE_JTAG</ipxact:value>
+          <ipxact:value>TG_CFG_AMM_EXPORT_MODE_EXPORT</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="DIAG_LPDDR3_TG2_TEST_DURATION" type="string">
           <ipxact:name>DIAG_LPDDR3_TG2_TEST_DURATION</ipxact:name>
@@ -8813,12 +8911,12 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="DIAG_DDRT_ENABLE_DEFAULT_MODE" type="bit">
           <ipxact:name>DIAG_DDRT_ENABLE_DEFAULT_MODE</ipxact:name>
           <ipxact:displayName>Enable default traffic pattern (pattern configured during compile-time)</ipxact:displayName>
-          <ipxact:value>true</ipxact:value>
+          <ipxact:value>false</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="DIAG_DDRT_ENABLE_USER_MODE" type="bit">
           <ipxact:name>DIAG_DDRT_ENABLE_USER_MODE</ipxact:name>
           <ipxact:displayName>Enable user-configured traffic pattern (pattern configured during run-time)</ipxact:displayName>
-          <ipxact:value>false</ipxact:value>
+          <ipxact:value>true</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="DIAG_DDRT_EXPORT_TG_CFG_AVALON_SLAVE" type="string">
           <ipxact:name>DIAG_DDRT_EXPORT_TG_CFG_AVALON_SLAVE</ipxact:name>
@@ -9523,12 +9621,929 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="hideFromIPCatalog" type="bit">
           <ipxact:name>hideFromIPCatalog</ipxact:name>
           <ipxact:displayName>Hide from IP Catalog</ipxact:displayName>
-          <ipxact:value>true</ipxact:value>
+          <ipxact:value>false</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="lockedInterfaceDefinition" type="string">
           <ipxact:name>lockedInterfaceDefinition</ipxact:name>
           <ipxact:displayName>lockedInterfaceDefinition</ipxact:displayName>
-          <ipxact:value></ipxact:value>
+          <ipxact:value>&lt;boundaryDefinition&gt;
+    &lt;interfaces&gt;
+        &lt;interface&gt;
+            &lt;name&gt;local_reset_req&lt;/name&gt;
+            &lt;type&gt;conduit&lt;/type&gt;
+            &lt;isStart&gt;false&lt;/isStart&gt;
+            &lt;ports&gt;
+                &lt;port&gt;
+                    &lt;name&gt;local_reset_req&lt;/name&gt;
+                    &lt;role&gt;local_reset_req&lt;/role&gt;
+                    &lt;direction&gt;Input&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+            &lt;/ports&gt;
+            &lt;assignments&gt;
+                &lt;assignmentValueMap/&gt;
+            &lt;/assignments&gt;
+            &lt;parameters&gt;
+                &lt;parameterValueMap&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedClock&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedReset&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;prSafe&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                &lt;/parameterValueMap&gt;
+            &lt;/parameters&gt;
+        &lt;/interface&gt;
+        &lt;interface&gt;
+            &lt;name&gt;local_reset_status&lt;/name&gt;
+            &lt;type&gt;conduit&lt;/type&gt;
+            &lt;isStart&gt;false&lt;/isStart&gt;
+            &lt;ports&gt;
+                &lt;port&gt;
+                    &lt;name&gt;local_reset_done&lt;/name&gt;
+                    &lt;role&gt;local_reset_done&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+            &lt;/ports&gt;
+            &lt;assignments&gt;
+                &lt;assignmentValueMap/&gt;
+            &lt;/assignments&gt;
+            &lt;parameters&gt;
+                &lt;parameterValueMap&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedClock&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedReset&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;prSafe&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                &lt;/parameterValueMap&gt;
+            &lt;/parameters&gt;
+        &lt;/interface&gt;
+        &lt;interface&gt;
+            &lt;name&gt;pll_ref_clk&lt;/name&gt;
+            &lt;type&gt;clock&lt;/type&gt;
+            &lt;isStart&gt;false&lt;/isStart&gt;
+            &lt;ports&gt;
+                &lt;port&gt;
+                    &lt;name&gt;pll_ref_clk&lt;/name&gt;
+                    &lt;role&gt;clk&lt;/role&gt;
+                    &lt;direction&gt;Input&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+            &lt;/ports&gt;
+            &lt;assignments&gt;
+                &lt;assignmentValueMap/&gt;
+            &lt;/assignments&gt;
+            &lt;parameters&gt;
+                &lt;parameterValueMap&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;clockRate&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;externallyDriven&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;ptfSchematicName&lt;/key&gt;
+                    &lt;/entry&gt;
+                &lt;/parameterValueMap&gt;
+            &lt;/parameters&gt;
+        &lt;/interface&gt;
+        &lt;interface&gt;
+            &lt;name&gt;pll_locked&lt;/name&gt;
+            &lt;type&gt;conduit&lt;/type&gt;
+            &lt;isStart&gt;false&lt;/isStart&gt;
+            &lt;ports&gt;
+                &lt;port&gt;
+                    &lt;name&gt;pll_locked&lt;/name&gt;
+                    &lt;role&gt;pll_locked&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+            &lt;/ports&gt;
+            &lt;assignments&gt;
+                &lt;assignmentValueMap/&gt;
+            &lt;/assignments&gt;
+            &lt;parameters&gt;
+                &lt;parameterValueMap&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedClock&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedReset&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;prSafe&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                &lt;/parameterValueMap&gt;
+            &lt;/parameters&gt;
+        &lt;/interface&gt;
+        &lt;interface&gt;
+            &lt;name&gt;oct&lt;/name&gt;
+            &lt;type&gt;conduit&lt;/type&gt;
+            &lt;isStart&gt;false&lt;/isStart&gt;
+            &lt;ports&gt;
+                &lt;port&gt;
+                    &lt;name&gt;oct_rzqin&lt;/name&gt;
+                    &lt;role&gt;oct_rzqin&lt;/role&gt;
+                    &lt;direction&gt;Input&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+            &lt;/ports&gt;
+            &lt;assignments&gt;
+                &lt;assignmentValueMap/&gt;
+            &lt;/assignments&gt;
+            &lt;parameters&gt;
+                &lt;parameterValueMap&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedClock&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedReset&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;prSafe&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                &lt;/parameterValueMap&gt;
+            &lt;/parameters&gt;
+        &lt;/interface&gt;
+        &lt;interface&gt;
+            &lt;name&gt;mem&lt;/name&gt;
+            &lt;type&gt;conduit&lt;/type&gt;
+            &lt;isStart&gt;false&lt;/isStart&gt;
+            &lt;ports&gt;
+                &lt;port&gt;
+                    &lt;name&gt;mem_ck&lt;/name&gt;
+                    &lt;role&gt;mem_ck&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;mem_ck_n&lt;/name&gt;
+                    &lt;role&gt;mem_ck_n&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;mem_a&lt;/name&gt;
+                    &lt;role&gt;mem_a&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;17&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;mem_act_n&lt;/name&gt;
+                    &lt;role&gt;mem_act_n&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;mem_ba&lt;/name&gt;
+                    &lt;role&gt;mem_ba&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;2&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;mem_bg&lt;/name&gt;
+                    &lt;role&gt;mem_bg&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;2&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;mem_cke&lt;/name&gt;
+                    &lt;role&gt;mem_cke&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;mem_cs_n&lt;/name&gt;
+                    &lt;role&gt;mem_cs_n&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;mem_odt&lt;/name&gt;
+                    &lt;role&gt;mem_odt&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;mem_reset_n&lt;/name&gt;
+                    &lt;role&gt;mem_reset_n&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;mem_par&lt;/name&gt;
+                    &lt;role&gt;mem_par&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;mem_alert_n&lt;/name&gt;
+                    &lt;role&gt;mem_alert_n&lt;/role&gt;
+                    &lt;direction&gt;Input&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;mem_dqs&lt;/name&gt;
+                    &lt;role&gt;mem_dqs&lt;/role&gt;
+                    &lt;direction&gt;Bidir&lt;/direction&gt;
+                    &lt;width&gt;9&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;mem_dqs_n&lt;/name&gt;
+                    &lt;role&gt;mem_dqs_n&lt;/role&gt;
+                    &lt;direction&gt;Bidir&lt;/direction&gt;
+                    &lt;width&gt;9&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;mem_dq&lt;/name&gt;
+                    &lt;role&gt;mem_dq&lt;/role&gt;
+                    &lt;direction&gt;Bidir&lt;/direction&gt;
+                    &lt;width&gt;72&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;mem_dbi_n&lt;/name&gt;
+                    &lt;role&gt;mem_dbi_n&lt;/role&gt;
+                    &lt;direction&gt;Bidir&lt;/direction&gt;
+                    &lt;width&gt;9&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+            &lt;/ports&gt;
+            &lt;assignments&gt;
+                &lt;assignmentValueMap/&gt;
+            &lt;/assignments&gt;
+            &lt;parameters&gt;
+                &lt;parameterValueMap&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedClock&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedReset&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;prSafe&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                &lt;/parameterValueMap&gt;
+            &lt;/parameters&gt;
+        &lt;/interface&gt;
+        &lt;interface&gt;
+            &lt;name&gt;status&lt;/name&gt;
+            &lt;type&gt;conduit&lt;/type&gt;
+            &lt;isStart&gt;false&lt;/isStart&gt;
+            &lt;ports&gt;
+                &lt;port&gt;
+                    &lt;name&gt;local_cal_success&lt;/name&gt;
+                    &lt;role&gt;local_cal_success&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;local_cal_fail&lt;/name&gt;
+                    &lt;role&gt;local_cal_fail&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+            &lt;/ports&gt;
+            &lt;assignments&gt;
+                &lt;assignmentValueMap/&gt;
+            &lt;/assignments&gt;
+            &lt;parameters&gt;
+                &lt;parameterValueMap&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedClock&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedReset&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;prSafe&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                &lt;/parameterValueMap&gt;
+            &lt;/parameters&gt;
+        &lt;/interface&gt;
+        &lt;interface&gt;
+            &lt;name&gt;emif_calbus&lt;/name&gt;
+            &lt;type&gt;conduit&lt;/type&gt;
+            &lt;isStart&gt;false&lt;/isStart&gt;
+            &lt;ports&gt;
+                &lt;port&gt;
+                    &lt;name&gt;calbus_read&lt;/name&gt;
+                    &lt;role&gt;calbus_read&lt;/role&gt;
+                    &lt;direction&gt;Input&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;calbus_write&lt;/name&gt;
+                    &lt;role&gt;calbus_write&lt;/role&gt;
+                    &lt;direction&gt;Input&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;calbus_address&lt;/name&gt;
+                    &lt;role&gt;calbus_address&lt;/role&gt;
+                    &lt;direction&gt;Input&lt;/direction&gt;
+                    &lt;width&gt;20&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;calbus_wdata&lt;/name&gt;
+                    &lt;role&gt;calbus_wdata&lt;/role&gt;
+                    &lt;direction&gt;Input&lt;/direction&gt;
+                    &lt;width&gt;32&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;calbus_rdata&lt;/name&gt;
+                    &lt;role&gt;calbus_rdata&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;32&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;calbus_seq_param_tbl&lt;/name&gt;
+                    &lt;role&gt;calbus_seq_param_tbl&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;4096&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+            &lt;/ports&gt;
+            &lt;assignments&gt;
+                &lt;assignmentValueMap/&gt;
+            &lt;/assignments&gt;
+            &lt;parameters&gt;
+                &lt;parameterValueMap&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedClock&lt;/key&gt;
+                        &lt;value&gt;emif_calbus_clk&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedReset&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;prSafe&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                &lt;/parameterValueMap&gt;
+            &lt;/parameters&gt;
+        &lt;/interface&gt;
+        &lt;interface&gt;
+            &lt;name&gt;emif_calbus_clk&lt;/name&gt;
+            &lt;type&gt;clock&lt;/type&gt;
+            &lt;isStart&gt;false&lt;/isStart&gt;
+            &lt;ports&gt;
+                &lt;port&gt;
+                    &lt;name&gt;calbus_clk&lt;/name&gt;
+                    &lt;role&gt;clk&lt;/role&gt;
+                    &lt;direction&gt;Input&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+            &lt;/ports&gt;
+            &lt;assignments&gt;
+                &lt;assignmentValueMap/&gt;
+            &lt;/assignments&gt;
+            &lt;parameters&gt;
+                &lt;parameterValueMap&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;clockRate&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;externallyDriven&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;ptfSchematicName&lt;/key&gt;
+                    &lt;/entry&gt;
+                &lt;/parameterValueMap&gt;
+            &lt;/parameters&gt;
+        &lt;/interface&gt;
+        &lt;interface&gt;
+            &lt;name&gt;emif_usr_reset_n&lt;/name&gt;
+            &lt;type&gt;reset&lt;/type&gt;
+            &lt;isStart&gt;true&lt;/isStart&gt;
+            &lt;ports&gt;
+                &lt;port&gt;
+                    &lt;name&gt;emif_usr_reset_n&lt;/name&gt;
+                    &lt;role&gt;reset_n&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+            &lt;/ports&gt;
+            &lt;assignments&gt;
+                &lt;assignmentValueMap/&gt;
+            &lt;/assignments&gt;
+            &lt;parameters&gt;
+                &lt;parameterValueMap&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedClock&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedDirectReset&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedResetSinks&lt;/key&gt;
+                        &lt;value&gt;none&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;synchronousEdges&lt;/key&gt;
+                        &lt;value&gt;NONE&lt;/value&gt;
+                    &lt;/entry&gt;
+                &lt;/parameterValueMap&gt;
+            &lt;/parameters&gt;
+        &lt;/interface&gt;
+        &lt;interface&gt;
+            &lt;name&gt;emif_usr_clk&lt;/name&gt;
+            &lt;type&gt;clock&lt;/type&gt;
+            &lt;isStart&gt;true&lt;/isStart&gt;
+            &lt;ports&gt;
+                &lt;port&gt;
+                    &lt;name&gt;emif_usr_clk&lt;/name&gt;
+                    &lt;role&gt;clk&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+            &lt;/ports&gt;
+            &lt;assignments&gt;
+                &lt;assignmentValueMap/&gt;
+            &lt;/assignments&gt;
+            &lt;parameters&gt;
+                &lt;parameterValueMap&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedDirectClock&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;clockRate&lt;/key&gt;
+                        &lt;value&gt;300000000&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;clockRateKnown&lt;/key&gt;
+                        &lt;value&gt;true&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;externallyDriven&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;ptfSchematicName&lt;/key&gt;
+                    &lt;/entry&gt;
+                &lt;/parameterValueMap&gt;
+            &lt;/parameters&gt;
+        &lt;/interface&gt;
+        &lt;interface&gt;
+            &lt;name&gt;ctrl_ecc_user_interrupt_0&lt;/name&gt;
+            &lt;type&gt;conduit&lt;/type&gt;
+            &lt;isStart&gt;false&lt;/isStart&gt;
+            &lt;ports&gt;
+                &lt;port&gt;
+                    &lt;name&gt;ctrl_ecc_user_interrupt_0&lt;/name&gt;
+                    &lt;role&gt;ctrl_ecc_user_interrupt&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+            &lt;/ports&gt;
+            &lt;assignments&gt;
+                &lt;assignmentValueMap/&gt;
+            &lt;/assignments&gt;
+            &lt;parameters&gt;
+                &lt;parameterValueMap&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedClock&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedReset&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;prSafe&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                &lt;/parameterValueMap&gt;
+            &lt;/parameters&gt;
+        &lt;/interface&gt;
+        &lt;interface&gt;
+            &lt;name&gt;ctrl_amm_0&lt;/name&gt;
+            &lt;type&gt;avalon&lt;/type&gt;
+            &lt;isStart&gt;false&lt;/isStart&gt;
+            &lt;ports&gt;
+                &lt;port&gt;
+                    &lt;name&gt;amm_ready_0&lt;/name&gt;
+                    &lt;role&gt;waitrequest_n&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;amm_read_0&lt;/name&gt;
+                    &lt;role&gt;read&lt;/role&gt;
+                    &lt;direction&gt;Input&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;amm_write_0&lt;/name&gt;
+                    &lt;role&gt;write&lt;/role&gt;
+                    &lt;direction&gt;Input&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;amm_address_0&lt;/name&gt;
+                    &lt;role&gt;address&lt;/role&gt;
+                    &lt;direction&gt;Input&lt;/direction&gt;
+                    &lt;width&gt;27&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;amm_readdata_0&lt;/name&gt;
+                    &lt;role&gt;readdata&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;512&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;amm_writedata_0&lt;/name&gt;
+                    &lt;role&gt;writedata&lt;/role&gt;
+                    &lt;direction&gt;Input&lt;/direction&gt;
+                    &lt;width&gt;512&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;amm_burstcount_0&lt;/name&gt;
+                    &lt;role&gt;burstcount&lt;/role&gt;
+                    &lt;direction&gt;Input&lt;/direction&gt;
+                    &lt;width&gt;7&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;amm_byteenable_0&lt;/name&gt;
+                    &lt;role&gt;byteenable&lt;/role&gt;
+                    &lt;direction&gt;Input&lt;/direction&gt;
+                    &lt;width&gt;64&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;amm_readdatavalid_0&lt;/name&gt;
+                    &lt;role&gt;readdatavalid&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+            &lt;/ports&gt;
+            &lt;assignments&gt;
+                &lt;assignmentValueMap&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;embeddedsw.configuration.isFlash&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;embeddedsw.configuration.isMemoryDevice&lt;/key&gt;
+                        &lt;value&gt;1&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;embeddedsw.configuration.isNonVolatileStorage&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;embeddedsw.configuration.isPrintableDevice&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                &lt;/assignmentValueMap&gt;
+            &lt;/assignments&gt;
+            &lt;parameters&gt;
+                &lt;parameterValueMap&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;addressAlignment&lt;/key&gt;
+                        &lt;value&gt;DYNAMIC&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;addressGroup&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;addressSpan&lt;/key&gt;
+                        &lt;value&gt;8589934592&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;addressUnits&lt;/key&gt;
+                        &lt;value&gt;WORDS&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;alwaysBurstMaxBurst&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedClock&lt;/key&gt;
+                        &lt;value&gt;emif_usr_clk&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedReset&lt;/key&gt;
+                        &lt;value&gt;emif_usr_reset_n&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;bitsPerSymbol&lt;/key&gt;
+                        &lt;value&gt;8&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;bridgedAddressOffset&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;bridgesToMaster&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;burstOnBurstBoundariesOnly&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;burstcountUnits&lt;/key&gt;
+                        &lt;value&gt;WORDS&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;constantBurstBehavior&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;explicitAddressSpan&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;holdTime&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;interleaveBursts&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;isBigEndian&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;isFlash&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;isMemoryDevice&lt;/key&gt;
+                        &lt;value&gt;true&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;isNonVolatileStorage&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;linewrapBursts&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;maximumPendingReadTransactions&lt;/key&gt;
+                        &lt;value&gt;64&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;maximumPendingWriteTransactions&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;minimumReadLatency&lt;/key&gt;
+                        &lt;value&gt;1&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;minimumResponseLatency&lt;/key&gt;
+                        &lt;value&gt;1&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;minimumUninterruptedRunLength&lt;/key&gt;
+                        &lt;value&gt;1&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;prSafe&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;printableDevice&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;readLatency&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;readWaitStates&lt;/key&gt;
+                        &lt;value&gt;1&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;readWaitTime&lt;/key&gt;
+                        &lt;value&gt;1&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;registerIncomingSignals&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;registerOutgoingSignals&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;setupTime&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;timingUnits&lt;/key&gt;
+                        &lt;value&gt;Cycles&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;transparentBridge&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;waitrequestAllowance&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;wellBehavedWaitrequest&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;writeLatency&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;writeWaitStates&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;writeWaitTime&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;dfhFeatureGuid&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;dfhGroupId&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;dfhParameterId&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;dfhParameterName&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;dfhParameterVersion&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;dfhParameterData&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;dfhParameterDataLength&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;dfhFeatureMajorVersion&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;dfhFeatureMinorVersion&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;dfhFeatureId&lt;/key&gt;
+                        &lt;value&gt;35&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;dfhFeatureType&lt;/key&gt;
+                        &lt;value&gt;3&lt;/value&gt;
+                    &lt;/entry&gt;
+                &lt;/parameterValueMap&gt;
+            &lt;/parameters&gt;
+        &lt;/interface&gt;
+    &lt;/interfaces&gt;
+&lt;/boundaryDefinition&gt;</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="systemInfos" type="string">
           <ipxact:name>systemInfos</ipxact:name>
@@ -9543,15 +10558,15 @@ https://fpgasoftware.intel.com/eula.-->
                 &lt;consumedSystemInfos&gt;
                     &lt;entry&gt;
                         &lt;key&gt;ADDRESS_MAP&lt;/key&gt;
-                        &lt;value&gt;&amp;lt;address-map&amp;gt;&amp;lt;slave name='ctrl_amm_0' start='0x0' end='0x80000000' datawidth='128' /&amp;gt;&amp;lt;/address-map&amp;gt;&lt;/value&gt;
+                        &lt;value&gt;&amp;lt;address-map&amp;gt;&amp;lt;slave name='ctrl_amm_0' start='0x0' end='0x200000000' datawidth='512' /&amp;gt;&amp;lt;/address-map&amp;gt;&lt;/value&gt;
                     &lt;/entry&gt;
                     &lt;entry&gt;
                         &lt;key&gt;ADDRESS_WIDTH&lt;/key&gt;
-                        &lt;value&gt;31&lt;/value&gt;
+                        &lt;value&gt;33&lt;/value&gt;
                     &lt;/entry&gt;
                     &lt;entry&gt;
                         &lt;key&gt;MAX_SLAVE_DATA_WIDTH&lt;/key&gt;
-                        &lt;value&gt;128&lt;/value&gt;
+                        &lt;value&gt;512&lt;/value&gt;
                     &lt;/entry&gt;
                 &lt;/consumedSystemInfos&gt;
             &lt;/value&gt;
@@ -9585,13 +10600,13 @@ https://fpgasoftware.intel.com/eula.-->
     &lt;cpuGroups/&gt;
     &lt;exportedModules&gt;
         &lt;entry&gt;
-            &lt;key&gt;arch&lt;/key&gt;
+            &lt;key&gt;ecc_core&lt;/key&gt;
             &lt;value&gt;
                 &lt;moduleInfo&gt;
-                    &lt;name&gt;arch&lt;/name&gt;
-                    &lt;kind&gt;altera_emif_arch_fm&lt;/kind&gt;
+                    &lt;name&gt;ecc_core&lt;/name&gt;
+                    &lt;kind&gt;altera_emif_ecc&lt;/kind&gt;
                     &lt;version&gt;19.1&lt;/version&gt;
-                    &lt;path&gt;arch&lt;/path&gt;
+                    &lt;path&gt;ecc_core&lt;/path&gt;
                     &lt;assignments/&gt;
                     &lt;irqReceiverNames/&gt;
                     &lt;masterNames/&gt;
@@ -9601,7 +10616,7 @@ https://fpgasoftware.intel.com/eula.-->
                         &lt;interfaceName&gt;ctrl_amm_0&lt;/interfaceName&gt;
                         &lt;connectedInterfaceName&gt;ctrl_amm_0&lt;/connectedInterfaceName&gt;
                         &lt;baseAddress&gt;0&lt;/baseAddress&gt;
-                        &lt;span&gt;2147483648&lt;/span&gt;
+                        &lt;span&gt;8589934592&lt;/span&gt;
                         &lt;addressGroup&gt;0&lt;/addressGroup&gt;
                         &lt;isBigEndian&gt;false&lt;/isBigEndian&gt;
                         &lt;assignments&gt;
@@ -9610,8 +10625,16 @@ https://fpgasoftware.intel.com/eula.-->
                                 &lt;value&gt;0&lt;/value&gt;
                             &lt;/entry&gt;
                             &lt;entry&gt;
+                                &lt;key&gt;embeddedsw.configuration.isFlash&lt;/key&gt;
+                                &lt;value&gt;0&lt;/value&gt;
+                            &lt;/entry&gt;
+                            &lt;entry&gt;
                                 &lt;key&gt;embeddedsw.configuration.isMemoryDevice&lt;/key&gt;
                                 &lt;value&gt;1&lt;/value&gt;
+                            &lt;/entry&gt;
+                            &lt;entry&gt;
+                                &lt;key&gt;embeddedsw.configuration.isPrintableDevice&lt;/key&gt;
+                                &lt;value&gt;0&lt;/value&gt;
                             &lt;/entry&gt;
                         &lt;/assignments&gt;
                     &lt;/slaveInterfaceInfo&gt;
@@ -9640,7 +10663,9 @@ https://fpgasoftware.intel.com/eula.-->
         <altera:port_mapping altera:name="amm_write_0" altera:internal="amm_write_0"></altera:port_mapping>
         <altera:port_mapping altera:name="amm_writedata_0" altera:internal="amm_writedata_0"></altera:port_mapping>
       </altera:interface_mapping>
-      <altera:interface_mapping altera:name="ctrl_ecc_user_interrupt_0" altera:internal="emif_fm_0.ctrl_ecc_user_interrupt_0"></altera:interface_mapping>
+      <altera:interface_mapping altera:name="ctrl_ecc_user_interrupt_0" altera:internal="emif_fm_0.ctrl_ecc_user_interrupt_0" altera:type="conduit" altera:dir="end">
+        <altera:port_mapping altera:name="ctrl_ecc_user_interrupt_0" altera:internal="ctrl_ecc_user_interrupt_0"></altera:port_mapping>
+      </altera:interface_mapping>
       <altera:interface_mapping altera:name="emif_calbus" altera:internal="emif_fm_0.emif_calbus" altera:type="conduit" altera:dir="end">
         <altera:port_mapping altera:name="calbus_address" altera:internal="calbus_address"></altera:port_mapping>
         <altera:port_mapping altera:name="calbus_rdata" altera:internal="calbus_rdata"></altera:port_mapping>
@@ -9665,29 +10690,31 @@ https://fpgasoftware.intel.com/eula.-->
         <altera:port_mapping altera:name="local_reset_done" altera:internal="local_reset_done"></altera:port_mapping>
       </altera:interface_mapping>
       <altera:interface_mapping altera:name="mem" altera:internal="emif_fm_0.mem" altera:type="conduit" altera:dir="end">
-        <altera:port_mapping altera:name="emif_fm_0_mem_mem_a" altera:internal="mem_a"></altera:port_mapping>
-        <altera:port_mapping altera:name="emif_fm_0_mem_mem_act_n" altera:internal="mem_act_n"></altera:port_mapping>
-        <altera:port_mapping altera:name="emif_fm_0_mem_mem_alert_n" altera:internal="mem_alert_n"></altera:port_mapping>
-        <altera:port_mapping altera:name="emif_fm_0_mem_mem_ba" altera:internal="mem_ba"></altera:port_mapping>
-        <altera:port_mapping altera:name="emif_fm_0_mem_mem_bg" altera:internal="mem_bg"></altera:port_mapping>
-        <altera:port_mapping altera:name="emif_fm_0_mem_mem_ck" altera:internal="mem_ck"></altera:port_mapping>
-        <altera:port_mapping altera:name="emif_fm_0_mem_mem_ck_n" altera:internal="mem_ck_n"></altera:port_mapping>
-        <altera:port_mapping altera:name="emif_fm_0_mem_mem_cke" altera:internal="mem_cke"></altera:port_mapping>
-        <altera:port_mapping altera:name="emif_fm_0_mem_mem_cs_n" altera:internal="mem_cs_n"></altera:port_mapping>
-        <altera:port_mapping altera:name="emif_fm_0_mem_mem_dbi_n" altera:internal="mem_dbi_n"></altera:port_mapping>
-        <altera:port_mapping altera:name="emif_fm_0_mem_mem_dq" altera:internal="mem_dq"></altera:port_mapping>
-        <altera:port_mapping altera:name="emif_fm_0_mem_mem_dqs" altera:internal="mem_dqs"></altera:port_mapping>
-        <altera:port_mapping altera:name="emif_fm_0_mem_mem_dqs_n" altera:internal="mem_dqs_n"></altera:port_mapping>
-        <altera:port_mapping altera:name="emif_fm_0_mem_mem_odt" altera:internal="mem_odt"></altera:port_mapping>
-        <altera:port_mapping altera:name="emif_fm_0_mem_mem_par" altera:internal="mem_par"></altera:port_mapping>
-        <altera:port_mapping altera:name="emif_fm_0_mem_mem_reset_n" altera:internal="mem_reset_n"></altera:port_mapping>
+        <altera:port_mapping altera:name="mem_a" altera:internal="mem_a"></altera:port_mapping>
+        <altera:port_mapping altera:name="mem_act_n" altera:internal="mem_act_n"></altera:port_mapping>
+        <altera:port_mapping altera:name="mem_alert_n" altera:internal="mem_alert_n"></altera:port_mapping>
+        <altera:port_mapping altera:name="mem_ba" altera:internal="mem_ba"></altera:port_mapping>
+        <altera:port_mapping altera:name="mem_bg" altera:internal="mem_bg"></altera:port_mapping>
+        <altera:port_mapping altera:name="mem_ck" altera:internal="mem_ck"></altera:port_mapping>
+        <altera:port_mapping altera:name="mem_ck_n" altera:internal="mem_ck_n"></altera:port_mapping>
+        <altera:port_mapping altera:name="mem_cke" altera:internal="mem_cke"></altera:port_mapping>
+        <altera:port_mapping altera:name="mem_cs_n" altera:internal="mem_cs_n"></altera:port_mapping>
+        <altera:port_mapping altera:name="mem_dbi_n" altera:internal="mem_dbi_n"></altera:port_mapping>
+        <altera:port_mapping altera:name="mem_dq" altera:internal="mem_dq"></altera:port_mapping>
+        <altera:port_mapping altera:name="mem_dqs" altera:internal="mem_dqs"></altera:port_mapping>
+        <altera:port_mapping altera:name="mem_dqs_n" altera:internal="mem_dqs_n"></altera:port_mapping>
+        <altera:port_mapping altera:name="mem_odt" altera:internal="mem_odt"></altera:port_mapping>
+        <altera:port_mapping altera:name="mem_par" altera:internal="mem_par"></altera:port_mapping>
+        <altera:port_mapping altera:name="mem_reset_n" altera:internal="mem_reset_n"></altera:port_mapping>
       </altera:interface_mapping>
       <altera:interface_mapping altera:name="oct" altera:internal="emif_fm_0.oct" altera:type="conduit" altera:dir="end">
-        <altera:port_mapping altera:name="emif_fm_0_oct_oct_rzqin" altera:internal="oct_rzqin"></altera:port_mapping>
+        <altera:port_mapping altera:name="oct_rzqin" altera:internal="oct_rzqin"></altera:port_mapping>
       </altera:interface_mapping>
-      <altera:interface_mapping altera:name="pll_locked" altera:internal="emif_fm_0.pll_locked"></altera:interface_mapping>
+      <altera:interface_mapping altera:name="pll_locked" altera:internal="emif_fm_0.pll_locked" altera:type="conduit" altera:dir="end">
+        <altera:port_mapping altera:name="pll_locked" altera:internal="pll_locked"></altera:port_mapping>
+      </altera:interface_mapping>
       <altera:interface_mapping altera:name="pll_ref_clk" altera:internal="emif_fm_0.pll_ref_clk" altera:type="clock" altera:dir="end">
-        <altera:port_mapping altera:name="emif_fm_0_pll_ref_clk_clk" altera:internal="pll_ref_clk"></altera:port_mapping>
+        <altera:port_mapping altera:name="pll_ref_clk" altera:internal="pll_ref_clk"></altera:port_mapping>
       </altera:interface_mapping>
       <altera:interface_mapping altera:name="status" altera:internal="emif_fm_0.status" altera:type="conduit" altera:dir="end">
         <altera:port_mapping altera:name="local_cal_fail" altera:internal="local_cal_fail"></altera:port_mapping>
@@ -9702,7 +10729,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:version>1.0</ipxact:version>
         <ipxact:busInterfaces>
           <ipxact:busInterface>
-            <ipxact:name>arch.ctrl_amm_0</ipxact:name>
+            <ipxact:name>ecc_core.ctrl_amm_0</ipxact:name>
             <ipxact:busType vendor="intel" library="intel" name="avalon" version="24.1"></ipxact:busType>
             <ipxact:slave></ipxact:slave>
           </ipxact:busInterface>

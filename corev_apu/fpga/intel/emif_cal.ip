@@ -142,75 +142,6 @@ https://fpgasoftware.intel.com/eula.-->
         </ipxact:parameter>
       </ipxact:parameters>
     </ipxact:busInterface>
-    <ipxact:busInterface>
-      <ipxact:name>cal_debug_clk</ipxact:name>
-      <ipxact:busType vendor="intel" library="intel" name="clock" version="24.1"></ipxact:busType>
-      <ipxact:abstractionTypes>
-        <ipxact:abstractionType>
-          <ipxact:abstractionRef vendor="intel" library="intel" name="clock" version="24.1"></ipxact:abstractionRef>
-          <ipxact:portMaps>
-            <ipxact:portMap>
-              <ipxact:logicalPort>
-                <ipxact:name>clk</ipxact:name>
-              </ipxact:logicalPort>
-              <ipxact:physicalPort>
-                <ipxact:name>cal_debug_clk_clk</ipxact:name>
-              </ipxact:physicalPort>
-            </ipxact:portMap>
-          </ipxact:portMaps>
-        </ipxact:abstractionType>
-      </ipxact:abstractionTypes>
-      <ipxact:slave></ipxact:slave>
-      <ipxact:parameters>
-        <ipxact:parameter parameterId="clockRate" type="longint">
-          <ipxact:name>clockRate</ipxact:name>
-          <ipxact:displayName>Clock rate</ipxact:displayName>
-          <ipxact:value>0</ipxact:value>
-        </ipxact:parameter>
-        <ipxact:parameter parameterId="externallyDriven" type="bit">
-          <ipxact:name>externallyDriven</ipxact:name>
-          <ipxact:displayName>Externally driven</ipxact:displayName>
-          <ipxact:value>false</ipxact:value>
-        </ipxact:parameter>
-        <ipxact:parameter parameterId="ptfSchematicName" type="string">
-          <ipxact:name>ptfSchematicName</ipxact:name>
-          <ipxact:displayName>PTF schematic name</ipxact:displayName>
-          <ipxact:value></ipxact:value>
-        </ipxact:parameter>
-      </ipxact:parameters>
-    </ipxact:busInterface>
-    <ipxact:busInterface>
-      <ipxact:name>cal_debug_reset_n</ipxact:name>
-      <ipxact:busType vendor="intel" library="intel" name="reset" version="24.1"></ipxact:busType>
-      <ipxact:abstractionTypes>
-        <ipxact:abstractionType>
-          <ipxact:abstractionRef vendor="intel" library="intel" name="reset" version="24.1"></ipxact:abstractionRef>
-          <ipxact:portMaps>
-            <ipxact:portMap>
-              <ipxact:logicalPort>
-                <ipxact:name>reset</ipxact:name>
-              </ipxact:logicalPort>
-              <ipxact:physicalPort>
-                <ipxact:name>cal_debug_reset_n_reset</ipxact:name>
-              </ipxact:physicalPort>
-            </ipxact:portMap>
-          </ipxact:portMaps>
-        </ipxact:abstractionType>
-      </ipxact:abstractionTypes>
-      <ipxact:slave></ipxact:slave>
-      <ipxact:parameters>
-        <ipxact:parameter parameterId="associatedClock" type="string">
-          <ipxact:name>associatedClock</ipxact:name>
-          <ipxact:displayName>Associated clock</ipxact:displayName>
-          <ipxact:value>cal_debug_clk</ipxact:value>
-        </ipxact:parameter>
-        <ipxact:parameter parameterId="synchronousEdges" type="string">
-          <ipxact:name>synchronousEdges</ipxact:name>
-          <ipxact:displayName>Synchronous edges</ipxact:displayName>
-          <ipxact:value>DEASSERT</ipxact:value>
-        </ipxact:parameter>
-      </ipxact:parameters>
-    </ipxact:busInterface>
   </ipxact:busInterfaces>
   <ipxact:model>
     <ipxact:views>
@@ -227,6 +158,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:fileSetRef>
           <ipxact:localName>QUARTUS_SYNTH</ipxact:localName>
         </ipxact:fileSetRef>
+        <ipxact:parameters></ipxact:parameters>
       </ipxact:componentInstantiation>
     </ipxact:instantiations>
     <ipxact:ports>
@@ -234,6 +166,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:name>calbus_read_0</ipxact:name>
         <ipxact:wire>
           <ipxact:direction>out</ipxact:direction>
+          <ipxact:vectors></ipxact:vectors>
           <ipxact:wireTypeDefs>
             <ipxact:wireTypeDef>
               <ipxact:typeName>STD_LOGIC</ipxact:typeName>
@@ -246,6 +179,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:name>calbus_write_0</ipxact:name>
         <ipxact:wire>
           <ipxact:direction>out</ipxact:direction>
+          <ipxact:vectors></ipxact:vectors>
           <ipxact:wireTypeDefs>
             <ipxact:wireTypeDef>
               <ipxact:typeName>STD_LOGIC</ipxact:typeName>
@@ -330,30 +264,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:name>calbus_clk</ipxact:name>
         <ipxact:wire>
           <ipxact:direction>out</ipxact:direction>
-          <ipxact:wireTypeDefs>
-            <ipxact:wireTypeDef>
-              <ipxact:typeName>STD_LOGIC</ipxact:typeName>
-              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
-            </ipxact:wireTypeDef>
-          </ipxact:wireTypeDefs>
-        </ipxact:wire>
-      </ipxact:port>
-      <ipxact:port>
-        <ipxact:name>cal_debug_clk_clk</ipxact:name>
-        <ipxact:wire>
-          <ipxact:direction>in</ipxact:direction>
-          <ipxact:wireTypeDefs>
-            <ipxact:wireTypeDef>
-              <ipxact:typeName>STD_LOGIC</ipxact:typeName>
-              <ipxact:viewRef>QUARTUS_SYNTH</ipxact:viewRef>
-            </ipxact:wireTypeDef>
-          </ipxact:wireTypeDefs>
-        </ipxact:wire>
-      </ipxact:port>
-      <ipxact:port>
-        <ipxact:name>cal_debug_reset_n_reset</ipxact:name>
-        <ipxact:wire>
-          <ipxact:direction>in</ipxact:direction>
+          <ipxact:vectors></ipxact:vectors>
           <ipxact:wireTypeDefs>
             <ipxact:wireTypeDef>
               <ipxact:typeName>STD_LOGIC</ipxact:typeName>
@@ -391,7 +302,7 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="DIAG_EXPORT_SEQ_AVALON_SLAVE" type="string">
           <ipxact:name>DIAG_EXPORT_SEQ_AVALON_SLAVE</ipxact:name>
           <ipxact:displayName>Quartus Prime EMIF Debug Toolkit/On-Chip Debug Port</ipxact:displayName>
-          <ipxact:value>CAL_DEBUG_EXPORT_MODE_JTAG</ipxact:value>
+          <ipxact:value>CAL_DEBUG_EXPORT_MODE_DISABLED</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="DIAG_SIM_VERBOSE" type="bit">
           <ipxact:name>DIAG_SIM_VERBOSE</ipxact:name>
@@ -487,6 +398,14 @@ https://fpgasoftware.intel.com/eula.-->
           <ipxact:displayName>bonusData</ipxact:displayName>
           <ipxact:value>bonusData 
 {
+   element $system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Agilex 7";
+         type = "String";
+      }
+   }
    element emif_cal_0
    {
       datum _sortIndex
@@ -506,7 +425,130 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:parameter parameterId="lockedInterfaceDefinition" type="string">
           <ipxact:name>lockedInterfaceDefinition</ipxact:name>
           <ipxact:displayName>lockedInterfaceDefinition</ipxact:displayName>
-          <ipxact:value></ipxact:value>
+          <ipxact:value>&lt;boundaryDefinition&gt;
+    &lt;interfaces&gt;
+        &lt;interface&gt;
+            &lt;name&gt;emif_calbus_0&lt;/name&gt;
+            &lt;type&gt;conduit&lt;/type&gt;
+            &lt;isStart&gt;false&lt;/isStart&gt;
+            &lt;ports&gt;
+                &lt;port&gt;
+                    &lt;name&gt;calbus_read_0&lt;/name&gt;
+                    &lt;role&gt;calbus_read&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;calbus_write_0&lt;/name&gt;
+                    &lt;role&gt;calbus_write&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;calbus_address_0&lt;/name&gt;
+                    &lt;role&gt;calbus_address&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;20&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;calbus_wdata_0&lt;/name&gt;
+                    &lt;role&gt;calbus_wdata&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;32&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;calbus_rdata_0&lt;/name&gt;
+                    &lt;role&gt;calbus_rdata&lt;/role&gt;
+                    &lt;direction&gt;Input&lt;/direction&gt;
+                    &lt;width&gt;32&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+                &lt;port&gt;
+                    &lt;name&gt;calbus_seq_param_tbl_0&lt;/name&gt;
+                    &lt;role&gt;calbus_seq_param_tbl&lt;/role&gt;
+                    &lt;direction&gt;Input&lt;/direction&gt;
+                    &lt;width&gt;4096&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC_VECTOR&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+            &lt;/ports&gt;
+            &lt;assignments&gt;
+                &lt;assignmentValueMap/&gt;
+            &lt;/assignments&gt;
+            &lt;parameters&gt;
+                &lt;parameterValueMap&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedClock&lt;/key&gt;
+                        &lt;value&gt;emif_calbus_clk&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedReset&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;prSafe&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                &lt;/parameterValueMap&gt;
+            &lt;/parameters&gt;
+        &lt;/interface&gt;
+        &lt;interface&gt;
+            &lt;name&gt;emif_calbus_clk&lt;/name&gt;
+            &lt;type&gt;clock&lt;/type&gt;
+            &lt;isStart&gt;true&lt;/isStart&gt;
+            &lt;ports&gt;
+                &lt;port&gt;
+                    &lt;name&gt;calbus_clk&lt;/name&gt;
+                    &lt;role&gt;clk&lt;/role&gt;
+                    &lt;direction&gt;Output&lt;/direction&gt;
+                    &lt;width&gt;1&lt;/width&gt;
+                    &lt;lowerBound&gt;0&lt;/lowerBound&gt;
+                    &lt;vhdlType&gt;STD_LOGIC&lt;/vhdlType&gt;
+                    &lt;terminationValue&gt;0&lt;/terminationValue&gt;
+                &lt;/port&gt;
+            &lt;/ports&gt;
+            &lt;assignments&gt;
+                &lt;assignmentValueMap/&gt;
+            &lt;/assignments&gt;
+            &lt;parameters&gt;
+                &lt;parameterValueMap&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;associatedDirectClock&lt;/key&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;clockRate&lt;/key&gt;
+                        &lt;value&gt;0&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;clockRateKnown&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;externallyDriven&lt;/key&gt;
+                        &lt;value&gt;false&lt;/value&gt;
+                    &lt;/entry&gt;
+                    &lt;entry&gt;
+                        &lt;key&gt;ptfSchematicName&lt;/key&gt;
+                    &lt;/entry&gt;
+                &lt;/parameterValueMap&gt;
+            &lt;/parameters&gt;
+        &lt;/interface&gt;
+    &lt;/interfaces&gt;
+&lt;/boundaryDefinition&gt;</ipxact:value>
         </ipxact:parameter>
         <ipxact:parameter parameterId="systemInfos" type="string">
           <ipxact:name>systemInfos</ipxact:name>
@@ -551,12 +593,8 @@ https://fpgasoftware.intel.com/eula.-->
       </ipxact:parameters>
     </altera:altera_system_parameters>
     <altera:altera_interface_boundary>
-      <altera:interface_mapping altera:name="cal_debug_clk" altera:internal="emif_cal_0.cal_debug_clk" altera:type="clock" altera:dir="end">
-        <altera:port_mapping altera:name="cal_debug_clk_clk" altera:internal="cal_debug_clk_clk"></altera:port_mapping>
-      </altera:interface_mapping>
-      <altera:interface_mapping altera:name="cal_debug_reset_n" altera:internal="emif_cal_0.cal_debug_reset_n" altera:type="reset" altera:dir="end">
-        <altera:port_mapping altera:name="cal_debug_reset_n_reset" altera:internal="cal_debug_reset_n_reset"></altera:port_mapping>
-      </altera:interface_mapping>
+      <altera:interface_mapping altera:name="cal_debug_clk" altera:internal="emif_cal_0.cal_debug_clk"></altera:interface_mapping>
+      <altera:interface_mapping altera:name="cal_debug_reset_n" altera:internal="emif_cal_0.cal_debug_reset_n"></altera:interface_mapping>
       <altera:interface_mapping altera:name="emif_calbus_0" altera:internal="emif_cal_0.emif_calbus_0" altera:type="conduit" altera:dir="end">
         <altera:port_mapping altera:name="calbus_address_0" altera:internal="calbus_address_0"></altera:port_mapping>
         <altera:port_mapping altera:name="calbus_rdata_0" altera:internal="calbus_rdata_0"></altera:port_mapping>
@@ -575,34 +613,8 @@ https://fpgasoftware.intel.com/eula.-->
         <ipxact:library>addressAndMemoryMap</ipxact:library>
         <ipxact:name>addressAndMemoryMap</ipxact:name>
         <ipxact:version>1.0</ipxact:version>
-        <ipxact:busInterfaces>
-          <ipxact:busInterface>
-            <ipxact:name>emif_cal.cal_debug</ipxact:name>
-            <ipxact:busType vendor="intel" library="intel" name="avalon" version="24.1"></ipxact:busType>
-            <ipxact:slave></ipxact:slave>
-          </ipxact:busInterface>
-          <ipxact:busInterface>
-            <ipxact:name>jtag_master.master</ipxact:name>
-            <ipxact:busType vendor="intel" library="intel" name="avalon" version="24.1"></ipxact:busType>
-            <ipxact:master>
-              <ipxact:addressSpaceRef addressSpaceRef="jtag_master.master">
-                <ipxact:baseAddress>0x0000_0000</ipxact:baseAddress>
-              </ipxact:addressSpaceRef>
-            </ipxact:master>
-          </ipxact:busInterface>
-        </ipxact:busInterfaces>
-        <ipxact:addressSpaces>
-          <ipxact:addressSpace>
-            <ipxact:name>jtag_master.master</ipxact:name>
-            <ipxact:segments>
-              <ipxact:segment>
-                <ipxact:name>emif_cal.cal_debug</ipxact:name>
-                <ipxact:addressOffset>0x0000_0000</ipxact:addressOffset>
-                <ipxact:range>0x0800_0000</ipxact:range>
-              </ipxact:segment>
-            </ipxact:segments>
-          </ipxact:addressSpace>
-        </ipxact:addressSpaces>
+        <ipxact:busInterfaces></ipxact:busInterfaces>
+        <ipxact:addressSpaces></ipxact:addressSpaces>
         <ipxact:memoryMaps></ipxact:memoryMaps>
       </ipxact:component>
     </ipxact:components>
