@@ -4,10 +4,10 @@ set_global_assignment -entity "emif_cal" -library "emif_cal" -name IP_TOOL_ENV "
 set_global_assignment -entity "emif_cal" -library "emif_cal" -name IP_TOOL_VENDOR_NAME "Intel Corporation"
 set_global_assignment -entity "emif_cal" -library "emif_cal" -name IP_TOP_LEVEL_COMPONENT_NAME "altera_emif_cal"
 set_global_assignment -entity "emif_cal" -library "emif_cal" -name PRE_COMPILED_MODULE "ON"
-set_global_assignment -entity "emif_cal" -library "emif_cal" -name OCS_IP_FILE "/home/angela/Documents/github/cva6/corev_apu/fpga/emif_cal.ip"
+set_global_assignment -entity "emif_cal" -library "emif_cal" -name OCS_IP_FILE "/home/angela/Documents/github/cva6/corev_apu/fpga/intel/emif_cal.ip"
 set_global_assignment -entity "emif_cal" -library "emif_cal" -name OCS_IP_TYPE "altera_emif_cal"
 set_global_assignment -entity "emif_cal" -library "emif_cal" -name OCS_IP_VERSION "2.7.4"
-set_global_assignment -entity "emif_cal" -library "emif_cal" -name OCS_IP_HASH "lplpolq"
+set_global_assignment -entity "emif_cal" -library "emif_cal" -name OCS_IP_HASH "yagv7fq"
 set_global_assignment -library "emif_cal" -name SOPCINFO_FILE [file join $::quartus(qip_path) "emif_cal.sopcinfo"]
 set_global_assignment -entity "emif_cal" -library "emif_cal" -name SLD_INFO "QSYS_NAME emif_cal HAS_SOPCINFO 1 GENERATION_ID 0"
 set_global_assignment -library "emif_cal" -name MISC_FILE [file join $::quartus(qip_path) "emif_cal.cmp"]
@@ -17,150 +17,24 @@ set_global_assignment -entity "emif_cal" -library "emif_cal" -name IP_QSYS_MODE 
 set_global_assignment -name SYNTHESIS_ONLY_QIP ON
 set_global_assignment -library "emif_cal" -name MISC_FILE [file join $::quartus(qip_path) "../emif_cal.ip"]
 
-set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_kxwbfsa" -library "altera_emif_cal_iossm_274" -name IP_COMPONENT_NAME "ZW1pZl9jYWxfYWx0ZXJhX2VtaWZfY2FsX2lvc3NtXzI3NF9reHdiZnNh"
-set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_kxwbfsa" -library "altera_emif_cal_iossm_274" -name IP_COMPONENT_DISPLAY_NAME "RXh0ZXJuYWwgTWVtb3J5IEludGVyZmFjZXMgSW50ZWwgQ2FsaWJyYXRpb24gSVA="
-set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_kxwbfsa" -library "altera_emif_cal_iossm_274" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
-set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_kxwbfsa" -library "altera_emif_cal_iossm_274" -name IP_COMPONENT_INTERNAL "On"
-set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_kxwbfsa" -library "altera_emif_cal_iossm_274" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
-set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_kxwbfsa" -library "altera_emif_cal_iossm_274" -name IP_COMPONENT_VERSION "Mi43LjQ="
-set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_kxwbfsa" -library "altera_emif_cal_iossm_274" -name IP_COMPONENT_DESCRIPTION "RXh0ZXJuYWwgTWVtb3J5IEludGVyZmFjZXMgSW50ZWwgQ2FsaWJyYXRpb24gSVA="
-set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_kxwbfsa" -library "altera_emif_cal_iossm_274" -name IP_COMPONENT_GROUP "TWVtb3J5IEludGVyZmFjZXMgYW5kIENvbnRyb2xsZXJz"
-set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_kxwbfsa" -library "altera_emif_cal_iossm_274" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL3Byb2dyYW1tYWJsZS9zdXBwb3J0L2xpdGVyYXR1cmUvbGl0LWV4dGVybmFsLW1lbW9yeS1pbnRlcmZhY2UuaHRtbA=="
-set_global_assignment -entity "altera_avalon_st_jtag_interface" -library "altera_jtag_dc_streaming_191" -name IP_COMPONENT_NAME "YWx0ZXJhX2F2YWxvbl9zdF9qdGFnX2ludGVyZmFjZQ=="
-set_global_assignment -entity "altera_avalon_st_jtag_interface" -library "altera_jtag_dc_streaming_191" -name IP_COMPONENT_DISPLAY_NAME "QXZhbG9uLVNUIEpUQUcgSW50ZXJmYWNl"
-set_global_assignment -entity "altera_avalon_st_jtag_interface" -library "altera_jtag_dc_streaming_191" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
-set_global_assignment -entity "altera_avalon_st_jtag_interface" -library "altera_jtag_dc_streaming_191" -name IP_COMPONENT_INTERNAL "On"
-set_global_assignment -entity "altera_avalon_st_jtag_interface" -library "altera_jtag_dc_streaming_191" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
-set_global_assignment -entity "altera_avalon_st_jtag_interface" -library "altera_jtag_dc_streaming_191" -name IP_COMPONENT_VERSION "MTkuMQ=="
-set_global_assignment -entity "altera_avalon_st_jtag_interface" -library "altera_jtag_dc_streaming_191" -name IP_COMPONENT_GROUP "SW50ZXJmYWNlIFByb3RvY29scy9TZXJpYWw="
-set_global_assignment -entity "altera_avalon_st_jtag_interface" -library "altera_jtag_dc_streaming_191" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cDovL3d3dy5hbHRlcmEuY29tL2xpdGVyYXR1cmUvaGIvbmlvczIvcXRzX3FpaTU1MDA4LnBkZg=="
-set_global_assignment -entity "emif_cal_timing_adapter_1940_5ju4ddy" -library "timing_adapter_1940" -name IP_COMPONENT_NAME "ZW1pZl9jYWxfdGltaW5nX2FkYXB0ZXJfMTk0MF81anU0ZGR5"
-set_global_assignment -entity "emif_cal_timing_adapter_1940_5ju4ddy" -library "timing_adapter_1940" -name IP_COMPONENT_DISPLAY_NAME "QXZhbG9uIFN0cmVhbWluZyBUaW1pbmcgQWRhcHRlciBJbnRlbCBGUEdBIElQ"
-set_global_assignment -entity "emif_cal_timing_adapter_1940_5ju4ddy" -library "timing_adapter_1940" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
-set_global_assignment -entity "emif_cal_timing_adapter_1940_5ju4ddy" -library "timing_adapter_1940" -name IP_COMPONENT_INTERNAL "Off"
-set_global_assignment -entity "emif_cal_timing_adapter_1940_5ju4ddy" -library "timing_adapter_1940" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
-set_global_assignment -entity "emif_cal_timing_adapter_1940_5ju4ddy" -library "timing_adapter_1940" -name IP_COMPONENT_VERSION "MTkuNC4w"
-set_global_assignment -entity "emif_cal_timing_adapter_1940_5ju4ddy" -library "timing_adapter_1940" -name IP_COMPONENT_GROUP "QmFzaWMgRnVuY3Rpb25zL0JyaWRnZXMgYW5kIEFkYXB0b3JzL1N0cmVhbWluZw=="
-set_global_assignment -entity "emif_cal_timing_adapter_1940_5ju4ddy" -library "timing_adapter_1940" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly9kb2N1bWVudGF0aW9uLmFsdGVyYS5jb20vIy9saW5rL213aDE0MDk5NjAxODE2NDEvbXdoMTQwOTk1ODgyODczMg=="
-set_global_assignment -entity "emif_cal_timing_adapter_1940_5ju4ddy" -library "timing_adapter_1940" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly9kb2N1bWVudGF0aW9uLmFsdGVyYS5jb20vIy9saW5rL2hjbzE0MjE2OTgwNDIwODcvaGNvMTQyMTY5ODAxMzQwOA=="
-set_global_assignment -entity "emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq" -library "altera_avalon_sc_fifo_1932" -name IP_COMPONENT_NAME "ZW1pZl9jYWxfYWx0ZXJhX2F2YWxvbl9zY19maWZvXzE5MzJfNWo3dWZzcQ=="
-set_global_assignment -entity "emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq" -library "altera_avalon_sc_fifo_1932" -name IP_COMPONENT_DISPLAY_NAME "QXZhbG9uIFN0cmVhbWluZyBTaW5nbGUgQ2xvY2sgRklGTyBJbnRlbCBGUEdBIElQ"
-set_global_assignment -entity "emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq" -library "altera_avalon_sc_fifo_1932" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
-set_global_assignment -entity "emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq" -library "altera_avalon_sc_fifo_1932" -name IP_COMPONENT_INTERNAL "Off"
-set_global_assignment -entity "emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq" -library "altera_avalon_sc_fifo_1932" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
-set_global_assignment -entity "emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq" -library "altera_avalon_sc_fifo_1932" -name IP_COMPONENT_VERSION "MTkuMy4y"
-set_global_assignment -entity "emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq" -library "altera_avalon_sc_fifo_1932" -name IP_COMPONENT_GROUP "QmFzaWMgRnVuY3Rpb25zL09uIENoaXAgTWVtb3J5"
-set_global_assignment -entity "emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq" -library "altera_avalon_sc_fifo_1932" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly9kb2N1bWVudGF0aW9uLmFsdGVyYS5jb20vIy9saW5rL3NmbzE0MDA3ODc5NTI5MzIvaWdhMTQwMTM5NTU2Mzc3OQ=="
-set_global_assignment -entity "emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq" -library "altera_avalon_sc_fifo_1932" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly9kb2N1bWVudGF0aW9uLmFsdGVyYS5jb20vIy9saW5rL2hjbzE0MjE2OTgwNDIwODcvaGNvMTQyMTY5NzY4OTMwMA=="
-set_global_assignment -entity "altera_avalon_st_bytes_to_packets" -library "altera_avalon_st_bytes_to_packets_1922" -name IP_COMPONENT_NAME "YWx0ZXJhX2F2YWxvbl9zdF9ieXRlc190b19wYWNrZXRz"
-set_global_assignment -entity "altera_avalon_st_bytes_to_packets" -library "altera_avalon_st_bytes_to_packets_1922" -name IP_COMPONENT_DISPLAY_NAME "QXZhbG9uLVNUIEJ5dGVzIHRvIFBhY2tldHMgQ29udmVydGVyIEludGVsIEZQR0EgSVA="
-set_global_assignment -entity "altera_avalon_st_bytes_to_packets" -library "altera_avalon_st_bytes_to_packets_1922" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
-set_global_assignment -entity "altera_avalon_st_bytes_to_packets" -library "altera_avalon_st_bytes_to_packets_1922" -name IP_COMPONENT_INTERNAL "Off"
-set_global_assignment -entity "altera_avalon_st_bytes_to_packets" -library "altera_avalon_st_bytes_to_packets_1922" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
-set_global_assignment -entity "altera_avalon_st_bytes_to_packets" -library "altera_avalon_st_bytes_to_packets_1922" -name IP_COMPONENT_VERSION "MTkuMi4y"
-set_global_assignment -entity "altera_avalon_st_bytes_to_packets" -library "altera_avalon_st_bytes_to_packets_1922" -name IP_COMPONENT_DESCRIPTION "QXZhbG9uLVNUIEJ5dGVzIHRvIFBhY2tldHMgQ29udmVydGVy"
-set_global_assignment -entity "altera_avalon_st_bytes_to_packets" -library "altera_avalon_st_bytes_to_packets_1922" -name IP_COMPONENT_GROUP "QmFzaWMgRnVuY3Rpb25zL0JyaWRnZXMgYW5kIEFkYXB0b3JzL1N0cmVhbWluZw=="
-set_global_assignment -entity "altera_avalon_st_bytes_to_packets" -library "altera_avalon_st_bytes_to_packets_1922" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cDovL3d3dy5hbHRlcmEuY29tL2xpdGVyYXR1cmUvaGIvbmlvczIvcXRzX3FpaTU1MDEyLnBkZg=="
-set_global_assignment -entity "altera_avalon_st_bytes_to_packets" -library "altera_avalon_st_bytes_to_packets_1922" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly9kb2N1bWVudGF0aW9uLmFsdGVyYS5jb20vIy9saW5rL3NmbzE0MDA3ODc5NTI5MzIvaWdhMTQwMTM5NjczMDE3OQ=="
-set_global_assignment -entity "altera_avalon_st_bytes_to_packets" -library "altera_avalon_st_bytes_to_packets_1922" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly9kb2N1bWVudGF0aW9uLmFsdGVyYS5jb20vIy9saW5rL2hjbzE0MjE2OTgwNDIwODcvaGNvMTQyMTY5NzY4OTMwMA=="
-set_global_assignment -entity "altera_avalon_st_packets_to_bytes" -library "altera_avalon_st_packets_to_bytes_1922" -name IP_COMPONENT_NAME "YWx0ZXJhX2F2YWxvbl9zdF9wYWNrZXRzX3RvX2J5dGVz"
-set_global_assignment -entity "altera_avalon_st_packets_to_bytes" -library "altera_avalon_st_packets_to_bytes_1922" -name IP_COMPONENT_DISPLAY_NAME "QXZhbG9uLVNUIFBhY2tldHMgdG8gQnl0ZXMgQ29udmVydGVyIEludGVsIEZQR0EgSVA="
-set_global_assignment -entity "altera_avalon_st_packets_to_bytes" -library "altera_avalon_st_packets_to_bytes_1922" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
-set_global_assignment -entity "altera_avalon_st_packets_to_bytes" -library "altera_avalon_st_packets_to_bytes_1922" -name IP_COMPONENT_INTERNAL "Off"
-set_global_assignment -entity "altera_avalon_st_packets_to_bytes" -library "altera_avalon_st_packets_to_bytes_1922" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
-set_global_assignment -entity "altera_avalon_st_packets_to_bytes" -library "altera_avalon_st_packets_to_bytes_1922" -name IP_COMPONENT_VERSION "MTkuMi4y"
-set_global_assignment -entity "altera_avalon_st_packets_to_bytes" -library "altera_avalon_st_packets_to_bytes_1922" -name IP_COMPONENT_DESCRIPTION "QXZhbG9uLVNUIFBhY2tldHMgdG8gQnl0ZXMgQ29udmVydGVy"
-set_global_assignment -entity "altera_avalon_st_packets_to_bytes" -library "altera_avalon_st_packets_to_bytes_1922" -name IP_COMPONENT_GROUP "QmFzaWMgRnVuY3Rpb25zL0JyaWRnZXMgYW5kIEFkYXB0b3JzL1N0cmVhbWluZw=="
-set_global_assignment -entity "altera_avalon_st_packets_to_bytes" -library "altera_avalon_st_packets_to_bytes_1922" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cDovL3d3dy5hbHRlcmEuY29tL2xpdGVyYXR1cmUvaGIvbmlvczIvcXRzX3FpaTU1MDEyLnBkZg=="
-set_global_assignment -entity "altera_avalon_st_packets_to_bytes" -library "altera_avalon_st_packets_to_bytes_1922" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly9kb2N1bWVudGF0aW9uLmFsdGVyYS5jb20vIy9saW5rL3NmbzE0MDA3ODc5NTI5MzIvaWdhMTQwMTM5NjczMDE3OQ=="
-set_global_assignment -entity "altera_avalon_st_packets_to_bytes" -library "altera_avalon_st_packets_to_bytes_1922" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly9kb2N1bWVudGF0aW9uLmFsdGVyYS5jb20vIy9saW5rL2hjbzE0MjE2OTgwNDIwODcvaGNvMTQyMTY5NzY4OTMwMA=="
-set_global_assignment -entity "altera_avalon_packets_to_master" -library "altera_avalon_packets_to_master_1922" -name IP_COMPONENT_NAME "YWx0ZXJhX2F2YWxvbl9wYWNrZXRzX3RvX21hc3Rlcg=="
-set_global_assignment -entity "altera_avalon_packets_to_master" -library "altera_avalon_packets_to_master_1922" -name IP_COMPONENT_DISPLAY_NAME "QXZhbG9uIFBhY2tldHMgdG8gVHJhbnNhY3Rpb24gQ29udmVydGVyIEludGVsIEZQR0EgSVA="
-set_global_assignment -entity "altera_avalon_packets_to_master" -library "altera_avalon_packets_to_master_1922" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
-set_global_assignment -entity "altera_avalon_packets_to_master" -library "altera_avalon_packets_to_master_1922" -name IP_COMPONENT_INTERNAL "Off"
-set_global_assignment -entity "altera_avalon_packets_to_master" -library "altera_avalon_packets_to_master_1922" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
-set_global_assignment -entity "altera_avalon_packets_to_master" -library "altera_avalon_packets_to_master_1922" -name IP_COMPONENT_VERSION "MTkuMi4y"
-set_global_assignment -entity "altera_avalon_packets_to_master" -library "altera_avalon_packets_to_master_1922" -name IP_COMPONENT_DESCRIPTION "QXZhbG9uIFBhY2tldHMgdG8gVHJhbnNhY3Rpb24gQ29udmVydGVy"
-set_global_assignment -entity "altera_avalon_packets_to_master" -library "altera_avalon_packets_to_master_1922" -name IP_COMPONENT_GROUP "QmFzaWMgRnVuY3Rpb25zL0JyaWRnZXMgYW5kIEFkYXB0b3JzL1N0cmVhbWluZw=="
-set_global_assignment -entity "altera_avalon_packets_to_master" -library "altera_avalon_packets_to_master_1922" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cDovL3d3dy5hbHRlcmEuY29tL2xpdGVyYXR1cmUvaGIvbmlvczIvcXRzX3FpaTU1MDEzLnBkZg=="
-set_global_assignment -entity "altera_avalon_packets_to_master" -library "altera_avalon_packets_to_master_1922" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly9kb2N1bWVudGF0aW9uLmFsdGVyYS5jb20vIy9saW5rL3NmbzE0MDA3ODc5NTI5MzIvaWdhMTQwMTM5Nzg2MTk4OA=="
-set_global_assignment -entity "altera_avalon_packets_to_master" -library "altera_avalon_packets_to_master_1922" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly9kb2N1bWVudGF0aW9uLmFsdGVyYS5jb20vIy9saW5rL2hjbzE0MjE2OTgwNDIwODcvaGNvMTQyMTY5NzY4OTMwMA=="
-set_global_assignment -entity "emif_cal_channel_adapter_1921_5wnzrci" -library "channel_adapter_1921" -name IP_COMPONENT_NAME "ZW1pZl9jYWxfY2hhbm5lbF9hZGFwdGVyXzE5MjFfNXduenJjaQ=="
-set_global_assignment -entity "emif_cal_channel_adapter_1921_5wnzrci" -library "channel_adapter_1921" -name IP_COMPONENT_DISPLAY_NAME "QXZhbG9uIFN0cmVhbWluZyBDaGFubmVsIEFkYXB0ZXIgSW50ZWwgRlBHQSBJUA=="
-set_global_assignment -entity "emif_cal_channel_adapter_1921_5wnzrci" -library "channel_adapter_1921" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
-set_global_assignment -entity "emif_cal_channel_adapter_1921_5wnzrci" -library "channel_adapter_1921" -name IP_COMPONENT_INTERNAL "Off"
-set_global_assignment -entity "emif_cal_channel_adapter_1921_5wnzrci" -library "channel_adapter_1921" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
-set_global_assignment -entity "emif_cal_channel_adapter_1921_5wnzrci" -library "channel_adapter_1921" -name IP_COMPONENT_VERSION "MTkuMi4x"
-set_global_assignment -entity "emif_cal_channel_adapter_1921_5wnzrci" -library "channel_adapter_1921" -name IP_COMPONENT_GROUP "QmFzaWMgRnVuY3Rpb25zL0JyaWRnZXMgYW5kIEFkYXB0b3JzL1N0cmVhbWluZw=="
-set_global_assignment -entity "emif_cal_channel_adapter_1921_5wnzrci" -library "channel_adapter_1921" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly9kb2N1bWVudGF0aW9uLmFsdGVyYS5jb20vIy9saW5rL213aDE0MDk5NjAxODE2NDEvbXdoMTQwOTk1ODgyODczMg=="
-set_global_assignment -entity "emif_cal_channel_adapter_1921_5wnzrci" -library "channel_adapter_1921" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly9kb2N1bWVudGF0aW9uLmFsdGVyYS5jb20vIy9saW5rL2hjbzE0MjE2OTgwNDIwODcvaGNvMTQyMTY5ODAxMzQwOA=="
-set_global_assignment -entity "emif_cal_channel_adapter_1921_fkajlia" -library "channel_adapter_1921" -name IP_COMPONENT_NAME "ZW1pZl9jYWxfY2hhbm5lbF9hZGFwdGVyXzE5MjFfZmthamxpYQ=="
-set_global_assignment -entity "emif_cal_channel_adapter_1921_fkajlia" -library "channel_adapter_1921" -name IP_COMPONENT_DISPLAY_NAME "QXZhbG9uIFN0cmVhbWluZyBDaGFubmVsIEFkYXB0ZXIgSW50ZWwgRlBHQSBJUA=="
-set_global_assignment -entity "emif_cal_channel_adapter_1921_fkajlia" -library "channel_adapter_1921" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
-set_global_assignment -entity "emif_cal_channel_adapter_1921_fkajlia" -library "channel_adapter_1921" -name IP_COMPONENT_INTERNAL "Off"
-set_global_assignment -entity "emif_cal_channel_adapter_1921_fkajlia" -library "channel_adapter_1921" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
-set_global_assignment -entity "emif_cal_channel_adapter_1921_fkajlia" -library "channel_adapter_1921" -name IP_COMPONENT_VERSION "MTkuMi4x"
-set_global_assignment -entity "emif_cal_channel_adapter_1921_fkajlia" -library "channel_adapter_1921" -name IP_COMPONENT_GROUP "QmFzaWMgRnVuY3Rpb25zL0JyaWRnZXMgYW5kIEFkYXB0b3JzL1N0cmVhbWluZw=="
-set_global_assignment -entity "emif_cal_channel_adapter_1921_fkajlia" -library "channel_adapter_1921" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly9kb2N1bWVudGF0aW9uLmFsdGVyYS5jb20vIy9saW5rL213aDE0MDk5NjAxODE2NDEvbXdoMTQwOTk1ODgyODczMg=="
-set_global_assignment -entity "emif_cal_channel_adapter_1921_fkajlia" -library "channel_adapter_1921" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly9kb2N1bWVudGF0aW9uLmFsdGVyYS5jb20vIy9saW5rL2hjbzE0MjE2OTgwNDIwODcvaGNvMTQyMTY5ODAxMzQwOA=="
-set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1922" -name IP_COMPONENT_NAME "YWx0ZXJhX3Jlc2V0X2NvbnRyb2xsZXI="
-set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1922" -name IP_COMPONENT_DISPLAY_NAME "TWVybGluIFJlc2V0IENvbnRyb2xsZXIgSW50ZWwgRlBHQSBJUA=="
-set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1922" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
-set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1922" -name IP_COMPONENT_INTERNAL "Off"
-set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1922" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
-set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1922" -name IP_COMPONENT_VERSION "MTkuMi4y"
-set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1922" -name IP_COMPONENT_DESCRIPTION "Rm9yIHN5c3RlbXMgd2l0aCBtdWx0aXBsZSByZXNldCBpbnB1dHMsIHRoZSBNZXJsaW4gUmVzZXQgQ29udHJvbGxlciBPUnMgYWxsIHJlc2V0IGlucHV0cyBhbmQgZ2VuZXJhdGVzIGEgc2luZ2xlIHJlc2V0IG91dHB1dC4="
-set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1922" -name IP_COMPONENT_GROUP "QmFzaWMgRnVuY3Rpb25zL0Nsb2NrczsgUExMcyBhbmQgUmVzZXRz"
-set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1922" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL3Byb2dyYW1tYWJsZS9kb2N1bWVudGF0aW9uL3pjbjE1MTM5ODcyODI5MzUuaHRtbCNtd2gxNDA5OTU4ODI4NzMy"
-set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1922" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvZGFtL3d3dy9wcm9ncmFtbWFibGUvdXMvZW4vcGRmcy9saXRlcmF0dXJlL3VnL3VnLXFwcC1wbGF0Zm9ybS1kZXNpZ25lci5wZGY="
-set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1922" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL3Byb2dyYW1tYWJsZS9kb2N1bWVudGF0aW9uL2hjbzE0MTY4MzYxNDU1NTUuaHRtbCNoY28xNDE2ODM2NjUzMjIx"
-set_global_assignment -entity "emif_cal_alt_mem_if_jtag_master_191_rksoe3i" -library "alt_mem_if_jtag_master_191" -name IP_COMPONENT_NAME "ZW1pZl9jYWxfYWx0X21lbV9pZl9qdGFnX21hc3Rlcl8xOTFfcmtzb2UzaQ=="
-set_global_assignment -entity "emif_cal_alt_mem_if_jtag_master_191_rksoe3i" -library "alt_mem_if_jtag_master_191" -name IP_COMPONENT_DISPLAY_NAME "YWx0X21lbV9pZiBKVEFHIHRvIEF2YWxvbiBNYXN0ZXIgQnJpZGdl"
-set_global_assignment -entity "emif_cal_alt_mem_if_jtag_master_191_rksoe3i" -library "alt_mem_if_jtag_master_191" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
-set_global_assignment -entity "emif_cal_alt_mem_if_jtag_master_191_rksoe3i" -library "alt_mem_if_jtag_master_191" -name IP_COMPONENT_INTERNAL "On"
-set_global_assignment -entity "emif_cal_alt_mem_if_jtag_master_191_rksoe3i" -library "alt_mem_if_jtag_master_191" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
-set_global_assignment -entity "emif_cal_alt_mem_if_jtag_master_191_rksoe3i" -library "alt_mem_if_jtag_master_191" -name IP_COMPONENT_VERSION "MTkuMQ=="
-set_global_assignment -entity "emif_cal_alt_mem_if_jtag_master_191_rksoe3i" -library "alt_mem_if_jtag_master_191" -name IP_COMPONENT_GROUP "QnJpZGdlcyBhbmQgQWRhcHRlcnMvTWVtb3J5IE1hcHBlZA=="
-set_global_assignment -entity "emif_cal_alt_mem_if_jtag_master_191_rksoe3i" -library "alt_mem_if_jtag_master_191" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cDovL3d3dy5hbHRlcmEuY29tL2xpdGVyYXR1cmUvaGIvbmlvczIvcXRzX3FpaTU1MDExLnBkZg=="
-set_global_assignment -entity "emif_cal_altera_merlin_master_translator_192_lykd4la" -library "altera_merlin_master_translator_192" -name IP_COMPONENT_NAME "ZW1pZl9jYWxfYWx0ZXJhX21lcmxpbl9tYXN0ZXJfdHJhbnNsYXRvcl8xOTJfbHlrZDRsYQ=="
-set_global_assignment -entity "emif_cal_altera_merlin_master_translator_192_lykd4la" -library "altera_merlin_master_translator_192" -name IP_COMPONENT_DISPLAY_NAME "QXZhbG9uIE1lbW9yeSBNYXBwZWQgTWFzdGVyIFRyYW5zbGF0b3IgSW50ZWwgRlBHQSBJUA=="
-set_global_assignment -entity "emif_cal_altera_merlin_master_translator_192_lykd4la" -library "altera_merlin_master_translator_192" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
-set_global_assignment -entity "emif_cal_altera_merlin_master_translator_192_lykd4la" -library "altera_merlin_master_translator_192" -name IP_COMPONENT_INTERNAL "On"
-set_global_assignment -entity "emif_cal_altera_merlin_master_translator_192_lykd4la" -library "altera_merlin_master_translator_192" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
-set_global_assignment -entity "emif_cal_altera_merlin_master_translator_192_lykd4la" -library "altera_merlin_master_translator_192" -name IP_COMPONENT_VERSION "MTkuMg=="
-set_global_assignment -entity "emif_cal_altera_merlin_master_translator_192_lykd4la" -library "altera_merlin_master_translator_192" -name IP_COMPONENT_DESCRIPTION "Q29udmVydHMgdGhlIEF2YWxvbiBNZW1vcnkgTWFwcGVkIG1hc3RlciBpbnRlcmZhY2UgdG8gYSBzaW1wbGVyIHJlcHJlc2VudGF0aW9uIHRoYXQgdGhlIFFzeXMgbmV0d29yayB1c2VzLiBSZWZlciB0byB0aGUgQXZhbG9uIEludGVyZmFjZSBTcGVjaWZpY2F0aW9ucyAoaHR0cDovL3d3dy5hbHRlcmEuY29tL2xpdGVyYXR1cmUvbWFudWFsL21ubF9hdmFsb25fc3BlYy5wZGYpIGZvciBkZWZpbml0aW9ucyBvZiB0aGUgQXZhbG9uIE1lbW9yeSBNYXBwZWQgc2lnbmFscyBhbmQgZXhwbGFuYXRpb25zIG9mIHRoZSBidXJzdGluZyBwcm9wZXJ0aWVzLg=="
-set_global_assignment -entity "emif_cal_altera_merlin_master_translator_192_lykd4la" -library "altera_merlin_master_translator_192" -name IP_COMPONENT_GROUP "SW50ZWwgRlBHQSBJbnRlcmNvbm5lY3QvTWVtb3J5LU1hcHBlZA=="
-set_global_assignment -entity "emif_cal_altera_merlin_master_translator_192_lykd4la" -library "altera_merlin_master_translator_192" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cDovL3d3dy5hbHRlcmEuY29tL2xpdGVyYXR1cmUvaGIvcXRzL3FzeXNfaW50ZXJjb25uZWN0LnBkZg=="
-set_global_assignment -entity "emif_cal_altera_merlin_master_translator_192_lykd4la" -library "altera_merlin_master_translator_192" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvZGFtL3d3dy9wcm9ncmFtbWFibGUvdXMvZW4vcGRmcy9saXRlcmF0dXJlL3VnL3VnLXFwcC1wbGF0Zm9ybS1kZXNpZ25lci5wZGY="
-set_global_assignment -entity "emif_cal_altera_merlin_master_translator_192_lykd4la" -library "altera_merlin_master_translator_192" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL3Byb2dyYW1tYWJsZS9kb2N1bWVudGF0aW9uL2hjbzE0MTY4MzYxNDU1NTUuaHRtbCNoY28xNDE2ODM2NjUzMjIx"
-set_global_assignment -entity "emif_cal_altera_merlin_slave_translator_191_x56fcki" -library "altera_merlin_slave_translator_191" -name IP_COMPONENT_NAME "ZW1pZl9jYWxfYWx0ZXJhX21lcmxpbl9zbGF2ZV90cmFuc2xhdG9yXzE5MV94NTZmY2tp"
-set_global_assignment -entity "emif_cal_altera_merlin_slave_translator_191_x56fcki" -library "altera_merlin_slave_translator_191" -name IP_COMPONENT_DISPLAY_NAME "QXZhbG9uIE1lbW9yeSBNYXBwZWQgU2xhdmUgVHJhbnNsYXRvciBJbnRlbCBGUEdBIElQ"
-set_global_assignment -entity "emif_cal_altera_merlin_slave_translator_191_x56fcki" -library "altera_merlin_slave_translator_191" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
-set_global_assignment -entity "emif_cal_altera_merlin_slave_translator_191_x56fcki" -library "altera_merlin_slave_translator_191" -name IP_COMPONENT_INTERNAL "On"
-set_global_assignment -entity "emif_cal_altera_merlin_slave_translator_191_x56fcki" -library "altera_merlin_slave_translator_191" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
-set_global_assignment -entity "emif_cal_altera_merlin_slave_translator_191_x56fcki" -library "altera_merlin_slave_translator_191" -name IP_COMPONENT_VERSION "MTkuMQ=="
-set_global_assignment -entity "emif_cal_altera_merlin_slave_translator_191_x56fcki" -library "altera_merlin_slave_translator_191" -name IP_COMPONENT_DESCRIPTION "Q29udmVydHMgdGhlIEF2YWxvbiBNZW1vcnkgTWFwcGVkIHNsYXZlIGludGVyZmFjZSB0byBhIHNpbXBsaWZpZWQgcmVwcmVzZW50YXRpb24gdGhhdCB0aGUgUXN5cyBuZXR3b3JrIHVzZXMuIFJlZmVyIHRvIHRoZSBBdmFsb24gSW50ZXJmYWNlIFNwZWNpZmljYXRpb25zIChodHRwOi8vd3d3LmFsdGVyYS5jb20vbGl0ZXJhdHVyZS9tYW51YWwvbW5sX2F2YWxvbl9zcGVjLnBkZikgZm9yIGRlZmluaXRpb25zIG9mIHRoZSBBdmFsb24gTWVtb3J5IE1hcHBlZCBzaWduYWxzIGFuZCBleHBsYW5hdGlvbnMgb2YgdGhlIGJ1cnN0aW5nIHByb3BlcnRpZXMgYW5kIGFkZHJlc3MgYWxpZ25tZW50Lg=="
-set_global_assignment -entity "emif_cal_altera_merlin_slave_translator_191_x56fcki" -library "altera_merlin_slave_translator_191" -name IP_COMPONENT_GROUP "SW50ZWwgRlBHQSBJbnRlcmNvbm5lY3QvTWVtb3J5LU1hcHBlZA=="
-set_global_assignment -entity "emif_cal_altera_merlin_slave_translator_191_x56fcki" -library "altera_merlin_slave_translator_191" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cDovL3d3dy5hbHRlcmEuY29tL2xpdGVyYXR1cmUvaGIvcXRzL3FzeXNfaW50ZXJjb25uZWN0LnBkZg=="
-set_global_assignment -entity "emif_cal_altera_merlin_slave_translator_191_x56fcki" -library "altera_merlin_slave_translator_191" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvZGFtL3d3dy9wcm9ncmFtbWFibGUvdXMvZW4vcGRmcy9saXRlcmF0dXJlL3VnL3VnLXFwcC1wbGF0Zm9ybS1kZXNpZ25lci5wZGY="
-set_global_assignment -entity "emif_cal_altera_merlin_slave_translator_191_x56fcki" -library "altera_merlin_slave_translator_191" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL3Byb2dyYW1tYWJsZS9kb2N1bWVudGF0aW9uL2hjbzE0MTY4MzYxNDU1NTUuaHRtbCNoY28xNDE2ODM2NjUzMjIx"
-set_global_assignment -entity "emif_cal_altera_mm_interconnect_1920_pvpm4mq" -library "altera_mm_interconnect_1920" -name IP_COMPONENT_NAME "ZW1pZl9jYWxfYWx0ZXJhX21tX2ludGVyY29ubmVjdF8xOTIwX3B2cG00bXE="
-set_global_assignment -entity "emif_cal_altera_mm_interconnect_1920_pvpm4mq" -library "altera_mm_interconnect_1920" -name IP_COMPONENT_DISPLAY_NAME "TU0gSW50ZXJjb25uZWN0"
-set_global_assignment -entity "emif_cal_altera_mm_interconnect_1920_pvpm4mq" -library "altera_mm_interconnect_1920" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
-set_global_assignment -entity "emif_cal_altera_mm_interconnect_1920_pvpm4mq" -library "altera_mm_interconnect_1920" -name IP_COMPONENT_INTERNAL "On"
-set_global_assignment -entity "emif_cal_altera_mm_interconnect_1920_pvpm4mq" -library "altera_mm_interconnect_1920" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
-set_global_assignment -entity "emif_cal_altera_mm_interconnect_1920_pvpm4mq" -library "altera_mm_interconnect_1920" -name IP_COMPONENT_VERSION "MTkuMi4w"
-set_global_assignment -entity "emif_cal_altera_mm_interconnect_1920_pvpm4mq" -library "altera_mm_interconnect_1920" -name IP_COMPONENT_DESCRIPTION "TU0gSW50ZXJjb25uZWN0"
-set_global_assignment -entity "emif_cal_altera_mm_interconnect_1920_pvpm4mq" -library "altera_mm_interconnect_1920" -name IP_COMPONENT_GROUP "TWVybGluIENvbXBvbmVudHM="
-set_global_assignment -entity "emif_cal_altera_emif_cal_274_qortvxi" -library "altera_emif_cal_274" -name IP_COMPONENT_NAME "ZW1pZl9jYWxfYWx0ZXJhX2VtaWZfY2FsXzI3NF9xb3J0dnhp"
-set_global_assignment -entity "emif_cal_altera_emif_cal_274_qortvxi" -library "altera_emif_cal_274" -name IP_COMPONENT_DISPLAY_NAME "RXh0ZXJuYWwgTWVtb3J5IEludGVyZmFjZXMgSW50ZWwgQ2FsaWJyYXRpb24gSVA="
-set_global_assignment -entity "emif_cal_altera_emif_cal_274_qortvxi" -library "altera_emif_cal_274" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
-set_global_assignment -entity "emif_cal_altera_emif_cal_274_qortvxi" -library "altera_emif_cal_274" -name IP_COMPONENT_INTERNAL "Off"
-set_global_assignment -entity "emif_cal_altera_emif_cal_274_qortvxi" -library "altera_emif_cal_274" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
-set_global_assignment -entity "emif_cal_altera_emif_cal_274_qortvxi" -library "altera_emif_cal_274" -name IP_COMPONENT_VERSION "Mi43LjQ="
-set_global_assignment -entity "emif_cal_altera_emif_cal_274_qortvxi" -library "altera_emif_cal_274" -name IP_COMPONENT_DESCRIPTION "RXh0ZXJuYWwgTWVtb3J5IEludGVyZmFjZXMgSW50ZWwgQ2FsaWJyYXRpb24gSVA="
-set_global_assignment -entity "emif_cal_altera_emif_cal_274_qortvxi" -library "altera_emif_cal_274" -name IP_COMPONENT_GROUP "TWVtb3J5IEludGVyZmFjZXMgYW5kIENvbnRyb2xsZXJz"
-set_global_assignment -entity "emif_cal_altera_emif_cal_274_qortvxi" -library "altera_emif_cal_274" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL3Byb2dyYW1tYWJsZS9zdXBwb3J0L2xpdGVyYXR1cmUvbGl0LWV4dGVybmFsLW1lbW9yeS1pbnRlcmZhY2UuaHRtbA=="
+set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_yagv7fq" -library "altera_emif_cal_iossm_274" -name IP_COMPONENT_NAME "ZW1pZl9jYWxfYWx0ZXJhX2VtaWZfY2FsX2lvc3NtXzI3NF95YWd2N2Zx"
+set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_yagv7fq" -library "altera_emif_cal_iossm_274" -name IP_COMPONENT_DISPLAY_NAME "RXh0ZXJuYWwgTWVtb3J5IEludGVyZmFjZXMgSW50ZWwgQ2FsaWJyYXRpb24gSVA="
+set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_yagv7fq" -library "altera_emif_cal_iossm_274" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
+set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_yagv7fq" -library "altera_emif_cal_iossm_274" -name IP_COMPONENT_INTERNAL "On"
+set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_yagv7fq" -library "altera_emif_cal_iossm_274" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
+set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_yagv7fq" -library "altera_emif_cal_iossm_274" -name IP_COMPONENT_VERSION "Mi43LjQ="
+set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_yagv7fq" -library "altera_emif_cal_iossm_274" -name IP_COMPONENT_DESCRIPTION "RXh0ZXJuYWwgTWVtb3J5IEludGVyZmFjZXMgSW50ZWwgQ2FsaWJyYXRpb24gSVA="
+set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_yagv7fq" -library "altera_emif_cal_iossm_274" -name IP_COMPONENT_GROUP "TWVtb3J5IEludGVyZmFjZXMgYW5kIENvbnRyb2xsZXJz"
+set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_yagv7fq" -library "altera_emif_cal_iossm_274" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL3Byb2dyYW1tYWJsZS9zdXBwb3J0L2xpdGVyYXR1cmUvbGl0LWV4dGVybmFsLW1lbW9yeS1pbnRlcmZhY2UuaHRtbA=="
+set_global_assignment -entity "emif_cal_altera_emif_cal_274_kaypsya" -library "altera_emif_cal_274" -name IP_COMPONENT_NAME "ZW1pZl9jYWxfYWx0ZXJhX2VtaWZfY2FsXzI3NF9rYXlwc3lh"
+set_global_assignment -entity "emif_cal_altera_emif_cal_274_kaypsya" -library "altera_emif_cal_274" -name IP_COMPONENT_DISPLAY_NAME "RXh0ZXJuYWwgTWVtb3J5IEludGVyZmFjZXMgSW50ZWwgQ2FsaWJyYXRpb24gSVA="
+set_global_assignment -entity "emif_cal_altera_emif_cal_274_kaypsya" -library "altera_emif_cal_274" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
+set_global_assignment -entity "emif_cal_altera_emif_cal_274_kaypsya" -library "altera_emif_cal_274" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "emif_cal_altera_emif_cal_274_kaypsya" -library "altera_emif_cal_274" -name IP_COMPONENT_AUTHOR "SW50ZWwgQ29ycG9yYXRpb24="
+set_global_assignment -entity "emif_cal_altera_emif_cal_274_kaypsya" -library "altera_emif_cal_274" -name IP_COMPONENT_VERSION "Mi43LjQ="
+set_global_assignment -entity "emif_cal_altera_emif_cal_274_kaypsya" -library "altera_emif_cal_274" -name IP_COMPONENT_DESCRIPTION "RXh0ZXJuYWwgTWVtb3J5IEludGVyZmFjZXMgSW50ZWwgQ2FsaWJyYXRpb24gSVA="
+set_global_assignment -entity "emif_cal_altera_emif_cal_274_kaypsya" -library "altera_emif_cal_274" -name IP_COMPONENT_GROUP "TWVtb3J5IEludGVyZmFjZXMgYW5kIENvbnRyb2xsZXJz"
+set_global_assignment -entity "emif_cal_altera_emif_cal_274_kaypsya" -library "altera_emif_cal_274" -name IP_COMPONENT_DOCUMENTATION_LINK "aHR0cHM6Ly93d3cuaW50ZWwuY29tL2NvbnRlbnQvd3d3L3VzL2VuL3Byb2dyYW1tYWJsZS9zdXBwb3J0L2xpdGVyYXR1cmUvbGl0LWV4dGVybmFsLW1lbW9yeS1pbnRlcmZhY2UuaHRtbA=="
 set_global_assignment -entity "emif_cal" -library "emif_cal" -name IP_COMPONENT_NAME "ZW1pZl9jYWw="
 set_global_assignment -entity "emif_cal" -library "emif_cal" -name IP_COMPONENT_DISPLAY_NAME "c3lzdGVt"
 set_global_assignment -entity "emif_cal" -library "emif_cal" -name IP_COMPONENT_REPORT_HIERARCHY "On"
@@ -171,86 +45,21 @@ set_global_assignment -entity "emif_cal" -library "emif_cal" -name IP_COMPONENT_
 
 set_global_assignment -library "altera_emif_cal_iossm_274" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "altera_emif_cal_iossm_274/synth/altera_emif_cal_iossm.sv"]
 set_global_assignment -library "altera_emif_cal_iossm_274" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "altera_emif_cal_iossm_274/synth/altera_emif_f2c_gearbox.sv"]
-set_global_assignment -library "altera_emif_cal_iossm_274" -name SOURCE_FILE [file join $::quartus(qip_path) "altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa_code.hex"]
-set_global_assignment -library "altera_emif_cal_iossm_274" -name SOURCE_FILE [file join $::quartus(qip_path) "altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa_sim_global_param_tbl.hex"]
-set_global_assignment -library "altera_emif_cal_iossm_274" -name SOURCE_FILE [file join $::quartus(qip_path) "altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa_sim_global_param_tbl.txt"]
-set_global_assignment -library "altera_emif_cal_iossm_274" -name SOURCE_FILE [file join $::quartus(qip_path) "altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa_synth_global_param_tbl.hex"]
-set_global_assignment -library "altera_emif_cal_iossm_274" -name SOURCE_FILE [file join $::quartus(qip_path) "altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa_synth_global_param_tbl.txt"]
-set_global_assignment -library "altera_emif_cal_iossm_274" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa_arch.sv"]
-set_global_assignment -library "altera_emif_cal_iossm_274" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_kxwbfsa.sv"]
-set_global_assignment -library "altera_jtag_dc_streaming_191" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_jtag_dc_streaming_191/synth/altera_avalon_st_jtag_interface.v"]
-set_global_assignment -library "altera_jtag_dc_streaming_191" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_jtag_dc_streaming_191/synth/altera_jtag_dc_streaming.v"]
-set_global_assignment -library "altera_jtag_dc_streaming_191" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_jtag_dc_streaming_191/synth/altera_jtag_sld_node.v"]
-set_global_assignment -library "altera_jtag_dc_streaming_191" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_jtag_dc_streaming_191/synth/altera_jtag_streaming.v"]
-set_global_assignment -library "altera_jtag_dc_streaming_191" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_jtag_dc_streaming_191/synth/altera_avalon_st_clock_crosser.v"]
-set_global_assignment -library "altera_jtag_dc_streaming_191" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_jtag_dc_streaming_191/synth/altera_reset_synchronizer.v"]
-set_global_assignment -library "altera_jtag_dc_streaming_191" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_jtag_dc_streaming_191/synth/altera_std_synchronizer_nocut.v"]
-set_global_assignment -library "altera_jtag_dc_streaming_191" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_jtag_dc_streaming_191/synth/altera_avalon_st_pipeline_base.v"]
-set_global_assignment -library "altera_jtag_dc_streaming_191" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_jtag_dc_streaming_191/synth/altera_avalon_st_idle_remover.v"]
-set_global_assignment -library "altera_jtag_dc_streaming_191" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_jtag_dc_streaming_191/synth/altera_avalon_st_idle_inserter.v"]
-set_global_assignment -library "altera_jtag_dc_streaming_191" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "altera_jtag_dc_streaming_191/synth/altera_avalon_st_pipeline_stage.sv"]
-set_instance_assignment -entity "altera_avalon_st_jtag_interface" -library "altera_jtag_dc_streaming_191" -name SDC_ENTITY_FILE [file join $::quartus(qip_path) "altera_jtag_dc_streaming_191/synth/altera_avalon_st_jtag_interface.sdc"] -no_sdc_promotion  -no_auto_inst_discovery 
-set_global_assignment -library "timing_adapter_1940" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "timing_adapter_1940/synth/emif_cal_timing_adapter_1940_5ju4ddy.sv"]
-set_global_assignment -library "altera_avalon_sc_fifo_1932" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_avalon_sc_fifo_1932/synth/emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq.v"]
-set_global_assignment -library "altera_avalon_st_bytes_to_packets_1922" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_avalon_st_bytes_to_packets_1922/synth/altera_avalon_st_bytes_to_packets.v"]
-set_global_assignment -library "altera_avalon_st_packets_to_bytes_1922" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_avalon_st_packets_to_bytes_1922/synth/altera_avalon_st_packets_to_bytes.v"]
-set_global_assignment -library "altera_avalon_packets_to_master_1922" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_avalon_packets_to_master_1922/synth/altera_avalon_packets_to_master.v"]
-set_global_assignment -library "channel_adapter_1921" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "channel_adapter_1921/synth/emif_cal_channel_adapter_1921_5wnzrci.sv"]
-set_global_assignment -library "channel_adapter_1921" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "channel_adapter_1921/synth/emif_cal_channel_adapter_1921_fkajlia.sv"]
-set_global_assignment -library "altera_reset_controller_1922" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_reset_controller_1922/synth/altera_reset_controller.v"]
-set_global_assignment -library "altera_reset_controller_1922" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_reset_controller_1922/synth/altera_reset_synchronizer.v"]
-set_instance_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1922" -name SDC_ENTITY_FILE [file join $::quartus(qip_path) "altera_reset_controller_1922/synth/altera_reset_controller.sdc"] -no_sdc_promotion 
-set_global_assignment -library "alt_mem_if_jtag_master_191" -name VERILOG_FILE [file join $::quartus(qip_path) "alt_mem_if_jtag_master_191/synth/emif_cal_alt_mem_if_jtag_master_191_rksoe3i.v"]
-set_global_assignment -library "altera_merlin_master_translator_192" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "altera_merlin_master_translator_192/synth/emif_cal_altera_merlin_master_translator_192_lykd4la.sv"]
-set_global_assignment -library "altera_merlin_slave_translator_191" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "altera_merlin_slave_translator_191/synth/emif_cal_altera_merlin_slave_translator_191_x56fcki.sv"]
-set_global_assignment -library "altera_mm_interconnect_1920" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_mm_interconnect_1920/synth/emif_cal_altera_mm_interconnect_1920_pvpm4mq.v"]
-set_global_assignment -library "altera_emif_cal_274" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_emif_cal_274/synth/emif_cal_altera_emif_cal_274_qortvxi.v"]
+set_global_assignment -library "altera_emif_cal_iossm_274" -name SOURCE_FILE [file join $::quartus(qip_path) "altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_yagv7fq_code.hex"]
+set_global_assignment -library "altera_emif_cal_iossm_274" -name SOURCE_FILE [file join $::quartus(qip_path) "altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_yagv7fq_sim_global_param_tbl.hex"]
+set_global_assignment -library "altera_emif_cal_iossm_274" -name SOURCE_FILE [file join $::quartus(qip_path) "altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_yagv7fq_sim_global_param_tbl.txt"]
+set_global_assignment -library "altera_emif_cal_iossm_274" -name SOURCE_FILE [file join $::quartus(qip_path) "altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_yagv7fq_synth_global_param_tbl.hex"]
+set_global_assignment -library "altera_emif_cal_iossm_274" -name SOURCE_FILE [file join $::quartus(qip_path) "altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_yagv7fq_synth_global_param_tbl.txt"]
+set_global_assignment -library "altera_emif_cal_iossm_274" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_yagv7fq_arch.sv"]
+set_global_assignment -library "altera_emif_cal_iossm_274" -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) "altera_emif_cal_iossm_274/synth/emif_cal_altera_emif_cal_iossm_274_yagv7fq.sv"]
+set_global_assignment -library "altera_emif_cal_274" -name VERILOG_FILE [file join $::quartus(qip_path) "altera_emif_cal_274/synth/emif_cal_altera_emif_cal_274_kaypsya.v"]
 set_global_assignment -library "emif_cal" -name VERILOG_FILE [file join $::quartus(qip_path) "synth/emif_cal.v"]
 
 
-set_global_assignment -entity "emif_cal_altera_emif_cal_274_qortvxi" -library "altera_emif_cal_274" -name IP_TOOL_NAME "altera_emif_cal"
-set_global_assignment -entity "emif_cal_altera_emif_cal_274_qortvxi" -library "altera_emif_cal_274" -name IP_TOOL_VERSION "2.7.4"
-set_global_assignment -entity "emif_cal_altera_emif_cal_274_qortvxi" -library "altera_emif_cal_274" -name IP_TOOL_ENV "QsysPrimePro"
-set_global_assignment -entity "emif_cal_altera_mm_interconnect_1920_pvpm4mq" -library "altera_mm_interconnect_1920" -name IP_TOOL_NAME "altera_mm_interconnect"
-set_global_assignment -entity "emif_cal_altera_mm_interconnect_1920_pvpm4mq" -library "altera_mm_interconnect_1920" -name IP_TOOL_VERSION "19.2.0"
-set_global_assignment -entity "emif_cal_altera_mm_interconnect_1920_pvpm4mq" -library "altera_mm_interconnect_1920" -name IP_TOOL_ENV "QsysPrimePro"
-set_global_assignment -entity "emif_cal_altera_merlin_slave_translator_191_x56fcki" -library "altera_merlin_slave_translator_191" -name IP_TOOL_NAME "altera_merlin_slave_translator"
-set_global_assignment -entity "emif_cal_altera_merlin_slave_translator_191_x56fcki" -library "altera_merlin_slave_translator_191" -name IP_TOOL_VERSION "19.1"
-set_global_assignment -entity "emif_cal_altera_merlin_slave_translator_191_x56fcki" -library "altera_merlin_slave_translator_191" -name IP_TOOL_ENV "QsysPrimePro"
-set_global_assignment -entity "emif_cal_altera_merlin_master_translator_192_lykd4la" -library "altera_merlin_master_translator_192" -name IP_TOOL_NAME "altera_merlin_master_translator"
-set_global_assignment -entity "emif_cal_altera_merlin_master_translator_192_lykd4la" -library "altera_merlin_master_translator_192" -name IP_TOOL_VERSION "19.2"
-set_global_assignment -entity "emif_cal_altera_merlin_master_translator_192_lykd4la" -library "altera_merlin_master_translator_192" -name IP_TOOL_ENV "QsysPrimePro"
-set_global_assignment -entity "emif_cal_alt_mem_if_jtag_master_191_rksoe3i" -library "alt_mem_if_jtag_master_191" -name IP_TOOL_NAME "alt_mem_if_jtag_master"
-set_global_assignment -entity "emif_cal_alt_mem_if_jtag_master_191_rksoe3i" -library "alt_mem_if_jtag_master_191" -name IP_TOOL_VERSION "19.1"
-set_global_assignment -entity "emif_cal_alt_mem_if_jtag_master_191_rksoe3i" -library "alt_mem_if_jtag_master_191" -name IP_TOOL_ENV "QsysPrimePro"
-set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1922" -name IP_TOOL_NAME "altera_reset_controller"
-set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1922" -name IP_TOOL_VERSION "19.2.2"
-set_global_assignment -entity "altera_reset_controller" -library "altera_reset_controller_1922" -name IP_TOOL_ENV "QsysPrimePro"
-set_global_assignment -entity "emif_cal_channel_adapter_1921_fkajlia" -library "channel_adapter_1921" -name IP_TOOL_NAME "channel_adapter"
-set_global_assignment -entity "emif_cal_channel_adapter_1921_fkajlia" -library "channel_adapter_1921" -name IP_TOOL_VERSION "19.2.1"
-set_global_assignment -entity "emif_cal_channel_adapter_1921_fkajlia" -library "channel_adapter_1921" -name IP_TOOL_ENV "QsysPrimePro"
-set_global_assignment -entity "emif_cal_channel_adapter_1921_5wnzrci" -library "channel_adapter_1921" -name IP_TOOL_NAME "channel_adapter"
-set_global_assignment -entity "emif_cal_channel_adapter_1921_5wnzrci" -library "channel_adapter_1921" -name IP_TOOL_VERSION "19.2.1"
-set_global_assignment -entity "emif_cal_channel_adapter_1921_5wnzrci" -library "channel_adapter_1921" -name IP_TOOL_ENV "QsysPrimePro"
-set_global_assignment -entity "altera_avalon_packets_to_master" -library "altera_avalon_packets_to_master_1922" -name IP_TOOL_NAME "altera_avalon_packets_to_master"
-set_global_assignment -entity "altera_avalon_packets_to_master" -library "altera_avalon_packets_to_master_1922" -name IP_TOOL_VERSION "19.2.2"
-set_global_assignment -entity "altera_avalon_packets_to_master" -library "altera_avalon_packets_to_master_1922" -name IP_TOOL_ENV "QsysPrimePro"
-set_global_assignment -entity "altera_avalon_st_packets_to_bytes" -library "altera_avalon_st_packets_to_bytes_1922" -name IP_TOOL_NAME "altera_avalon_st_packets_to_bytes"
-set_global_assignment -entity "altera_avalon_st_packets_to_bytes" -library "altera_avalon_st_packets_to_bytes_1922" -name IP_TOOL_VERSION "19.2.2"
-set_global_assignment -entity "altera_avalon_st_packets_to_bytes" -library "altera_avalon_st_packets_to_bytes_1922" -name IP_TOOL_ENV "QsysPrimePro"
-set_global_assignment -entity "altera_avalon_st_bytes_to_packets" -library "altera_avalon_st_bytes_to_packets_1922" -name IP_TOOL_NAME "altera_avalon_st_bytes_to_packets"
-set_global_assignment -entity "altera_avalon_st_bytes_to_packets" -library "altera_avalon_st_bytes_to_packets_1922" -name IP_TOOL_VERSION "19.2.2"
-set_global_assignment -entity "altera_avalon_st_bytes_to_packets" -library "altera_avalon_st_bytes_to_packets_1922" -name IP_TOOL_ENV "QsysPrimePro"
-set_global_assignment -entity "emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq" -library "altera_avalon_sc_fifo_1932" -name IP_TOOL_NAME "altera_avalon_sc_fifo"
-set_global_assignment -entity "emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq" -library "altera_avalon_sc_fifo_1932" -name IP_TOOL_VERSION "19.3.2"
-set_global_assignment -entity "emif_cal_altera_avalon_sc_fifo_1932_5j7ufsq" -library "altera_avalon_sc_fifo_1932" -name IP_TOOL_ENV "QsysPrimePro"
-set_global_assignment -entity "emif_cal_timing_adapter_1940_5ju4ddy" -library "timing_adapter_1940" -name IP_TOOL_NAME "timing_adapter"
-set_global_assignment -entity "emif_cal_timing_adapter_1940_5ju4ddy" -library "timing_adapter_1940" -name IP_TOOL_VERSION "19.4.0"
-set_global_assignment -entity "emif_cal_timing_adapter_1940_5ju4ddy" -library "timing_adapter_1940" -name IP_TOOL_ENV "QsysPrimePro"
-set_global_assignment -entity "altera_avalon_st_jtag_interface" -library "altera_jtag_dc_streaming_191" -name IP_TOOL_NAME "altera_jtag_dc_streaming"
-set_global_assignment -entity "altera_avalon_st_jtag_interface" -library "altera_jtag_dc_streaming_191" -name IP_TOOL_VERSION "19.1"
-set_global_assignment -entity "altera_avalon_st_jtag_interface" -library "altera_jtag_dc_streaming_191" -name IP_TOOL_ENV "QsysPrimePro"
-set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_kxwbfsa" -library "altera_emif_cal_iossm_274" -name IP_TOOL_NAME "altera_emif_cal_iossm"
-set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_kxwbfsa" -library "altera_emif_cal_iossm_274" -name IP_TOOL_VERSION "2.7.4"
-set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_kxwbfsa" -library "altera_emif_cal_iossm_274" -name IP_TOOL_ENV "QsysPrimePro"
+set_global_assignment -entity "emif_cal_altera_emif_cal_274_kaypsya" -library "altera_emif_cal_274" -name IP_TOOL_NAME "altera_emif_cal"
+set_global_assignment -entity "emif_cal_altera_emif_cal_274_kaypsya" -library "altera_emif_cal_274" -name IP_TOOL_VERSION "2.7.4"
+set_global_assignment -entity "emif_cal_altera_emif_cal_274_kaypsya" -library "altera_emif_cal_274" -name IP_TOOL_ENV "QsysPrimePro"
+set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_yagv7fq" -library "altera_emif_cal_iossm_274" -name IP_TOOL_NAME "altera_emif_cal_iossm"
+set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_yagv7fq" -library "altera_emif_cal_iossm_274" -name IP_TOOL_VERSION "2.7.4"
+set_global_assignment -entity "emif_cal_altera_emif_cal_iossm_274_yagv7fq" -library "altera_emif_cal_iossm_274" -name IP_TOOL_ENV "QsysPrimePro"
 

@@ -11,9 +11,6 @@ Info: io_pll: "Transforming system: io_pll"
 Info: io_pll: "Naming system components in system: io_pll"
 Info: io_pll: "Processing generation queue"
 Info: io_pll: "Generating: io_pll"
-Info: io_pll: "Generating: io_pll_altera_iopll_1931_il4ft3y"
+Info: io_pll: "Generating: io_pll_altera_iopll_1931_saopfla"
 Info: io_pll: Done "io_pll" with 2 modules, 7 files
 Info: Finished: Create HDL design files for synthesis
-Info: Starting: Generate IP Core Documentation
-Info: No documentation filesets were found for components in io_pll. No files generated.
-Info: Finished: Generate IP Core Documentation

@@ -67,7 +67,7 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
   </table>
   <table class="blueBar">
    <tr>
-    <td class="l">2024.06.20.13:40:20</td>
+    <td class="l">2024.07.03.12:58:24</td>
     <td class="r">Datasheet</td>
    </tr>
   </table>
@@ -82,10 +82,7 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
     </table>
    </div><span style="display:inline-block ; width:28px"> </span>
    <div style="display:inline-block ; text-align:left"><span>
-     <br/>All Components
-     <br/>&#160;&#160;
-     <a href="#module_emif_cal_0_emif_cal"><b>emif_cal_0_emif_cal</b>
-     </a> altera_emif_cal_iossm 2.7.4</span>
+     <br/></span>
    </div>
   </div>
   <div style="width:100% ;  height:10px"> </div>
@@ -93,24 +90,6 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
   <table class="mmap">
    <tr>
     <td class="empty" rowspan="2"></td>
-    <td class="mastermodule" colspan="1">
-     <a href="#module_emif_cal_0_jtag_master"><b>emif_cal_0_jtag_master</b>
-     </a>
-    </td>
-   </tr>
-   <tr>
-    <td class="masterlr">&#160;master</td>
-   </tr>
-   <tr>
-    <td class="slavemodule">&#160;
-     <a href="#module_emif_cal_0_emif_cal"><b>emif_cal_0_emif_cal</b>
-     </a>
-    </td>
-    <td class="empty"></td>
-   </tr>
-   <tr>
-    <td class="slaveb">cal_debug&#160;</td>
-    <td>0x0000_0000 - 0x07ff_ffff</td>
    </tr>
   </table>
   <a name="module_emif_cal_0"> </a>
@@ -135,7 +114,7 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
        </tr>
        <tr>
         <td class="parametername">DIAG_EXPORT_SEQ_AVALON_SLAVE</td>
-        <td class="parametervalue">CAL_DEBUG_EXPORT_MODE_JTAG</td>
+        <td class="parametervalue">CAL_DEBUG_EXPORT_MODE_DISABLED</td>
        </tr>
        <tr>
         <td class="parametername">DIAG_SIM_VERBOSE</td>
@@ -169,44 +148,6 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
    <hr/>
    <h2>emif_cal_0_emif_cal</h2>altera_emif_cal_iossm v2.7.4
    <br/>
-   <div class="greydiv">
-    <table class="connectionboxes">
-     <tr>
-      <td class="neighbor" rowspan="2">
-       <a href="#module_emif_cal_0_clk_bridge">emif_cal_0_clk_bridge</a>
-      </td>
-      <td class="from">out_clk&#160;&#160;</td>
-      <td class="main" rowspan="8">emif_cal_0_emif_cal</td>
-     </tr>
-     <tr>
-      <td class="to">&#160;&#160;cal_debug_clk</td>
-     </tr>
-     <tr style="height:6px">
-      <td></td>
-     </tr>
-     <tr>
-      <td class="neighbor" rowspan="2">
-       <a href="#module_emif_cal_0_rst_bridge">emif_cal_0_rst_bridge</a>
-      </td>
-      <td class="from">out_reset&#160;&#160;</td>
-     </tr>
-     <tr>
-      <td class="to">&#160;&#160;cal_debug_reset_n</td>
-     </tr>
-     <tr style="height:6px">
-      <td></td>
-     </tr>
-     <tr>
-      <td class="neighbor" rowspan="2">
-       <a href="#module_emif_cal_0_jtag_master">emif_cal_0_jtag_master</a>
-      </td>
-      <td class="from">master&#160;&#160;</td>
-     </tr>
-     <tr>
-      <td class="to">&#160;&#160;cal_debug</td>
-     </tr>
-    </table>
-   </div>
    <br/>
    <br/>
    <table class="flowbox">
@@ -224,7 +165,7 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
        </tr>
        <tr>
         <td class="parametername">DIAG_EXPORT_SEQ_AVALON_SLAVE</td>
-        <td class="parametervalue">CAL_DEBUG_EXPORT_MODE_JTAG</td>
+        <td class="parametervalue">CAL_DEBUG_EXPORT_MODE_DISABLED</td>
        </tr>
        <tr>
         <td class="parametername">DIAG_SIM_VERBOSE</td>
@@ -257,233 +198,10 @@ div.greydiv { vertical-align:top ; text-align:center ; background:#eeeeee ; bord
     </tr>
    </table>
   </div>
-  <a name="module_emif_cal_0_jtag_master"> </a>
-  <div>
-   <hr/>
-   <h2>emif_cal_0_jtag_master</h2>alt_mem_if_jtag_master v19.1
-   <br/>
-   <div class="greydiv">
-    <table class="connectionboxes">
-     <tr>
-      <td class="neighbor" rowspan="2">
-       <a href="#module_emif_cal_0_clk_bridge">emif_cal_0_clk_bridge</a>
-      </td>
-      <td class="from">out_clk&#160;&#160;</td>
-      <td class="main" rowspan="7">emif_cal_0_jtag_master</td>
-     </tr>
-     <tr>
-      <td class="to">&#160;&#160;clk</td>
-     </tr>
-     <tr style="height:6px">
-      <td></td>
-     </tr>
-     <tr>
-      <td class="neighbor" rowspan="2">
-       <a href="#module_emif_cal_0_rst_bridge">emif_cal_0_rst_bridge</a>
-      </td>
-      <td class="from">out_reset&#160;&#160;</td>
-     </tr>
-     <tr>
-      <td class="to">&#160;&#160;clk_reset</td>
-     </tr>
-     <tr>
-      <td></td>
-      <td></td>
-      <td class="from">master&#160;&#160;</td>
-      <td class="neighbor" rowspan="2">
-       <a href="#module_emif_cal_0_emif_cal">emif_cal_0_emif_cal</a>
-      </td>
-     </tr>
-     <tr>
-      <td></td>
-      <td></td>
-      <td class="to">&#160;&#160;cal_debug</td>
-     </tr>
-    </table>
-   </div>
-   <br/>
-   <br/>
-   <table class="flowbox">
-    <tr>
-     <td class="parametersbox">
-      <h2>Parameters</h2>
-      <table>
-       <tr>
-        <td class="parametername">USE_PLI</td>
-        <td class="parametervalue">0</td>
-       </tr>
-       <tr>
-        <td class="parametername">PLI_PORT</td>
-        <td class="parametervalue">50000</td>
-       </tr>
-       <tr>
-        <td class="parametername">FAST_VER</td>
-        <td class="parametervalue">0</td>
-       </tr>
-       <tr>
-        <td class="parametername">FIFO_DEPTHS</td>
-        <td class="parametervalue">2</td>
-       </tr>
-       <tr>
-        <td class="parametername">generateLegacySim</td>
-        <td class="parametervalue">false</td>
-       </tr>
-      </table>
-     </td>
-    </tr>
-   </table>&#160;&#160;
-   <table class="flowbox">
-    <tr>
-     <td class="parametersbox">
-      <h2>Software Assignments</h2>(none)</td>
-    </tr>
-   </table>
-  </div>
-  <a name="module_emif_cal_0_clk_bridge"> </a>
-  <div>
-   <hr/>
-   <h2>emif_cal_0_clk_bridge</h2>altera_clock_bridge v19.2.0
-   <br/>
-   <br/>
-   <br/>
-   <table class="flowbox">
-    <tr>
-     <td class="parametersbox">
-      <h2>Parameters</h2>
-      <table>
-       <tr>
-        <td class="parametername">DERIVED_CLOCK_RATE</td>
-        <td class="parametervalue">0</td>
-       </tr>
-       <tr>
-        <td class="parametername">EXPLICIT_CLOCK_RATE</td>
-        <td class="parametervalue">0</td>
-       </tr>
-       <tr>
-        <td class="parametername">NUM_CLOCK_OUTPUTS</td>
-        <td class="parametervalue">1</td>
-       </tr>
-       <tr>
-        <td class="parametername">deviceFamily</td>
-        <td class="parametervalue">UNKNOWN</td>
-       </tr>
-       <tr>
-        <td class="parametername">generateLegacySim</td>
-        <td class="parametervalue">false</td>
-       </tr>
-      </table>
-     </td>
-    </tr>
-   </table>&#160;&#160;
-   <table class="flowbox">
-    <tr>
-     <td class="parametersbox">
-      <h2>Software Assignments</h2>(none)</td>
-    </tr>
-   </table>
-  </div>
-  <a name="module_emif_cal_0_rst_bridge"> </a>
-  <div>
-   <hr/>
-   <h2>emif_cal_0_rst_bridge</h2>altera_reset_bridge v19.2.0
-   <br/>
-   <div class="greydiv">
-    <table class="connectionboxes">
-     <tr>
-      <td class="neighbor" rowspan="2">
-       <a href="#module_emif_cal_0_clk_bridge">emif_cal_0_clk_bridge</a>
-      </td>
-      <td class="from">out_clk&#160;&#160;</td>
-      <td class="main" rowspan="7">emif_cal_0_rst_bridge</td>
-     </tr>
-     <tr>
-      <td class="to">&#160;&#160;clk</td>
-     </tr>
-     <tr>
-      <td></td>
-      <td></td>
-      <td class="from">out_reset&#160;&#160;</td>
-      <td class="neighbor" rowspan="2">
-       <a href="#module_emif_cal_0_emif_cal">emif_cal_0_emif_cal</a>
-      </td>
-     </tr>
-     <tr>
-      <td></td>
-      <td></td>
-      <td class="to">&#160;&#160;cal_debug_reset_n</td>
-     </tr>
-     <tr style="height:6px">
-      <td></td>
-     </tr>
-     <tr>
-      <td></td>
-      <td></td>
-      <td class="from">out_reset&#160;&#160;</td>
-      <td class="neighbor" rowspan="2">
-       <a href="#module_emif_cal_0_jtag_master">emif_cal_0_jtag_master</a>
-      </td>
-     </tr>
-     <tr>
-      <td></td>
-      <td></td>
-      <td class="to">&#160;&#160;clk_reset</td>
-     </tr>
-    </table>
-   </div>
-   <br/>
-   <br/>
-   <table class="flowbox">
-    <tr>
-     <td class="parametersbox">
-      <h2>Parameters</h2>
-      <table>
-       <tr>
-        <td class="parametername">ACTIVE_LOW_RESET</td>
-        <td class="parametervalue">0</td>
-       </tr>
-       <tr>
-        <td class="parametername">SYNCHRONOUS_EDGES</td>
-        <td class="parametervalue">deassert</td>
-       </tr>
-       <tr>
-        <td class="parametername">O_SYNCHRONOUS_EDGES</td>
-        <td class="parametervalue">deassert</td>
-       </tr>
-       <tr>
-        <td class="parametername">NUM_RESET_OUTPUTS</td>
-        <td class="parametervalue">1</td>
-       </tr>
-       <tr>
-        <td class="parametername">USE_RESET_REQUEST</td>
-        <td class="parametervalue">0</td>
-       </tr>
-       <tr>
-        <td class="parametername">SYNC_RESET</td>
-        <td class="parametervalue">0</td>
-       </tr>
-       <tr>
-        <td class="parametername">deviceFamily</td>
-        <td class="parametervalue">UNKNOWN</td>
-       </tr>
-       <tr>
-        <td class="parametername">generateLegacySim</td>
-        <td class="parametervalue">false</td>
-       </tr>
-      </table>
-     </td>
-    </tr>
-   </table>&#160;&#160;
-   <table class="flowbox">
-    <tr>
-     <td class="parametersbox">
-      <h2>Software Assignments</h2>(none)</td>
-    </tr>
-   </table>
-  </div>
   <table class="blueBar">
    <tr>
     <td class="l">generation took 0.00 seconds</td>
-    <td class="r">rendering took 0.00 seconds</td>
+    <td class="r">rendering took 0.01 seconds</td>
    </tr>
   </table>
  </body>
