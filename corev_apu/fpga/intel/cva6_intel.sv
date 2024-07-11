@@ -186,8 +186,8 @@ rstgen i_rstgen_main (
     .init_no      (                          ) // keep open
 );
 
-assign rst_n = ~ddr_sync_reset;
-assign rst = ddr_sync_reset;
+assign rst_n = ddr_sync_reset;
+assign rst = ~ddr_sync_reset;
 
 // ---------------
 // AXI Xbar
@@ -789,45 +789,41 @@ cva6_peripherals #(
 // ---------------
 // DDR
 // ---------------
-logic [AxiIdWidthSlaves-1:0] s_axi_awid;
-logic [AxiAddrWidth-1:0]     s_axi_awaddr;
-logic [7:0]                  s_axi_awlen;
-logic [2:0]                  s_axi_awsize;
-logic [1:0]                  s_axi_awburst;
-logic [0:0]                  s_axi_awlock;
-logic [3:0]                  s_axi_awcache;
-logic [2:0]                  s_axi_awprot;
-logic [3:0]                  s_axi_awregion;
-logic [3:0]                  s_axi_awqos;
-logic                        s_axi_awvalid;
-logic                        s_axi_awready;
-logic [AxiDataWidth-1:0]     s_axi_wdata;
-logic [AxiDataWidth/8-1:0]   s_axi_wstrb;
-logic                        s_axi_wlast;
-logic                        s_axi_wvalid;
-logic                        s_axi_wready;
-logic [AxiIdWidthSlaves-1:0] s_axi_bid;
-logic [1:0]                  s_axi_bresp;
-logic                        s_axi_bvalid;
-logic                        s_axi_bready;
-logic [AxiIdWidthSlaves-1:0] s_axi_arid;
-logic [AxiAddrWidth-1:0]     s_axi_araddr;
-logic [7:0]                  s_axi_arlen;
-logic [2:0]                  s_axi_arsize;
-logic [1:0]                  s_axi_arburst;
-logic [0:0]                  s_axi_arlock;
-logic [3:0]                  s_axi_arcache;
-logic [2:0]                  s_axi_arprot;
-logic [3:0]                  s_axi_arregion;
-logic [3:0]                  s_axi_arqos;
-logic                        s_axi_arvalid;
-logic                        s_axi_arready;
-logic [AxiIdWidthSlaves-1:0] s_axi_rid;
-logic [AxiDataWidth-1:0]     s_axi_rdata;
-logic [1:0]                  s_axi_rresp;
-logic                        s_axi_rlast;
-logic                        s_axi_rvalid;
-logic                        s_axi_rready;
+wire     [1:0] axi_bridge_0_m0_awburst;                              // axi_bridge_0:m0_awburst -> mm_interconnect_0:axi_bridge_0_m0_awburst
+wire     [7:0] axi_bridge_0_m0_arlen;                                // axi_bridge_0:m0_arlen -> mm_interconnect_0:axi_bridge_0_m0_arlen
+wire     [7:0] axi_bridge_0_m0_wstrb;                                // axi_bridge_0:m0_wstrb -> mm_interconnect_0:axi_bridge_0_m0_wstrb
+wire           axi_bridge_0_m0_wready;                               // mm_interconnect_0:axi_bridge_0_m0_wready -> axi_bridge_0:m0_wready
+wire     [7:0] axi_bridge_0_m0_rid;                                  // mm_interconnect_0:axi_bridge_0_m0_rid -> axi_bridge_0:m0_rid
+wire           axi_bridge_0_m0_rready;                               // axi_bridge_0:m0_rready -> mm_interconnect_0:axi_bridge_0_m0_rready
+wire     [7:0] axi_bridge_0_m0_awlen;                                // axi_bridge_0:m0_awlen -> mm_interconnect_0:axi_bridge_0_m0_awlen
+wire     [3:0] axi_bridge_0_m0_arcache;                              // axi_bridge_0:m0_arcache -> mm_interconnect_0:axi_bridge_0_m0_arcache
+wire           axi_bridge_0_m0_wvalid;                               // axi_bridge_0:m0_wvalid -> mm_interconnect_0:axi_bridge_0_m0_wvalid
+wire    [63:0] axi_bridge_0_m0_araddr;                               // axi_bridge_0:m0_araddr -> mm_interconnect_0:axi_bridge_0_m0_araddr
+wire     [2:0] axi_bridge_0_m0_arprot;                               // axi_bridge_0:m0_arprot -> mm_interconnect_0:axi_bridge_0_m0_arprot
+wire     [2:0] axi_bridge_0_m0_awprot;                               // axi_bridge_0:m0_awprot -> mm_interconnect_0:axi_bridge_0_m0_awprot
+wire    [63:0] axi_bridge_0_m0_wdata;                                // axi_bridge_0:m0_wdata -> mm_interconnect_0:axi_bridge_0_m0_wdata
+wire           axi_bridge_0_m0_arvalid;                              // axi_bridge_0:m0_arvalid -> mm_interconnect_0:axi_bridge_0_m0_arvalid
+wire     [3:0] axi_bridge_0_m0_awcache;                              // axi_bridge_0:m0_awcache -> mm_interconnect_0:axi_bridge_0_m0_awcache
+wire     [7:0] axi_bridge_0_m0_arid;                                 // axi_bridge_0:m0_arid -> mm_interconnect_0:axi_bridge_0_m0_arid
+wire     [0:0] axi_bridge_0_m0_arlock;                               // axi_bridge_0:m0_arlock -> mm_interconnect_0:axi_bridge_0_m0_arlock
+wire     [0:0] axi_bridge_0_m0_awlock;                               // axi_bridge_0:m0_awlock -> mm_interconnect_0:axi_bridge_0_m0_awlock
+wire    [63:0] axi_bridge_0_m0_awaddr;                               // axi_bridge_0:m0_awaddr -> mm_interconnect_0:axi_bridge_0_m0_awaddr
+wire     [1:0] axi_bridge_0_m0_bresp;                                // mm_interconnect_0:axi_bridge_0_m0_bresp -> axi_bridge_0:m0_bresp
+wire           axi_bridge_0_m0_arready;                              // mm_interconnect_0:axi_bridge_0_m0_arready -> axi_bridge_0:m0_arready
+wire    [63:0] axi_bridge_0_m0_rdata;                                // mm_interconnect_0:axi_bridge_0_m0_rdata -> axi_bridge_0:m0_rdata
+wire           axi_bridge_0_m0_awready;                              // mm_interconnect_0:axi_bridge_0_m0_awready -> axi_bridge_0:m0_awready
+wire     [1:0] axi_bridge_0_m0_arburst;                              // axi_bridge_0:m0_arburst -> mm_interconnect_0:axi_bridge_0_m0_arburst
+wire     [2:0] axi_bridge_0_m0_arsize;                               // axi_bridge_0:m0_arsize -> mm_interconnect_0:axi_bridge_0_m0_arsize
+wire           axi_bridge_0_m0_bready;                               // axi_bridge_0:m0_bready -> mm_interconnect_0:axi_bridge_0_m0_bready
+wire           axi_bridge_0_m0_rlast;                                // mm_interconnect_0:axi_bridge_0_m0_rlast -> axi_bridge_0:m0_rlast
+wire           axi_bridge_0_m0_wlast;                                // axi_bridge_0:m0_wlast -> mm_interconnect_0:axi_bridge_0_m0_wlast
+wire     [1:0] axi_bridge_0_m0_rresp;                                // mm_interconnect_0:axi_bridge_0_m0_rresp -> axi_bridge_0:m0_rresp
+wire     [7:0] axi_bridge_0_m0_awid;                                 // axi_bridge_0:m0_awid -> mm_interconnect_0:axi_bridge_0_m0_awid
+wire     [7:0] axi_bridge_0_m0_bid;                                  // mm_interconnect_0:axi_bridge_0_m0_bid -> axi_bridge_0:m0_bid
+wire           axi_bridge_0_m0_bvalid;                               // mm_interconnect_0:axi_bridge_0_m0_bvalid -> axi_bridge_0:m0_bvalid
+wire     [2:0] axi_bridge_0_m0_awsize;                               // axi_bridge_0:m0_awsize -> mm_interconnect_0:axi_bridge_0_m0_awsize
+wire           axi_bridge_0_m0_awvalid;                              // axi_bridge_0:m0_awvalid -> mm_interconnect_0:axi_bridge_0_m0_awvalid
+wire           axi_bridge_0_m0_rvalid;                               // mm_interconnect_0:axi_bridge_0_m0_rvalid -> axi_bridge_0:m0_rvalid
 
 logic ddr_amm_ready;
 logic ddr_amm_read;
@@ -946,8 +942,8 @@ ed_synth_emif_fm_0 inst_ddr4 (
     .mem_dqs_n                 (ddr4_dqs_n),                 //   inout,     width = 9,                          .mem_dqs_n
     .mem_dq                    (ddr4_dq),                    //   inout,    width = 72,                          .mem_dq
     .mem_dbi_n                 (ddr4_dbi_n),                 //   inout,     width = 9,                          .mem_dbi_n
-    // .local_cal_success         (_connected_to_local_cal_success_),         //  output,     width = 1,                    status.local_cal_success
-    // .local_cal_fail            (_connected_to_local_cal_fail_),            //  output,     width = 1,                          .local_cal_fail
+    // .local_cal_success         (led[1]),         //  output,     width = 1,                    status.local_cal_success
+    // .local_cal_fail            (led[2]),            //  output,     width = 1,                          .local_cal_fail
     .calbus_read               (calbus_read),               //   input,     width = 1,               emif_calbus.calbus_read
     .calbus_write              (calbus_write),              //   input,     width = 1,                          .calbus_write
     .calbus_address            (calbus_addr),            //   input,    width = 20,                          .calbus_address
@@ -980,49 +976,49 @@ emif_cal ddr_calibration (
 
 //avalon to axi converter with clock conversion integrated
 cva6_intel_altera_mm_interconnect_1920_7uifsqq avalon_to_axi4 (
-		.axi_bridge_0_m0_awid                                             (s_axi_awid),            //   input,    width = 5,                                            mgc_axi4_master_0_altera_axi4_master.awid
-		.axi_bridge_0_m0_awaddr                                           (s_axi_awaddr),          //   input,   width = 64,                                                                                .awaddr
-		.axi_bridge_0_m0_awlen                                            (s_axi_awlen),           //   input,    width = 8,                                                                                .awlen
-		.axi_bridge_0_m0_awsize                                           (s_axi_awsize),          //   input,    width = 3,                                                                                .awsize
-		.axi_bridge_0_m0_awburst                                          (s_axi_awburst),         //   input,    width = 2,                                                                                .awburst
-		.axi_bridge_0_m0_awlock                                           (s_axi_awlock),          //   input,    width = 1,                                                                                .awlock
-		.axi_bridge_0_m0_awcache                                          (s_axi_awcache),         //   input,    width = 4,                                                                                .awcache
-		.axi_bridge_0_m0_awprot                                           (s_axi_awprot),          //   input,    width = 3,                                                                                .awprot
+		.axi_bridge_0_m0_awid                                             (dram.aw_id),            //   input,    width = 5,                                            mgc_axi4_master_0_altera_axi4_master.awid
+		.axi_bridge_0_m0_awaddr                                           (dram.aw_addr),          //   input,   width = 64,                                                                                .awaddr
+		.axi_bridge_0_m0_awlen                                            (dram.aw_len),           //   input,    width = 8,                                                                                .awlen
+		.axi_bridge_0_m0_awsize                                           (dram.aw_size),          //   input,    width = 3,                                                                                .awsize
+		.axi_bridge_0_m0_awburst                                          (dram.aw_burst),         //   input,    width = 2,                                                                                .awburst
+		.axi_bridge_0_m0_awlock                                           (dram.aw_lock),          //   input,    width = 1,                                                                                .awlock
+		.axi_bridge_0_m0_awcache                                          (dram.aw_cache),         //   input,    width = 4,                                                                                .awcache
+		.axi_bridge_0_m0_awprot                                           (dram.aw_prot),          //   input,    width = 3,                                                                                .awprot
 		// .axi_bridge_0_m0_awuser                                           ('0),          //   input,    width = 8,                                                                                .awuser
-		// .axi_bridge_0_m0_awqos                                            (s_axi_awqos),           //   input,    width = 4,                                                                                .awqos
-		// .axi_bridge_0_m0_awregion                                         (s_axi_awregion),        //   input,    width = 4,                                                                                .awregion
-		.axi_bridge_0_m0_awvalid                                          (s_axi_awvalid),         //   input,    width = 1,                                                                                .awvalid
-		.axi_bridge_0_m0_awready                                          (s_axi_awready),         //  output,    width = 1,                                                                                .awready
-		.axi_bridge_0_m0_wdata                                            (s_axi_wdata),           //   input,  width = 512,                                                                                .wdata
-		.axi_bridge_0_m0_wstrb                                            (s_axi_wstrb),           //   input,   width = 64,                                                                                .wstrb
-		.axi_bridge_0_m0_wlast                                            (s_axi_wlast),           //   input,    width = 1,                                                                                .wlast
-		.axi_bridge_0_m0_wvalid                                           (s_axi_wvalid),          //   input,    width = 1,                                                                                .wvalid
+		// .axi_bridge_0_m0_awqos                                            (dram.awqos),           //   input,    width = 4,                                                                                .awqos
+		// .axi_bridge_0_m0_awregion                                         (dram.awregion),        //   input,    width = 4,                                                                                .awregion
+		.axi_bridge_0_m0_awvalid                                          (dram.aw_valid),         //   input,    width = 1,                                                                                .awvalid
+		.axi_bridge_0_m0_awready                                          (dram.aw_ready),         //  output,    width = 1,                                                                                .awready
+		.axi_bridge_0_m0_wdata                                            (dram.w_data),           //   input,  width = 512,                                                                                .wdata
+		.axi_bridge_0_m0_wstrb                                            (dram.w_strb),           //   input,   width = 64,                                                                                .wstrb
+		.axi_bridge_0_m0_wlast                                            (dram.w_last),           //   input,    width = 1,                                                                                .wlast
+		.axi_bridge_0_m0_wvalid                                           (dram.w_valid),          //   input,    width = 1,                                                                                .wvalid
 		// .axi_bridge_0_m0_wuser                                            ('0),           //   input,    width = 8,                                                                                .wuser
-		.axi_bridge_0_m0_wready                                           (s_axi_wready),          //  output,    width = 1,                                                                                .wready
-		.axi_bridge_0_m0_bid                                              (s_axi_bid),             //  output,    width = 5,                                                                                .bid
-		.axi_bridge_0_m0_bresp                                            (s_axi_bresp),           //  output,    width = 2,                                                                                .bresp
+		.axi_bridge_0_m0_wready                                           (dram.w_ready),          //  output,    width = 1,                                                                                .wready
+		.axi_bridge_0_m0_bid                                              (dram.b_id),             //  output,    width = 5,                                                                                .bid
+		.axi_bridge_0_m0_bresp                                            (dram.b_resp),           //  output,    width = 2,                                                                                .bresp
 		// .axi_bridge_0_m0_buser                                            (),           //  output,    width = 8,                                                                                .buser
-		.axi_bridge_0_m0_bvalid                                           (s_axi_bvalid),          //  output,    width = 1,                                                                                .bvalid
-		.axi_bridge_0_m0_bready                                           (s_axi_bready),          //   input,    width = 1,                                                                                .bready
-		.axi_bridge_0_m0_arid                                             (s_axi_arid),            //   input,    width = 5,                                                                                .arid
-		.axi_bridge_0_m0_araddr                                           (s_axi_araddr),          //   input,   width = 64,                                                                                .araddr
-		.axi_bridge_0_m0_arlen                                            (s_axi_arlen),           //   input,    width = 8,                                                                                .arlen
-		.axi_bridge_0_m0_arsize                                           (s_axi_arsize),          //   input,    width = 3,                                                                                .arsize
-		.axi_bridge_0_m0_arburst                                          (s_axi_arburst),         //   input,    width = 2,                                                                                .arburst
-		.axi_bridge_0_m0_arlock                                           (s_axi_arlock),          //   input,    width = 1,                                                                                .arlock
-		.axi_bridge_0_m0_arcache                                          (s_axi_arcache),         //   input,    width = 4,                                                                                .arcache
-		.axi_bridge_0_m0_arprot                                           (s_axi_arprot),          //   input,    width = 3,                                                                                .arprot
+		.axi_bridge_0_m0_bvalid                                           (dram.b_valid),          //  output,    width = 1,                                                                                .bvalid
+		.axi_bridge_0_m0_bready                                           (dram.b_ready),          //   input,    width = 1,                                                                                .bready
+		.axi_bridge_0_m0_arid                                             (dram.ar_id),            //   input,    width = 5,                                                                                .arid
+		.axi_bridge_0_m0_araddr                                           (dram.ar_addr),          //   input,   width = 64,                                                                                .araddr
+		.axi_bridge_0_m0_arlen                                            (dram.ar_len),           //   input,    width = 8,                                                                                .arlen
+		.axi_bridge_0_m0_arsize                                           (dram.ar_size),          //   input,    width = 3,                                                                                .arsize
+		.axi_bridge_0_m0_arburst                                          (dram.ar_burst),         //   input,    width = 2,                                                                                .arburst
+		.axi_bridge_0_m0_arlock                                           (dram.ar_lock),          //   input,    width = 1,                                                                                .arlock
+		.axi_bridge_0_m0_arcache                                          (dram.ar_cache),         //   input,    width = 4,                                                                                .arcache
+		.axi_bridge_0_m0_arprot                                           (dram.ar_prot),          //   input,    width = 3,                                                                                .arprot
 		// .axi_bridge_0_m0_aruser                                           ('0),          //   input,    width = 8,                                                                                .aruser
-		// .axi_bridge_0_m0_arqos                                            (s_axi_arqos),           //   input,    width = 4,                                                                                .arqos
-		// .axi_bridge_0_m0_arregion                                         (s_axi_arregion),        //   input,    width = 4,                                                                                .arregion
-		.axi_bridge_0_m0_arvalid                                          (s_axi_arvalid),         //   input,    width = 1,                                                                                .arvalid
-		.axi_bridge_0_m0_arready                                          (s_axi_arready),         //  output,    width = 1,                                                                                .arready
-		.axi_bridge_0_m0_rid                                              (s_axi_rid),             //  output,    width = 5,                                                                                .rid
-		.axi_bridge_0_m0_rdata                                            (s_axi_rdata),           //  output,  width = 512,                                                                                .rdata
-		.axi_bridge_0_m0_rresp                                            (s_axi_rresp),           //  output,    width = 2,                                                                                .rresp
-		.axi_bridge_0_m0_rlast                                            (s_axi_rlast),           //  output,    width = 1,                                                                                .rlast
-		.axi_bridge_0_m0_rvalid                                           (s_axi_rvalid),          //  output,    width = 1,                                                                                .rvalid
-		.axi_bridge_0_m0_rready                                           (s_axi_rready),          //   input,    width = 1,                                                                                .rready
+		// .axi_bridge_0_m0_arqos                                            (dram.arqos),           //   input,    width = 4,                                                                                .arqos
+		// .axi_bridge_0_m0_arregion                                         (dram.arregion),        //   input,    width = 4,                                                                                .arregion
+		.axi_bridge_0_m0_arvalid                                          (dram.ar_valid),         //   input,    width = 1,                                                                                .arvalid
+		.axi_bridge_0_m0_arready                                          (dram.ar_ready),         //  output,    width = 1,                                                                                .arready
+		.axi_bridge_0_m0_rid                                              (dram.r_id),             //  output,    width = 5,                                                                                .rid
+		.axi_bridge_0_m0_rdata                                            (dram.r_data),           //  output,  width = 512,                                                                                .rdata
+		.axi_bridge_0_m0_rresp                                            (dram.r_resp),           //  output,    width = 2,                                                                                .rresp
+		.axi_bridge_0_m0_rlast                                            (dram.r_last),           //  output,    width = 1,                                                                                .rlast
+		.axi_bridge_0_m0_rvalid                                           (dram.r_valid),          //  output,    width = 1,                                                                                .rvalid
+		.axi_bridge_0_m0_rready                                           (dram.r_ready),          //   input,    width = 1,                                                                                .rready
 		// .axi_bridge_0_m0_ruser                                            (),           //  output,    width = 8,                                                                                .ruser
 		.emif_fm_0_ctrl_amm_0_address                                                          (ddr_amm_address),       //  output,   width = 27,                                                            emif_fm_0_ctrl_amm_0.address
 		.emif_fm_0_ctrl_amm_0_write                                                            (ddr_amm_write),         //  output,    width = 1,                                                                                .write
@@ -1035,8 +1031,8 @@ cva6_intel_altera_mm_interconnect_1920_7uifsqq avalon_to_axi4 (
 		.emif_fm_0_ctrl_amm_0_waitrequest                                                      (ddr_amm_ready),  //   input,    width = 1,                                                                                .waitrequest
 		.axi_bridge_0_clk_reset_reset_bridge_in_reset_reset                              (~ndmreset_n),                       //   input,    width = 1,                              mgc_axi4_master_0_reset_sink_reset_bridge_in_reset.reset
 		.axi_bridge_0_m0_translator_clk_reset_reset_bridge_in_reset_reset (~ndmreset_n),                       //   input,    width = 1, axi_bridge_0_m0_translator_clk_reset_reset_bridge_in_reset.reset
-		.emif_fm_0_ctrl_amm_0_translator_reset_reset_bridge_in_reset_reset                     (ddr_sync_reset),                   //   input,    width = 1,                     emif_fm_0_ctrl_amm_0_translator_reset_reset_bridge_in_reset.reset
-		.emif_fm_0_ctrl_amm_0_agent_rsp_fifo_clk_reset_reset_bridge_in_reset_reset             (ddr_sync_reset),                   //   input,    width = 1,             emif_fm_0_ctrl_amm_0_agent_rsp_fifo_clk_reset_reset_bridge_in_reset.reset
+		.emif_fm_0_ctrl_amm_0_translator_reset_reset_bridge_in_reset_reset                     (rst),                   //   input,    width = 1,                     emif_fm_0_ctrl_amm_0_translator_reset_reset_bridge_in_reset.reset
+		.emif_fm_0_ctrl_amm_0_agent_rsp_fifo_clk_reset_reset_bridge_in_reset_reset             (rst),                   //   input,    width = 1,             emif_fm_0_ctrl_amm_0_agent_rsp_fifo_clk_reset_reset_bridge_in_reset.reset
 		.iopll_0_outclk0_clk                                                                   (clk),                                  //   input,    width = 1,                                                                 iopll_0_outclk0.clk
 		.emif_fm_0_emif_usr_clk_clk                                                            (ddr_clock_out)                            //   input,    width = 1,                                                          emif_fm_0_emif_usr_clk.clk
 	);
