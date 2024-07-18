@@ -652,6 +652,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE ../../core/fpu_wrap.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../core/ex_stage.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../core/decoder.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../core/cvxif_fu.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../../core/rvfi_types.svh
 set_global_assignment -name SYSTEMVERILOG_FILE ../../core/cva6_rvfi_probes.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../core/cva6_rvfi.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../../core/cva6_fifo_v3.sv
