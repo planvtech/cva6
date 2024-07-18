@@ -88,7 +88,7 @@ localparam type rvfi_probes_instr_t = `RVFI_PROBES_INSTR_T(CVA6Cfg);
 localparam type rvfi_probes_csr_t = `RVFI_PROBES_CSR_T(CVA6Cfg);
 localparam type rvfi_probes_t = struct packed {
   logic csr;
-  logic instr;
+  rvfi_probes_instr_t instr;
 };
 
 // 24 MByte in 8 byte words
@@ -180,7 +180,7 @@ logic [NBSlave-1:0] pc_asserted;
 
 rstgen i_rstgen_main (
     .clk_i        ( clk                      ),
-    .rst_ni       ( pll_locked & (~ndmreset) ),
+    .rst_ni       ( pll_locked & cal_success & (~ndmreset) ),
     .test_mode_i  ( test_en                  ),
     .rst_no       ( ndmreset_n               ),
     .init_no      (                          ) // keep open
@@ -884,6 +884,12 @@ logic [19:0] calbus_addr;
 logic [31:0] calbus_wdata;
 logic [31:0] calbus_rdata;
 logic [4095:0] calbus_seq_param_tbl;
+logic cal_success;
+logic ddr_amm_wait_request;
+
+assign ddr_amm_wait_request = ~ddr_amm_ready;
+
+// assign led[1] = cal_success;
 
 ed_synth_emif_fm_0 inst_ddr4 (
     .local_reset_req           ('0),           //   input,     width = 1,           local_reset_req.local_reset_req
@@ -907,8 +913,8 @@ ed_synth_emif_fm_0 inst_ddr4 (
     .mem_dqs_n                 (ddr4_dqs_n),                 //   inout,     width = 9,                          .mem_dqs_n
     .mem_dq                    (ddr4_dq),                    //   inout,    width = 72,                          .mem_dq
     .mem_dbi_n                 (ddr4_dbi_n),                 //   inout,     width = 9,                          .mem_dbi_n
-    // .local_cal_success         (led[1]),         //  output,     width = 1,                    status.local_cal_success
-    // .local_cal_fail            (led[2]),            //  output,     width = 1,                          .local_cal_fail
+    .local_cal_success         (cal_success),         //  output,     width = 1,                    status.local_cal_success
+    // .local_cal_fail            (led[0]),            //  output,     width = 1,                          .local_cal_fail
     .calbus_read               (calbus_read),               //   input,     width = 1,               emif_calbus.calbus_read
     .calbus_write              (calbus_write),              //   input,     width = 1,                          .calbus_write
     .calbus_address            (calbus_addr),            //   input,    width = 20,                          .calbus_address
@@ -985,7 +991,7 @@ cva6_intel_altera_mm_interconnect_1920_otvf3ky axi_to_avalon (
 		.emif_fm_0_ctrl_amm_0_burstcount                                                       (ddr_amm_burstcount),    //  output,    width = 7,                                                                                .burstcount
 		.emif_fm_0_ctrl_amm_0_byteenable                                                       (ddr_amm_byteenable),    //  output,   width = 64,                                                                                .byteenable
 		.emif_fm_0_ctrl_amm_0_readdatavalid                                                    (ddr_amm_readdatavalid), //   input,    width = 1,                                                                                .readdatavalid
-		.emif_fm_0_ctrl_amm_0_waitrequest                                                      (ddr_amm_ready),  //   input,    width = 1,                                                                                .waitrequest
+		.emif_fm_0_ctrl_amm_0_waitrequest                                                      (ddr_amm_wait_request),  //   input,    width = 1,                                                                                .waitrequest
 		.axi_bridge_0_m0_translator_clk_reset_reset_bridge_in_reset_reset          (rst),                       //   input,    width = 1,          axi_bridge_0_m0_translator_clk_reset_reset_bridge_in_reset.reset
 		.emif_fm_0_ctrl_amm_0_translator_reset_reset_bridge_in_reset_reset         (rst),                   //   input,    width = 1,         emif_fm_0_ctrl_amm_0_translator_reset_reset_bridge_in_reset.reset
 		.emif_fm_0_ctrl_amm_0_agent_rsp_fifo_clk_reset_reset_bridge_in_reset_reset (rst),                   //   input,    width = 1, emif_fm_0_ctrl_amm_0_agent_rsp_fifo_clk_reset_reset_bridge_in_reset.reset
