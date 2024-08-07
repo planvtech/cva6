@@ -114,12 +114,12 @@ module ariane_regfile_fpga #(
   end
 
   // random initialization of the memory to suppress assert warnings on Questa.
-  initial begin
-    for (int i = 0; i < CVA6Cfg.NrCommitPorts; i++) begin
-      for (int j = 0; j < NUM_WORDS; j++) begin
-        mem[i][j] = $random();
-      end
-    end
-  end
+//  initial begin
+//    for (int i = 0; i < CVA6Cfg.NrCommitPorts; i++) begin
+//      for (int j = 0; j < NUM_WORDS; j++) begin
+//        mem[i][j] = $random();
+//      end
+//    end
+//  end
 
 endmodule

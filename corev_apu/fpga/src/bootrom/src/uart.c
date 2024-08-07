@@ -20,9 +20,14 @@ int is_transmit_empty()
     return read_reg_u8(UART_LINE_STATUS) & 0x20;
 }
 
+char is_transmit_empty_intel()
+{
+    return read_reg_u8(UART_THR+6);
+}
+
 void write_serial(char a)
 {
-    while (is_transmit_empty() == 0) {};
+    while (is_transmit_empty_intel() < 8) {};
 
     write_reg_u8(UART_THR, a);
 }

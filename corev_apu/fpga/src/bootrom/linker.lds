@@ -37,4 +37,25 @@ SECTIONS
         *(.rodata*)
     _RODATA_END_ = .;
     }
+
+      .sdata : {
+    __global_pointer$ = . + 0x800;
+    *(.srodata.cst16) *(.srodata.cst8) *(.srodata.cst4) *(.srodata.cst2) *(.srodata*)
+    *(.sdata .sdata.* .gnu.linkonce.s.*)
+  }
+
+    /* thread-local data segment */
+  .tdata :
+  {
+    _tdata_begin = .;
+    *(.tdata)
+    _tdata_end = .;
+  }
+  .tbss :
+  {
+    *(.tbss)
+    _tbss_end = .;
+  }
+  /* End of uninitalized data segement */
+  _end = .;
 }

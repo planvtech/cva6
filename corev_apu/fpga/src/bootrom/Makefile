@@ -1,5 +1,8 @@
 XLEN ?= 64
 CROSSCOMPILE ?= riscv-none-elf-
+TEST ?=
+benchmarks = ../../../../verif/tests/riscv-tests/benchmarks/
+common = ../../../../verif/tests/custom/common/
 
 ifeq ($(BOARD), nexys_video)
 DRAM_SIZE_64 ?= 0x20000000 #512MB
@@ -14,7 +17,7 @@ DRAM_SIZE_32 ?= 0x08000000 #128MB
 CLOCK_FREQUENCY ?= 50000000 #50MHz
 HALF_CLOCK_FREQUENCY ?= 25000000 #25MHz
 UART_BITRATE ?= 115200
-HAS_ETHERNET ?= 1
+HAS_ETHERNET ?= 0
 endif
 
 CC = $(RISCV)/bin/${CROSSCOMPILE}gcc
@@ -23,18 +26,33 @@ SED = sed
 PLATFORM_DEFINES = -DCLOCK_FREQUENCY=$(CLOCK_FREQUENCY) -DUART_BITRATE=$(UART_BITRATE)
 
 ifeq ($(XLEN), 64)
-CFLAGS = $(PLATFORM_DEFINES) -Os -ggdb -march=rv64im_zicsr -mabi=lp64 -Wall -mcmodel=medany -mexplicit-relocs -ffreestanding
+CFLAGS = $(PLATFORM_DEFINES) -O3 -ggdb -march=rv64im_zicsr -mabi=lp64 -Wall -mcmodel=medany -mexplicit-relocs -ffreestanding -DNOPRINT
 else
-CFLAGS = $(PLATFORM_DEFINES) -O2 -ggdb  -march=rv32im_zicsr -mabi=ilp32 -W -Wall -mcmodel=medany -mexplicit-relocs -fno-builtin -ffreestanding
+# CFLAGS = $(PLATFORM_DEFINES) -O3 -ggdb  -march=rv32imac_zicsr_zifencei -mabi=ilp32 -Wall -mcmodel=medany -mexplicit-relocs -fno-builtin -ffreestanding -DNOPRINT -DPREALLOCATE=1 -fvisibility=hidden -funroll-all-loops -static -pedantic -DPERFORMANCE_RUN=1 -DITERATIONS=3 
+# CFLAGS = $(PLATFORM_DEFINES) -O3 --no-inline -march=rv32imac_zicsr_zifencei -mabi=ilp32 -mcmodel=medany -fno-tree-loop-distribute-patterns -Wno-implicit-function-declaration -Wno-implicit-int  -DNOPRINT -fvisibility=hidden -static -DPERFORMANCE_RUN=1 -DITERATIONS=3 
+# CFLAGS = -O3 --no-inline -march=rv32im_zicsr -mabi=ilp32 -W -Wall -mcmodel=medany -fno-tree-loop-distribute-patterns -fvisibility=hidden -static -fno-builtin -DITERATIONS=100 -DCOMPILER_FLAGS=' ' -DPERFORMANCE_RUN -DNOPRINT
+# CFLAGS = $(PLATFORM_DEFINES) -O2 -ggdb  -march=rv32im_zicsr -mabi=ilp32 -W -Wall -mcmodel=medany -mexplicit-relocs -fno-builtin -ffreestanding
+
+# CFLAGS = -O3 --no-inline -fno-tree-loop-distribute-patterns -static -march=rv32imc_zicsr_zifencei -mabi=ilp32 -W -Wall -mcmodel=medany -mexplicit-relocs -fvisibility=hidden -fno-builtin -DITERATIONS=100 -DCOMPILER_FLAGS=' ' -DPERFORMANCE_RUN -DNOPRINT
+CFLAGS :=-DPERFORMANCE_RUN=1 -DITERATIONS=3 -march=rv32imac_zba_zbb_zbs_zbc_zicsr_zifencei -mabi=ilp32 -DPREALLOCATE=1 -fvisibility=hidden -DSTDIO_THRU_UART -O3 -mcmodel=medany -funroll-all-loops -static -Wall -pedantic 
 endif
 
 CCASFLAGS = -mcmodel=medany -mexplicit-relocs
 LDFLAGS = -nostdlib -nodefaultlibs -nostartfiles
 
+ifeq ($(TEST), dhrystone)
+INCLUDES = -I./../../../bootrom/ -I./src -I./$(common) -I./$(benchmarks)/$(TEST)
+SRCS_C = src/uart.c src/spi.c src/sd.c src/gpt.c $(common)*syscalls_baremetal.c $(benchmarks)/dhrystone/dhrystone.c $(benchmarks)/dhrystone/dhrystone_baremetal.c
+# SRCS_ASM = $(benchmarks)/common/crt.S startup.S 
+SRCS_ASM = startup.S 
+else
 INCLUDES = -I./ -I./src
 
 SRCS_C = src/main.c src/uart.c src/spi.c src/sd.c src/gpt.c
 SRCS_ASM = startup.S
+endif
+
+
 OBJS_C = $(SRCS_C:.c=.o)
 OBJS_S = $(SRCS_ASM:.S=.o)
 
@@ -54,7 +72,8 @@ endif
 #.PHONY: clean
 
 $(MAIN): $(DTB) $(OBJS_C) $(OBJS_S) linker.lds
-	$(CC) $(CFLAGS) $(LDFLAGS) $(INCLUDES) -Tlinker.lds $(OBJS_S) $(OBJS_C) -o $(MAIN)
+	# $(CC) $(CFLAGS) $(LDFLAGS) $(INCLUDES) -Tlinker.lds $(OBJS_S) $(OBJS_C) -o $(MAIN)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(INCLUDES) -Tlinker.lds $(OBJS_S) $(OBJS_C) -o $(MAIN) -lgcc
 	@echo "LD    >= $(MAIN)"
 
 %.img: %.bin
