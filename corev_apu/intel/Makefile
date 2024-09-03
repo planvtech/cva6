@@ -5,10 +5,11 @@
 # Settings File (.qsf)
 ###################################################################
 
-PROJECT = Example-Project ##mkdigitals ask for project name
+PROJECT = "Example-Project" ##mkdigitals ask for project name
 TOP_LEVEL_ENTITY = ####mkdigitals ask for the top level entity
 ASSIGNMENT_FILES = $(PROJECT).qpf $(PROJECT).qsf
 SOURCES_FILE = ./scripts/sourcelist.txt
+
 ###################################################################
 # Part, Family, Boardfile DE1 or DE2
 ## FAMILY COMES FROM THE CALLING MAKEFILE
@@ -39,8 +40,17 @@ all: create_project \
 
 clean:
 	$(RM) -rf *.rpt *.chg smart.log *.htm *.eqn *.pin *.sof *.pof db incremental_db *.summary *.smsg *.jdi $(ASSIGNMENT_FILES)
+# Capture the Quartus version
+QUARTUS_VERSION := $(shell quartus_sh --version | grep -oP 'Version \K[0-9]+\.[0-9]+')
+CURRENT_DATETIME := $(shell date +"%H:%M:%S  %B %d, %Y")
+create_project:	
+	@echo "Creating or regenerating $(PROJECT).qpf"
+	@rm -f "$(PROJECT).qpf"
+	@touch "$(PROJECT).qpf"
+	@echo "QUARTUS_VERSION = \"$(QUARTUS_VERSION)\"" >> "$(PROJECT).qpf"
+	@echo "DATE = \"$(CURRENT_DATETIME)\"" >> "$(PROJECT).qpf"
+	@echo "PROJECT_REVISION = \"$(PROJECT)\"" >> "$(PROJECT).qpf"
 
-create_project:
 	@echo "Creating or regenerating $(PROJECT).qsf"
 	@rm -f "$(PROJECT).qsf"
 	@touch "$(PROJECT).qsf"
