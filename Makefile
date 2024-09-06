@@ -224,6 +224,7 @@ uart_src := $(wildcard corev_apu/fpga/src/apb_uart/src/*.vhd)
 uart_src := $(addprefix $(root-dir), $(uart_src))
 
 fpga_src :=  $(wildcard corev_apu/fpga/src/*.sv) $(wildcard corev_apu/fpga/src/ariane-ethernet/*.sv) common/local/util/tc_sram_fpga_wrapper.sv vendor/pulp-platform/fpga-support/rtl/SyncSpRamBeNx64.sv
+intel_src := $(shell find corev_apu/fpga/cva6_intel -type f \( -name "*altera*.v" -o -name "*altera*.sv" \))
 fpga_src := $(addprefix $(root-dir), $(fpga_src)) src/bootrom/bootrom_$(XLEN).sv
 
 # look for testbenches
@@ -725,6 +726,7 @@ intel: $(ariane_pkg) $(src) $(fpga_src) $(uart_src) $(src_flist)
 	@echo $(filter-out $(fpga_filter), $(src_flist))		>> corev_apu/intel/scripts/sourcelist.txt
 	@echo $(filter-out $(fpga_filter), $(src)) 	   >> corev_apu/intel/scripts/sourcelist.txt
 	@echo $(fpga_src)   >> corev_apu/intel/scripts/sourcelist.txt
+	@echo $(intel_src)   >> corev_apu/intel/scripts/sourcelist.txt
 	@echo "[FPGA] Generate Bitstream"
 	$(MAKE) -C corev_apu/intel INTEL_PART=$(INTEL_PART) INTEL_BOARD=$(INTEL_BOARD) CLK_PERIOD_NS=$(CLK_PERIOD_NS)
 

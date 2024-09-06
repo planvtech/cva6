@@ -178,19 +178,19 @@ set_instance_assignment -name  set_instance_assignment -name IO_STANDARD "TRUE D
 set_instance_assignment -name  set_instance_assignment -name IO_STANDARD "1.2 V" -to led[3] -entity cva6_intel
 set_instance_assignment -name  set_instance_assignment -name IO_STANDARD "1.2 V" -to led[2] -entity cva6_intel
 set_instance_assignment -name  set_instance_assignment -name IO_STANDARD "1.2 V" -to led[1] -entity cva6_intel
-set_global_assignment -name IP_FILE intel/io_pll.ip
-set_global_assignment -name IP_FILE intel/iobuf.ip
-set_global_assignment -name IP_FILE intel/oddr_intel.ip
-set_global_assignment -name IP_FILE intel/iddr_intel.ip
-set_global_assignment -name IP_FILE intel/ed_synth_emif_fm_0.ip
-set_global_assignment -name IP_FILE intel/emif_cal.ip
+set_global_assignment -name IP_FILE ../fpga/intel/io_pll.ip
+set_global_assignment -name IP_FILE ../fpga/intel/iobuf.ip
+set_global_assignment -name IP_FILE ../fpga/intel/oddr_intel.ip
+set_global_assignment -name IP_FILE ../fpga/intel/iddr_intel.ip
+set_global_assignment -name IP_FILE ../fpga/intel/ed_synth_emif_fm_0.ip
+set_global_assignment -name IP_FILE ../fpga/intel/emif_cal.ip
 set_global_assignment -name IP_FILE vJTAG.ip
-set_global_assignment -name SEARCH_PATH /home/angela/Documents/github/cva6/corev_apu/fpga/src/apb/include
-set_global_assignment -name SEARCH_PATH /home/angela/Documents/github/cva6/corev_apu/fpga/src
-set_global_assignment -name SEARCH_PATH /home/angela/Documents/github/cva6/vendor/pulp-platform/common_cells/include
-set_global_assignment -name SEARCH_PATH /home/angela/Documents/github/cva6/vendor/pulp-platform/axi/include
-set_global_assignment -name SEARCH_PATH /home/angela/Documents/github/cva6/core/cache_subsystem/hpdcache/rtl/include
-set_global_assignment -name SEARCH_PATH /home/angela/Documents/github/cva6/core/include
+set_global_assignment -name SEARCH_PATH ../fpga/src/apb/include
+set_global_assignment -name SEARCH_PATH ../fpga/src
+set_global_assignment -name SEARCH_PATH ../../vendor/pulp-platform/common_cells/include
+set_global_assignment -name SEARCH_PATH ../../cva6/vendor/pulp-platform/axi/include
+set_global_assignment -name SEARCH_PATH ../../core/cache_subsystem/hpdcache/rtl/include
+set_global_assignment -name SEARCH_PATH ../../core/include
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/tb/ariane_axi_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/tb/axi_intf.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/register_interface/src/reg_intf.sv

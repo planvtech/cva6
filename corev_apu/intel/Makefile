@@ -5,7 +5,7 @@
 # Settings File (.qsf)
 ###################################################################
 
-PROJECT = "Example-Project" ##mkdigitals ask for project name
+PROJECT =Example-Project##mkdigitals ask for project name
 TOP_LEVEL_ENTITY = ####mkdigitals ask for the top level entity
 ASSIGNMENT_FILES = $(PROJECT).qpf $(PROJECT).qsf
 SOURCES_FILE = ./scripts/sourcelist.txt
