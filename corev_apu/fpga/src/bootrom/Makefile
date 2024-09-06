@@ -48,7 +48,7 @@ SRCS_ASM = startup.S
 else
 INCLUDES = -I./ -I./src
 
-SRCS_C = src/main.c src/uart.c src/spi.c src/sd.c src/gpt.c
+SRCS_C = src/main.c src/uart.c# src/spi.c src/sd.c src/gpt.c
 SRCS_ASM = startup.S
 endif
 

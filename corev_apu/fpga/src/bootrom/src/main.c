@@ -9,19 +9,19 @@
 
 int main()
 {
-    init_uart(CLOCK_FREQUENCY, UART_BITRATE);
+    //init_uart(CLOCK_FREQUENCY, UART_BITRATE);
     print_uart("Hello World!\r\n");
 
-    int res = gpt_find_boot_partition((uint8_t *)0x80000000UL, 2 * 16384);
+    // int res = gpt_find_boot_partition((uint8_t *)0x80000000UL, 2 * 16384);
 
-    if (res == 0)
-    {
-        // jump to the address
-        __asm__ volatile(
-            "li s0, 0x80000000;"
-            "la a1, _dtb;"
-            "jr s0");
-    }
+    // if (res == 0)
+    // {
+    //     // jump to the address
+    //     __asm__ volatile(
+    //         "li s0, 0x80000000;"
+    //         "la a1, _dtb;"
+    //         "jr s0");
+    // }
 
     while (1)
     {

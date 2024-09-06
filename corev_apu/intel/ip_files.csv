@@ -1,8 +1,8 @@
-intel/io_pll.ip
-intel/iobuf.ip
-intel/oddr_intel.ip
-intel/iddr_intel.ip
-intel/ed_synth_emif_fm_0.ip
-intel/emif_cal.ip
+../fpga/intel/io_pll.ip
+../fpga/intel/iobuf.ip
+../fpga/intel/oddr_intel.ip
+../fpga/intel/iddr_intel.ip
+../fpga/intel/ed_synth_emif_fm_0.ip
+../fpga/intel/emif_cal.ip
 vJTAG.ip
-ip/cva6_intel/cva6_intel_jtag_uart_0.ip
+../fpga/ip/cva6_intel/cva6_intel_jtag_uart_0.ip
