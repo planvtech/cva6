@@ -5,7 +5,7 @@ set_global_assignment -name LAST_QUARTUS_VERSION "24.1.0 Pro Edition"
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 100
-set_global_assignment -name DEVICE AGFB027R24C2E2VR2
+set_global_assignment -name DEVICE AGFB014R24B2E2V
 set_global_assignment -name FAMILY "Agilex 7"
 set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 256
 set_global_assignment -name EDA_SIMULATION_TOOL "QuestaSim (Verilog)"
@@ -191,6 +191,18 @@ set_global_assignment -name SEARCH_PATH ../../vendor/pulp-platform/common_cells/
 set_global_assignment -name SEARCH_PATH ../../cva6/vendor/pulp-platform/axi/include
 set_global_assignment -name SEARCH_PATH ../../core/cache_subsystem/hpdcache/rtl/include
 set_global_assignment -name SEARCH_PATH ../../core/include
+set_global_assignment -name VHDL_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/fpga/src/apb_uart/src/vhdl_orig/apb_uart.vhd
+set_global_assignment -name VHDL_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/fpga/src/apb_uart/src/vhdl_orig/uart_transmitter.vhd
+set_global_assignment -name VHDL_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/fpga/src/apb_uart/src/vhdl_orig/uart_interrupt.vhd
+set_global_assignment -name VHDL_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/fpga/src/apb_uart/src/vhdl_orig/slib_mv_filter.vhd
+set_global_assignment -name VHDL_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/fpga/src/apb_uart/src/vhdl_orig/slib_input_filter.vhd
+set_global_assignment -name VHDL_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/fpga/src/apb_uart/src/vhdl_orig/slib_counter.vhd
+set_global_assignment -name VHDL_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/fpga/src/apb_uart/src/vhdl_orig/uart_receiver.vhd
+set_global_assignment -name VHDL_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/fpga/src/apb_uart/src/vhdl_orig/slib_edge_detect.vhd
+set_global_assignment -name VHDL_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/fpga/src/apb_uart/src/vhdl_orig/slib_input_sync.vhd
+set_global_assignment -name VHDL_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/fpga/src/apb_uart/src/vhdl_orig/slib_clock_div.vhd
+set_global_assignment -name VHDL_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/fpga/src/apb_uart/src/vhdl_orig/slib_fifo.vhd
+set_global_assignment -name VHDL_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/fpga/src/apb_uart/src/vhdl_orig/uart_baudgen.vhd
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/tb/ariane_axi_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/tb/axi_intf.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/register_interface/src/reg_intf.sv
@@ -220,6 +232,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/core/cvfpu/src/fpu_div_sqrt_mvp/hdl/nrbd_nrsc_mvp.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/core/cvfpu/src/fpu_div_sqrt_mvp/hdl/preprocess_mvp.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/core/include/config_pkg.sv
+set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/core/include/cv64a6_imafdc_sv39_config_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/core/include/riscv_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/core/include/ariane_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/vendor/pulp-platform/axi/src/axi_pkg.sv
@@ -358,7 +371,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/core/cva6_mmu/cva6_ptw.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/core/cva6_mmu/cva6_tlb.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/core/cva6_mmu/cva6_shared_tlb.sv
-set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/core/include/cv64a6_imafdc_sv39_config_pkg.sv
+set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/core/cva6_rvfi.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/src/ariane.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/clint/axi_lite_interface.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/clint/clint.sv
@@ -491,4 +504,3 @@ set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6//corev_apu/intel/src/altera_merlin_demultiplexer_1921/synth/cva6_intel_altera_merlin_demultiplexer_1921_cpaekci.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6//corev_apu/intel/src/altera_merlin_demultiplexer_1921/synth/cva6_intel_altera_merlin_demultiplexer_1921_bu3hlhy.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6//corev_apu/intel/src/altera_merlin_demultiplexer_1921/synth/cva6_intel_altera_merlin_demultiplexer_1921_njo7owy.sv
-set_global_assignment -name BOARD "Intel Agilex 7 FPGA F-Series Development Kit 2xF-Tile DK-DEV-AGF027F1ES"

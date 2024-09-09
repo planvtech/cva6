@@ -145,7 +145,7 @@ CFLAGS += -I$(QUESTASIM_HOME)/include         \
           -I$(VL_INC_DIR)/vltstd              \
           -I$(RISCV)/include                  \
           -I$(SPIKE_INSTALL_DIR)/include      \
-          -std=c++17 -I../corev_apu/tb/dpi -O3
+          -std=c++17 -I$(CVA6_REPO_DIR)/corev_apu/tb/dpi -O3
 
 ifdef XCELIUM_HOME
 CFLAGS += -I$(XCELIUM_HOME)/tools/include
@@ -154,13 +154,13 @@ $(warning XCELIUM_HOME not set which is necessary for compiling DPIs when using 
 endif
 
 # this list contains the standalone components
-src :=  core/include/$(target)_config_pkg.sv                                         \
-        $(if $(spike-tandem),verif/tb/core/uvma_core_cntrl_pkg.sv)                   \
+src :=  $(if $(spike-tandem),verif/tb/core/uvma_core_cntrl_pkg.sv)                   \
         $(if $(spike-tandem),verif/tb/core/uvma_cva6pkg_utils_pkg.sv)                \
         $(if $(spike-tandem),verif/tb/core/uvma_rvfi_pkg.sv)                         \
         $(if $(spike-tandem),verif/tb/core/uvmc_rvfi_reference_model_pkg.sv)         \
         $(if $(spike-tandem),verif/tb/core/uvmc_rvfi_scoreboard_pkg.sv)              \
         $(if $(spike-tandem),corev_apu/tb/common/spike.sv)                           \
+        core/cva6_rvfi.sv                                                            \
         corev_apu/src/ariane.sv                                                      \
         $(wildcard corev_apu/bootrom/*.sv)                                           \
         $(wildcard corev_apu/clint/*.sv)                                             \
@@ -186,7 +186,7 @@ src :=  core/include/$(target)_config_pkg.sv                                    
         vendor/pulp-platform/common_cells/src/rstgen_bypass.sv                       \
         vendor/pulp-platform/common_cells/src/rstgen.sv                              \
         vendor/pulp-platform/common_cells/src/addr_decode.sv                         \
-	vendor/pulp-platform/common_cells/src/stream_register.sv                     \
+        vendor/pulp-platform/common_cells/src/stream_register.sv                     \
         vendor/pulp-platform/axi/src/axi_cut.sv                                      \
         vendor/pulp-platform/axi/src/axi_join.sv                                     \
         vendor/pulp-platform/axi/src/axi_delayer.sv                                  \
@@ -220,8 +220,23 @@ copro_src := core/cvxif_example/include/cvxif_instr_pkg.sv \
              $(wildcard core/cvxif_example/*.sv)
 copro_src := $(addprefix $(root-dir), $(copro_src))
 
-uart_src := $(wildcard corev_apu/fpga/src/apb_uart/src/*.vhd)
+uart_src := $(wildcard corev_apu/fpga/src/apb_uart/src/vhdl_orig/*.vhd)
 uart_src := $(addprefix $(root-dir), $(uart_src))
+
+uart_src_sv:= corev_apu/fpga/src/apb_uart/src/slib_clock_div.sv     \
+              corev_apu/fpga/src/apb_uart/src/slib_counter.sv       \
+              corev_apu/fpga/src/apb_uart/src/slib_edge_detect.sv   \
+              corev_apu/fpga/src/apb_uart/src/slib_fifo.sv          \
+              corev_apu/fpga/src/apb_uart/src/slib_input_filter.sv  \
+              corev_apu/fpga/src/apb_uart/src/slib_input_sync.sv    \
+              corev_apu/fpga/src/apb_uart/src/slib_mv_filter.sv     \
+              corev_apu/fpga/src/apb_uart/src/uart_baudgen.sv       \
+              corev_apu/fpga/src/apb_uart/src/uart_interrupt.sv     \
+              corev_apu/fpga/src/apb_uart/src/uart_receiver.sv      \
+              corev_apu/fpga/src/apb_uart/src/uart_transmitter.sv   \
+              corev_apu/fpga/src/apb_uart/src/apb_uart.sv           \
+              corev_apu/fpga/src/apb_uart/src/apb_uart_wrap.sv
+uart_src_sv := $(addprefix $(root-dir), $(uart_src_sv))
 
 fpga_src :=  $(wildcard corev_apu/fpga/src/*.sv) $(wildcard corev_apu/fpga/src/ariane-ethernet/*.sv) common/local/util/tc_sram_fpga_wrapper.sv vendor/pulp-platform/fpga-support/rtl/SyncSpRamBeNx64.sv
 intel_src := $(shell find $(root-dir)/corev_apu/intel/src -type f \( -name "*.v" -o -name "*.sv" -o -name "*.vhd" \) -print)
@@ -311,7 +326,7 @@ vcs_build: $(dpi-library)/ariane_dpi.so
 	cd $(vcs-library) &&\
 	vlogan $(if $(VERDI), -kdb,) -full64 -nc -sverilog +define+$(defines) -assert svaext -f $(flist) $(list_incdir) ../corev_apu/tb/common/mock_uart.sv -timescale=1ns/1ns &&\
 	vlogan $(if $(VERDI), -kdb,) -full64 -nc -sverilog +define+$(defines) $(filter %.sv,$(ariane_pkg)) +incdir+core/include/+$(VCS_HOME)/etc/uvm-1.2/dpi &&\
-	vhdlan $(if $(VERDI), -kdb,) -full64 -nc $(filter %.vhd,$(uart_src)) &&\
+	vlogan $(if $(VERDI), -kdb,) -full64 -nc -sverilog $(uart_src_sv) &&\
 	vlogan $(if $(VERDI), -kdb,) -full64 -nc -sverilog -assert svaext +define+$(defines) +incdir+$(VCS_HOME)/etc/uvm/src $(VCS_HOME)/etc/uvm/src/uvm_pkg.sv  $(filter %.sv,$(src)) $(list_incdir) &&\
 	vlogan $(if $(VERDI), -kdb,) -full64 -nc -sverilog -ntb_opts uvm-1.2 &&\
 	vlogan $(if $(VERDI), -kdb,) -full64 -nc -sverilog -ntb_opts uvm-1.2 $(tbs) +define+$(defines) $(list_incdir) &&\
@@ -356,6 +371,12 @@ $(dpi-library)/ariane_dpi.so: $(dpi)
 	mkdir -p $(dpi-library)
 	# Compile C-code and generate .so file
 	$(CXX) -shared -m64 -o $(dpi-library)/ariane_dpi.so $? -L$(RISCV)/lib -L$(SPIKE_INSTALL_DIR)/lib -Wl,-rpath,$(RISCV)/lib -Wl,-rpath,$(SPIKE_INSTALL_DIR)/lib -lfesvr -lriscv
+
+$(dpi-library)/xrun_ariane_dpi.so: $(dpi)
+	# Make Dir work-dpi
+	mkdir -p $(dpi-library)
+	# Compile C-code and generate .so file
+	$(CXX) -shared -m64 -o $(dpi-library)/xrun_ariane_dpi.so $? -L$(RISCV)/lib -L$(SPIKE_INSTALL_DIR)/lib -Wl,-rpath,$(RISCV)/lib -Wl,-rpath,$(SPIKE_INSTALL_DIR)/lib -lfesvr -lriscv
 
 # single test runs on Questa can be started by calling make <testname>, e.g. make towers.riscv
 # the test names are defined in ci/riscv-asm-tests.list, and in ci/riscv-benchmarks.list
@@ -433,24 +454,25 @@ check-benchmarks:
 XRUN               ?= xrun
 XRUN_WORK_DIR      ?= xrun_work
 XRUN_RESULTS_DIR   ?= xrun_results
-XRUN_UVMHOME_ARG   ?= CDNS-1.2-ML
+##XRUN_UVMHOME_ARG   ?= CDNS-1.2-ML
+XRUN_UVMHOME_ARG   ?= CDNS-1.2
 XRUN_COMPL_LOG     ?= xrun_compl.log
 XRUN_RUN_LOG       ?= xrun_run.log
 CVA6_HOME	   ?= $(realpath -s $(root-dir))
 
-XRUN_INCDIR :=+incdir+$(CVA6_HOME)/src/axi_node 	\
-	+incdir+$(CVA6_HOME)/src/common_cells/include 	\
-	+incdir+$(CVA6_HOME)/src/util
+XRUN_INCDIR :=+incdir+$(CVA6_HOME)/core/include 			\
+	+incdir+$(CVA6_HOME)/vendor/pulp-platform/axi/include/		\
+	+incdir+$(CVA6_HOME)/corev_apu/register_interface/include
+
 XRUN_TB := $(addprefix $(CVA6_HOME)/, corev_apu/tb/ariane_tb.sv)
 
-XRUN_COMP_FLAGS  ?= -64bit -disable_sem2009 -access +rwc 			\
-		    -sv -v93 -uvm -uvmhome $(XRUN_UVMHOME_ARG) 			\
-		    -sv_lib $(CVA6_HOME)/$(dpi-library)/ariane_dpi.so		\
+XRUN_COMP_FLAGS  ?= -64bit -v200x -disable_sem2009 -access +rwc 			\
+		    -sv -uvm -uvmhome $(XRUN_UVMHOME_ARG) 			\
+		    -sv_lib $(CVA6_HOME)/$(dpi-library)/xrun_ariane_dpi.so		\
 		    -smartorder -sv -top worklib.$(top_level)			\
-		    -xceligen on=1903 +define+$(defines) -timescale 1ns/1ps	\
+		    -timescale 1ns/1ps
 
-XRUN_RUN_FLAGS := -R -64bit -disable_sem2009 -access +rwc -timescale 1ns/1ps		\
-		-sv_lib	$(CVA6_HOME)/$(dpi-library)/ariane_dpi.so -xceligen on=1903	\
+XRUN_RUN_FLAGS := -R -messages -status -64bit -licqueue -noupdate -uvmhome CDNS-1.2 -sv_lib $(CVA6_HOME)/$(dpi-library)/xrun_ariane_dpi.so +UVM_VERBOSITY=UVM_LOW
 
 XRUN_DISABLED_WARNINGS := BIGWIX 	\
 			ZROMCW 		\
@@ -464,21 +486,21 @@ XRUN_DISABLED_WARNINGS 	:= $(patsubst %, -nowarn %, $(XRUN_DISABLED_WARNINGS))
 XRUN_COMP = $(XRUN_COMP_FLAGS)		\
 	$(XRUN_DISABLED_WARNINGS) 	\
 	$(XRUN_INCDIR)		      	\
+	-f ../core/Flist.cva6    	\
 	$(filter %.sv, $(ariane_pkg)) 	\
-	$(filter %.vhd, $(uart_src))  	\
 	$(filter %.sv, $(src))	      	\
-	-f ../core/Flist.cva6    	    \
-	$(filter %.sv, $(XRUN_TB))	\
+	$(filter %.vhd, $(uart_src))  	\
+	$(filter %.sv, $(XRUN_TB))
 
 XRUN_RUN = $(XRUN_RUN_FLAGS) 		\
-	$(XRUN_DISABLED_WARNINGS)	\
+	$(XRUN_DISABLED_WARNINGS)
 
 xrun_clean:
 	@echo "[XRUN] clean up"
 	rm -rf $(XRUN_RESULTS_DIR)
 	rm -rf $(dpi-library)
 
-xrun_comp: $(dpi-library)/ariane_dpi.so
+xrun_comp: $(dpi-library)/xrun_ariane_dpi.so
 	@echo "[XRUN] Building Model"
 	mkdir -p $(XRUN_RESULTS_DIR)
 	cd $(XRUN_RESULTS_DIR) && $(XRUN)   \
@@ -495,11 +517,13 @@ xrun_sim: xrun_comp
 		$(XRUN_RUN)			\
 		+MAX_CYCLES=$(max_cycles)	\
 		+UVM_TESTNAME=$(test_case)	\
-		-l $(XRUN_RUN_LOG)		\
+		+time_out=200000000000            \
+		+tohost_addr=$(shell ${RISCV}/bin/${CV_SW_PREFIX}nm -B $(elf) | grep -w tohost | cut -d' ' -f1)          \
+		-log $(XRUN_RUN_LOG)		\
+		+gui				\
 		+permissive-off			\
-		++$(elf_file)
-
-#-e "set_severity_pack_assert_off {warning}; set_pack_assert_off {numeric_std}" TODO: This will remove assertion warning at the beginning of the simulation.
+		+elf_file=$(elf)           \
+		++$(elf)
 
 xrun_all: xrun_clean xrun_comp xrun_sim
 
@@ -708,7 +732,6 @@ fpga_filter += $(addprefix $(root-dir), common/local/util/tc_sram_wrapper.sv)
 src/bootrom/bootrom_$(XLEN).sv:
 	$(MAKE) -C corev_apu/fpga/src/bootrom BOARD=$(BOARD) XLEN=$(XLEN) bootrom_$(XLEN).sv
 
-# This is a target rule for 'fpga'. It depends on several files specified by the variables $(ariane_pkg), $(src), $(fpga_src), $(uart_src), and $(src_flist).
 fpga: $(ariane_pkg) $(src) $(fpga_src) $(uart_src) $(src_flist)
 	@echo "[FPGA] Generate sources"
 	@echo read_vhdl        {$(uart_src)}    > corev_apu/fpga/scripts/add_sources.tcl
