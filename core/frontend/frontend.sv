@@ -19,6 +19,7 @@ module frontend
   import ariane_pkg::*;
 #(
     parameter config_pkg::cva6_cfg_t CVA6Cfg = config_pkg::cva6_cfg_empty,
+    parameter bit FPGA_INTEL = 1'b0,
     parameter type bp_resolve_t = logic,
     parameter type fetch_entry_t = logic,
     parameter type icache_dreq_t = logic,
@@ -63,7 +64,8 @@ module frontend
     // Handshake's valid between fetch and decode - ID_STAGE
     output logic [ariane_pkg::SUPERSCALAR:0] fetch_entry_valid_o,
     // Handshake's ready between fetch and decode - ID_STAGE
-    input logic [ariane_pkg::SUPERSCALAR:0] fetch_entry_ready_i
+    input logic [ariane_pkg::SUPERSCALAR:0] fetch_entry_ready_i,
+    output logic error
 );
 
   localparam type bht_update_t = struct packed {
@@ -140,6 +142,7 @@ module frontend
   btb_prediction_t [CVA6Cfg.INSTR_PER_FETCH-1:0]                   btb_prediction_shifted;
   ras_t                                                            ras_predict;
   logic            [           CVA6Cfg.VLEN-1:0]                   vpc_btb;
+  logic            [           CVA6Cfg.VLEN-1:0]                   vpc_bht;
 
   // branch-predict update
   logic                                                            is_mispredict;
@@ -485,6 +488,7 @@ module frontend
   //while for ASIC, BTB is implemented in D flip-flop
   //and can be read at the same cycle.
   assign vpc_btb = (CVA6Cfg.FpgaEn) ? icache_dreq_i.vaddr : icache_vaddr_q;
+  assign vpc_bht = (FPGA_INTEL && icache_dreq_i.valid) ? icache_dreq_i.vaddr : icache_vaddr_q;
 
   if (CVA6Cfg.BTBEntries == 0) begin
     assign btb_prediction = '0;
@@ -511,13 +515,14 @@ module frontend
     bht #(
         .CVA6Cfg   (CVA6Cfg),
         .bht_update_t(bht_update_t),
+        .FPGA_INTEL(FPGA_INTEL),
         .NR_ENTRIES(CVA6Cfg.BHTEntries)
     ) i_bht (
         .clk_i,
         .rst_ni,
         .flush_bp_i      (flush_bp_i),
         .debug_mode_i,
-        .vpc_i           (icache_vaddr_q),
+        .vpc_i           (vpc_bht),
         .bht_update_i    (bht_update),
         .bht_prediction_o(bht_prediction)
     );

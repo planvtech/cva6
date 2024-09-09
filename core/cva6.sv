@@ -591,6 +591,7 @@ module cva6
   // --------------
   frontend #(
       .CVA6Cfg(CVA6Cfg),
+      .FPGA_INTEL(CVA6Cfg.FpgaEn),
       .bp_resolve_t(bp_resolve_t),
       .fetch_entry_t(fetch_entry_t),
       .icache_dreq_t(icache_dreq_t),
