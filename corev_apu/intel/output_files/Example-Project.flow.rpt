@@ -1,0 +1,186 @@
+Flow report for Example-Project
+Fri Sep  6 16:01:36 2024
+Quartus Prime Version 24.1.0 Build 115 03/21/2024 SC Pro Edition
+
+
+---------------------
+; Table of Contents ;
+---------------------
+  1. Legal Notice
+  2. Flow Summary
+  3. Flow Settings
+  4. Flow Non-Default Global Settings
+  5. Flow Elapsed Time
+  6. Flow OS Summary
+  7. Flow Log
+
+
+
+----------------
+; Legal Notice ;
+----------------
+Copyright (C) 2024  Intel Corporation. All rights reserved.
+Your use of Intel Corporation's design tools, logic functions 
+and other software and tools, and any partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Intel Program License 
+Subscription Agreement, the Intel Quartus Prime License Agreement,
+the Intel FPGA IP License Agreement, or other applicable license
+agreement, including, without limitation, that your use is for
+the sole purpose of programming logic devices manufactured by
+Intel and sold by Intel or its authorized distributors.  Please
+refer to the Intel FPGA Software License Subscription Agreements 
+on the Quartus Prime software download page.
+
+
+
++-----------------------------------------------------------+
+; Flow Summary                                              ;
++-------------+---------------------------------------------+
+; Flow Status ; Synthesis Failed - Fri Sep  6 16:01:36 2024 ;
++-------------+---------------------------------------------+
+
+
++-----------------------------------------+
+; Flow Settings                           ;
++-------------------+---------------------+
+; Option            ; Setting             ;
++-------------------+---------------------+
+; Start date & time ; 09/06/2024 16:01:28 ;
+; Main task         ; Compilation         ;
+; Revision Name     ; Example-Project     ;
++-------------------+---------------------+
+
+
++------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Flow Non-Default Global Settings                                                                                                                                                                                                                                 ;
++----------------------------+---------------------------------------------------------------------------------------------------------------------------------+-----------------------------+----------------------------------------------------+----------------+
+; Assignment Name            ; Value                                                                                                                           ; Default Value               ; Entity Name                                        ; Section Id     ;
++----------------------------+---------------------------------------------------------------------------------------------------------------------------------+-----------------------------+----------------------------------------------------+----------------+
+; COMPILER_SIGNATURE_ID      ; 171983377942672.172563128821322                                                                                                 ; --                          ; --                                                 ; --             ;
+; EDA_OUTPUT_DATA_FORMAT     ; Verilog Hdl                                                                                                                     ; --                          ; --                                                 ; eda_simulation ;
+; EDA_SIMULATION_TOOL        ; QuestaSim (Verilog)                                                                                                             ; Questa Intel FPGA (Verilog) ; --                                                 ; --             ;
+; EDA_TIME_SCALE             ; 1 ps                                                                                                                            ; --                          ; --                                                 ; eda_simulation ;
+; ENABLE_SIGNALTAP           ; On                                                                                                                              ; --                          ; --                                                 ; --             ;
+; MAX_CORE_JUNCTION_TEMP     ; 100                                                                                                                             ; --                          ; --                                                 ; --             ;
+; MESSAGE_DISABLE            ; 10034                                                                                                                           ; --                          ; altera_gpio                                        ; --             ;
+; MESSAGE_DISABLE            ; 10230                                                                                                                           ; --                          ; altera_gpio                                        ; --             ;
+; MESSAGE_DISABLE            ; 10036                                                                                                                           ; --                          ; altera_gpio                                        ; --             ;
+; MESSAGE_DISABLE            ; 10034                                                                                                                           ; --                          ; altera_gpio                                        ; --             ;
+; MESSAGE_DISABLE            ; 10230                                                                                                                           ; --                          ; altera_gpio                                        ; --             ;
+; MESSAGE_DISABLE            ; 10036                                                                                                                           ; --                          ; altera_gpio                                        ; --             ;
+; MESSAGE_DISABLE            ; 10034                                                                                                                           ; --                          ; altera_gpio                                        ; --             ;
+; MESSAGE_DISABLE            ; 10230                                                                                                                           ; --                          ; altera_gpio                                        ; --             ;
+; MESSAGE_DISABLE            ; 10036                                                                                                                           ; --                          ; altera_gpio                                        ; --             ;
+; MESSAGE_DISABLE            ; 10036                                                                                                                           ; --                          ; fmiohmc_ecc                                        ; --             ;
+; MESSAGE_DISABLE            ; 14320                                                                                                                           ; --                          ; fmiohmc_fifo                                       ; --             ;
+; MIN_CORE_JUNCTION_TEMP     ; 0                                                                                                                               ; --                          ; --                                                 ; --             ;
+; MISC_FILE                  ; ./ip/ed_synth_emif_fm_0/ed_synth_emif_fm_0.cmp                                                                                  ; --                          ; --                                                 ; --             ;
+; MISC_FILE                  ; ./ip/ed_synth_emif_fm_0/../ed_synth_emif_fm_0.ip                                                                                ; --                          ; --                                                 ; --             ;
+; MISC_FILE                  ; ./ip/emif_cal/emif_cal.cmp                                                                                                      ; --                          ; --                                                 ; --             ;
+; MISC_FILE                  ; ./ip/emif_cal/../emif_cal.ip                                                                                                    ; --                          ; --                                                 ; --             ;
+; MISC_FILE                  ; ./ip/iddr_intel/iddr_intel.cmp                                                                                                  ; --                          ; --                                                 ; --             ;
+; MISC_FILE                  ; ./ip/iddr_intel/../iddr_intel.ip                                                                                                ; --                          ; --                                                 ; --             ;
+; MISC_FILE                  ; ./ip/io_pll/io_pll.cmp                                                                                                          ; --                          ; --                                                 ; --             ;
+; MISC_FILE                  ; ./ip/io_pll/../io_pll.ip                                                                                                        ; --                          ; --                                                 ; --             ;
+; MISC_FILE                  ; ./ip/iobuf/iobuf.cmp                                                                                                            ; --                          ; --                                                 ; --             ;
+; MISC_FILE                  ; ./ip/iobuf/../iobuf.ip                                                                                                          ; --                          ; --                                                 ; --             ;
+; MISC_FILE                  ; ./ip/oddr_intel/oddr_intel.cmp                                                                                                  ; --                          ; --                                                 ; --             ;
+; MISC_FILE                  ; ./ip/oddr_intel/../oddr_intel.ip                                                                                                ; --                          ; --                                                 ; --             ;
+; MISC_FILE                  ; ./ip/vJTAG/vJTAG.cmp                                                                                                            ; --                          ; --                                                 ; --             ;
+; MISC_FILE                  ; ./ip/vJTAG/../vJTAG.ip                                                                                                          ; --                          ; --                                                 ; --             ;
+; OCS_IP_FILE                ; /home/angela/Documents/github/cva6/corev_apu/fpga/intel/ed_synth_emif_fm_0.ip                                                   ; --                          ; ed_synth_emif_fm_0                                 ; --             ;
+; OCS_IP_FILE                ; /home/angela/Documents/github/cva6/corev_apu/fpga/intel/emif_cal.ip                                                             ; --                          ; emif_cal                                           ; --             ;
+; OCS_IP_FILE                ; /home/angela/Documents/github/cva6/corev_apu/fpga/iddr_intel.ip                                                                 ; --                          ; iddr_intel                                         ; --             ;
+; OCS_IP_FILE                ; /home/angela/Documents/github/cva6/corev_apu/fpga/intel/io_pll.ip                                                               ; --                          ; io_pll                                             ; --             ;
+; OCS_IP_FILE                ; /home/angela/Documents/github/cva6/corev_apu/fpga/iobuf.ip                                                                      ; --                          ; iobuf                                              ; --             ;
+; OCS_IP_FILE                ; /home/angela/Documents/github/cva6/corev_apu/fpga/oddr_intel.ip                                                                 ; --                          ; oddr_intel                                         ; --             ;
+; OCS_IP_FILE                ; /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/ip/vJTAG.ip                                                         ; --                          ; vJTAG                                              ; --             ;
+; OCS_IP_HASH                ; z5lxzjq                                                                                                                         ; --                          ; ed_synth_emif_fm_0                                 ; --             ;
+; OCS_IP_HASH                ; yagv7fq                                                                                                                         ; --                          ; emif_cal                                           ; --             ;
+; OCS_IP_HASH                ; id4velq                                                                                                                         ; --                          ; iddr_intel                                         ; --             ;
+; OCS_IP_HASH                ; saopfla                                                                                                                         ; --                          ; io_pll                                             ; --             ;
+; OCS_IP_HASH                ; ck55vhi                                                                                                                         ; --                          ; iobuf                                              ; --             ;
+; OCS_IP_HASH                ; djxpcyq                                                                                                                         ; --                          ; oddr_intel                                         ; --             ;
+; OCS_IP_HASH                ; lk4a7ha                                                                                                                         ; --                          ; vJTAG                                              ; --             ;
+; OCS_IP_TYPE                ; altera_emif_fm                                                                                                                  ; --                          ; ed_synth_emif_fm_0                                 ; --             ;
+; OCS_IP_TYPE                ; altera_emif_cal                                                                                                                 ; --                          ; emif_cal                                           ; --             ;
+; OCS_IP_TYPE                ; altera_gpio                                                                                                                     ; --                          ; iddr_intel                                         ; --             ;
+; OCS_IP_TYPE                ; altera_iopll                                                                                                                    ; --                          ; io_pll                                             ; --             ;
+; OCS_IP_TYPE                ; altera_gpio                                                                                                                     ; --                          ; iobuf                                              ; --             ;
+; OCS_IP_TYPE                ; altera_gpio                                                                                                                     ; --                          ; oddr_intel                                         ; --             ;
+; OCS_IP_TYPE                ; altera_virtual_jtag                                                                                                             ; --                          ; vJTAG                                              ; --             ;
+; OCS_IP_VERSION             ; 2.7.4                                                                                                                           ; --                          ; ed_synth_emif_fm_0                                 ; --             ;
+; OCS_IP_VERSION             ; 2.7.4                                                                                                                           ; --                          ; emif_cal                                           ; --             ;
+; OCS_IP_VERSION             ; 22.1.0                                                                                                                          ; --                          ; iddr_intel                                         ; --             ;
+; OCS_IP_VERSION             ; 19.3.1                                                                                                                          ; --                          ; io_pll                                             ; --             ;
+; OCS_IP_VERSION             ; 22.1.0                                                                                                                          ; --                          ; iobuf                                              ; --             ;
+; OCS_IP_VERSION             ; 22.1.0                                                                                                                          ; --                          ; oddr_intel                                         ; --             ;
+; OCS_IP_VERSION             ; 19.2.1                                                                                                                          ; --                          ; vJTAG                                              ; --             ;
+; POWER_APPLY_THERMAL_MARGIN ; ADDITIONAL                                                                                                                      ; Off                         ; --                                                 ; --             ;
+; PROJECT_OUTPUT_DIRECTORY   ; output_files                                                                                                                    ; --                          ; --                                                 ; --             ;
+; SDC_ENTITY_FILE            ; ./ip/ed_synth_emif_fm_0/altera_emif_arch_fm_191/synth/ed_synth_emif_fm_0_altera_emif_arch_fm_191_faapzxy.sdc                    ; --                          ; ed_synth_emif_fm_0_altera_emif_arch_fm_191_faapzxy ; --             ;
+; SDC_ENTITY_FILE            ; ./ip/io_pll/altera_iopll_1931/synth/io_pll_altera_iopll_1931_saopfla.sdc                                                        ; --                          ; io_pll_altera_iopll_1931_saopfla                   ; --             ;
+; SEARCH_PATH                ; ../fpga/src/apb/include                                                                                                         ; --                          ; --                                                 ; --             ;
+; SEARCH_PATH                ; ../fpga/src                                                                                                                     ; --                          ; --                                                 ; --             ;
+; SEARCH_PATH                ; ../../vendor/pulp-platform/common_cells/include                                                                                 ; --                          ; --                                                 ; --             ;
+; SEARCH_PATH                ; ../../cva6/vendor/pulp-platform/axi/include                                                                                     ; --                          ; --                                                 ; --             ;
+; SEARCH_PATH                ; ../../core/cache_subsystem/hpdcache/rtl/include                                                                                 ; --                          ; --                                                 ; --             ;
+; SEARCH_PATH                ; ../../core/include                                                                                                              ; --                          ; --                                                 ; --             ;
+; SLD_INFO                   ; QSYS_NAME ed_synth_emif_fm_0 HAS_SOPCINFO 1 GENERATION_ID 0                                                                     ; --                          ; ed_synth_emif_fm_0                                 ; --             ;
+; SLD_INFO                   ; QSYS_NAME emif_cal HAS_SOPCINFO 1 GENERATION_ID 0                                                                               ; --                          ; emif_cal                                           ; --             ;
+; SLD_INFO                   ; QSYS_NAME iddr_intel HAS_SOPCINFO 1 GENERATION_ID 0                                                                             ; --                          ; iddr_intel                                         ; --             ;
+; SLD_INFO                   ; QSYS_NAME io_pll HAS_SOPCINFO 1 GENERATION_ID 0                                                                                 ; --                          ; io_pll                                             ; --             ;
+; SLD_INFO                   ; QSYS_NAME iobuf HAS_SOPCINFO 1 GENERATION_ID 0                                                                                  ; --                          ; iobuf                                              ; --             ;
+; SLD_INFO                   ; QSYS_NAME oddr_intel HAS_SOPCINFO 1 GENERATION_ID 0                                                                             ; --                          ; oddr_intel                                         ; --             ;
+; SLD_INFO                   ; QSYS_NAME vJTAG HAS_SOPCINFO 1 GENERATION_ID 0                                                                                  ; --                          ; vJTAG                                              ; --             ;
+; SOPCINFO_FILE              ; ./ip/ed_synth_emif_fm_0/ed_synth_emif_fm_0.sopcinfo                                                                             ; --                          ; --                                                 ; --             ;
+; SOPCINFO_FILE              ; ./ip/emif_cal/emif_cal.sopcinfo                                                                                                 ; --                          ; --                                                 ; --             ;
+; SOPCINFO_FILE              ; ./ip/iddr_intel/iddr_intel.sopcinfo                                                                                             ; --                          ; --                                                 ; --             ;
+; SOPCINFO_FILE              ; ./ip/io_pll/io_pll.sopcinfo                                                                                                     ; --                          ; --                                                 ; --             ;
+; SOPCINFO_FILE              ; ./ip/iobuf/iobuf.sopcinfo                                                                                                       ; --                          ; --                                                 ; --             ;
+; SOPCINFO_FILE              ; ./ip/oddr_intel/oddr_intel.sopcinfo                                                                                             ; --                          ; --                                                 ; --             ;
+; SOPCINFO_FILE              ; ./ip/vJTAG/vJTAG.sopcinfo                                                                                                       ; --                          ; --                                                 ; --             ;
+; TCL_ENTITY_FILE            ; ./ip/ed_synth_emif_fm_0/altera_emif_arch_fm_191/synth/ed_synth_emif_fm_0_altera_emif_arch_fm_191_faapzxy_ip_parameters.tcl      ; --                          ; ed_synth_emif_fm_0_altera_emif_arch_fm_191_faapzxy ; --             ;
+; TCL_ENTITY_FILE            ; ./ip/ed_synth_emif_fm_0/altera_emif_arch_fm_191/synth/ed_synth_emif_fm_0_altera_emif_arch_fm_191_faapzxy_utils.tcl              ; --                          ; ed_synth_emif_fm_0_altera_emif_arch_fm_191_faapzxy ; --             ;
+; TCL_ENTITY_FILE            ; ./ip/ed_synth_emif_fm_0/altera_emif_arch_fm_191/synth/ed_synth_emif_fm_0_altera_emif_arch_fm_191_faapzxy_parameters.tcl         ; --                          ; ed_synth_emif_fm_0_altera_emif_arch_fm_191_faapzxy ; --             ;
+; TCL_ENTITY_FILE            ; ./ip/ed_synth_emif_fm_0/altera_emif_arch_fm_191/synth/ed_synth_emif_fm_0_altera_emif_arch_fm_191_faapzxy_pin_map.tcl            ; --                          ; ed_synth_emif_fm_0_altera_emif_arch_fm_191_faapzxy ; --             ;
+; TCL_ENTITY_FILE            ; ./ip/ed_synth_emif_fm_0/altera_emif_arch_fm_191/synth/ed_synth_emif_fm_0_altera_emif_arch_fm_191_faapzxy_report_io_timing.tcl   ; --                          ; ed_synth_emif_fm_0_altera_emif_arch_fm_191_faapzxy ; --             ;
+; TCL_ENTITY_FILE            ; ./ip/ed_synth_emif_fm_0/altera_emif_arch_fm_191/synth/ed_synth_emif_fm_0_altera_emif_arch_fm_191_faapzxy_report_timing.tcl      ; --                          ; ed_synth_emif_fm_0_altera_emif_arch_fm_191_faapzxy ; --             ;
+; TCL_ENTITY_FILE            ; ./ip/ed_synth_emif_fm_0/altera_emif_arch_fm_191/synth/ed_synth_emif_fm_0_altera_emif_arch_fm_191_faapzxy_report_timing_core.tcl ; --                          ; ed_synth_emif_fm_0_altera_emif_arch_fm_191_faapzxy ; --             ;
+; TCL_ENTITY_FILE            ; ./ip/io_pll/altera_iopll_1931/synth/io_pll_altera_iopll_1931_saopfla_all_ip_params.tcl                                          ; --                          ; io_pll_altera_iopll_1931_saopfla                   ; --             ;
+; TCL_ENTITY_FILE            ; ./ip/io_pll/altera_iopll_1931/synth/io_pll_altera_iopll_1931_saopfla_parameters.tcl                                             ; --                          ; io_pll_altera_iopll_1931_saopfla                   ; --             ;
+; TCL_ENTITY_FILE            ; ./ip/io_pll/altera_iopll_1931/synth/io_pll_altera_iopll_1931_saopfla_pin_map.tcl                                                ; --                          ; io_pll_altera_iopll_1931_saopfla                   ; --             ;
+; TOP_LEVEL_ENTITY           ; cva6_intel                                                                                                                      ; Example-Project             ; --                                                 ; --             ;
+; USE_SIGNALTAP_FILE         ; stp1.stp                                                                                                                        ; --                          ; --                                                 ; --             ;
++----------------------------+---------------------------------------------------------------------------------------------------------------------------------+-----------------------------+----------------------------------------------------+----------------+
+
+
++--------------------------------------------------+
+; Flow Elapsed Time                                ;
++-------------+--------------+---------------------+
+; Module Name ; Elapsed Time ; Peak Virtual Memory ;
++-------------+--------------+---------------------+
+; Synthesis   ; 00:00:09     ; 1384 MB             ;
+; Total       ; 00:00:09     ; --                  ;
++-------------+--------------+---------------------+
+
+
++------------------------------------------------------------------------------+
+; Flow OS Summary                                                              ;
++-------------+------------------+---------------+------------+----------------+
+; Module Name ; Machine Hostname ; OS Name       ; OS Version ; Processor type ;
++-------------+------------------+---------------+------------+----------------+
+; Synthesis   ; parma            ; CentOS Stream ; 8          ; x86_64         ;
++-------------+------------------+---------------+------------+----------------+
+
+
+------------
+; Flow Log ;
+------------
+quartus_syn --read_settings_files=on --write_settings_files=off Example-Project -c Example-Project --quick_elab
+
+
+
