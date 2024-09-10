@@ -64,8 +64,7 @@ module frontend
     // Handshake's valid between fetch and decode - ID_STAGE
     output logic [ariane_pkg::SUPERSCALAR:0] fetch_entry_valid_o,
     // Handshake's ready between fetch and decode - ID_STAGE
-    input logic [ariane_pkg::SUPERSCALAR:0] fetch_entry_ready_i,
-    output logic error
+    input logic [ariane_pkg::SUPERSCALAR:0] fetch_entry_ready_i
 );
 
   localparam type bht_update_t = struct packed {
