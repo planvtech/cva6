@@ -312,6 +312,7 @@ set_global_assignment -name PWRMGT_LINEAR_FORMAT_N "-13"
 set_global_assignment -name POWER_APPLY_THERMAL_MARGIN ADDITIONAL
 set_global_assignment -name USE_INIT_DONE SDM_IO0
 
+
 set_global_assignment -name VERILOG_FILE cva6_intel/altera_mm_interconnect_1920/synth/cva6_intel_altera_mm_interconnect_1920_otvf3ky.v
 set_global_assignment -name VERILOG_FILE cva6_intel/altera_mm_interconnect_1920/synth/cva6_intel_altera_mm_interconnect_1920_v5r556a.v
 set_global_assignment -name SYSTEMVERILOG_FILE cva6_intel/altera_merlin_width_adapter_1940/synth/cva6_intel_altera_merlin_width_adapter_1940_7beubrq.sv
@@ -702,4 +703,5 @@ set_global_assignment -name SIGNALTAP_FILE stp1.stp
 set_global_assignment -name BOARD default
 set_global_assignment -name IP_FILE vJTAG.ip
 set_global_assignment -name IP_FILE ip/cva6_intel/cva6_intel_jtag_uart_0.ip
+set_global_assignment -name SDC_FILE SDC1.sdc
 
