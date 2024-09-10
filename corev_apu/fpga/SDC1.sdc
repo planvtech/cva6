@@ -1,0 +1,2 @@
+set_false_path -from [get_clocks {inst_ddr4|emif_fm_0_core_usr_clk}] -to [get_clocks {clocks|iopll_0_outclk0}]
+set_false_path -from [get_clocks {clocks|iopll_0_outclk0}] -to [get_clocks {inst_ddr4|emif_fm_0_core_usr_clk}]
