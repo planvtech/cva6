@@ -38,6 +38,7 @@ module issue_stage
     input logic stall_i,
     // Handshake's data with decode stage - ID_STAGE
     input scoreboard_entry_t [SUPERSCALAR:0] decoded_instr_i,
+    input scoreboard_entry_t [SUPERSCALAR:0] decoded_instr_i_prev,
     // instruction value - ID_STAGE
     input logic [SUPERSCALAR:0][31:0] orig_instr_i,
     // Handshake's valid with decode stage - ID_STAGE
@@ -208,10 +209,12 @@ module issue_stage
       .branchpredict_sbe_t(branchpredict_sbe_t),
       .fu_data_t(fu_data_t),
       .scoreboard_entry_t(scoreboard_entry_t),
-      .rs3_len_t(rs3_len_t)
+      .rs3_len_t(rs3_len_t),
+      .FPGA_INTEL   (CVA6Cfg.FpgaEn)
   ) i_issue_read_operands (
       .flush_i            (flush_unissued_instr_i),
       .issue_instr_i      (issue_instr_sb_iro),
+      .issue_instr_i_prev (decoded_instr_i_prev),
       .orig_instr_i       (orig_instr_sb_iro),
       .issue_instr_valid_i(issue_instr_valid_sb_iro),
       .issue_ack_o        (issue_ack_iro_sb),

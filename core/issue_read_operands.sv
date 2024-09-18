@@ -21,7 +21,8 @@ module issue_read_operands
     parameter type branchpredict_sbe_t = logic,
     parameter type fu_data_t = logic,
     parameter type scoreboard_entry_t = logic,
-    parameter type rs3_len_t = logic
+    parameter type rs3_len_t = logic,
+    parameter bit  FPGA_INTEL    = 1'b0
 ) (
     // Subsystem Clock - SUBSYSTEM
     input logic clk_i,
@@ -33,6 +34,7 @@ module issue_read_operands
     input logic stall_i,
     // TO_BE_COMPLETED - TO_BE_COMPLETED
     input scoreboard_entry_t [SUPERSCALAR:0] issue_instr_i,
+    input scoreboard_entry_t [SUPERSCALAR:0] issue_instr_i_prev,
     // TO_BE_COMPLETED - TO_BE_COMPLETED
     input logic [SUPERSCALAR:0][31:0] orig_instr_i,
     // TO_BE_COMPLETED - TO_BE_COMPLETED
@@ -450,6 +452,7 @@ module issue_read_operands
       fpu_rm_q       <= '0;
       csr_valid_q    <= '0;
       branch_valid_q <= '0;
+
       // Exception pass through:
       // If an exception has occurred simply pass it through
       // we do not want to issue this instruction
@@ -596,11 +599,11 @@ module issue_read_operands
   logic [CVA6Cfg.NrCommitPorts-1:0][CVA6Cfg.XLEN-1:0] wdata_pack;
   logic [CVA6Cfg.NrCommitPorts-1:0]                   we_pack;
 
-  for (genvar i = 0; i <= SUPERSCALAR; i++) begin
-    assign raddr_pack[i*OPERANDS_PER_INSTR+0] = issue_instr_i[i].rs1[4:0];
-    assign raddr_pack[i*OPERANDS_PER_INSTR+1] = issue_instr_i[i].rs2[4:0];
+  for (genvar i = 0; i <= SUPERSCALAR; i++) begin //adjust address to read from register file (when synchronous RAM is used reads take one cycle, so we advance the address)
+    assign raddr_pack[i*OPERANDS_PER_INSTR+0] = FPGA_INTEL ? issue_instr_i_prev[i].rs1[4:0] : issue_instr_i[i].rs1[4:0];
+    assign raddr_pack[i*OPERANDS_PER_INSTR+1] = FPGA_INTEL ? issue_instr_i_prev[i].rs2[4:0] : issue_instr_i[i].rs2[4:0];
     if (OPERANDS_PER_INSTR == 3) begin
-      assign raddr_pack[i*OPERANDS_PER_INSTR+2] = issue_instr_i[i].result[4:0];
+      assign raddr_pack[i*OPERANDS_PER_INSTR+2] = FPGA_INTEL ? issue_instr_i_prev[i].result[4:0] : issue_instr_i[i].result[4:0];
     end
   end
 
@@ -609,10 +612,11 @@ module issue_read_operands
     assign wdata_pack[i] = wdata_i[i];
     assign we_pack[i]    = we_gpr_i[i];
   end
-  if (CVA6Cfg.FpgaEn) begin : gen_fpga_regfile
+  if (CVA6Cfg.FpgaEn || FPGA_INTEL) begin : gen_fpga_regfile
     ariane_regfile_fpga #(
         .CVA6Cfg      (CVA6Cfg),
         .DATA_WIDTH   (CVA6Cfg.XLEN),
+        .FPGA_INTEL   (FPGA_INTEL),
         .NR_READ_PORTS(CVA6Cfg.NrRgprPorts),
         .ZERO_REG_ZERO(1)
     ) i_ariane_regfile_fpga (

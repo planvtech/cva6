@@ -29,6 +29,7 @@ module ariane_regfile_fpga #(
     parameter config_pkg::cva6_cfg_t CVA6Cfg       = config_pkg::cva6_cfg_empty,
     parameter int unsigned           DATA_WIDTH    = 32,
     parameter int unsigned           NR_READ_PORTS = 2,
+    parameter bit                    FPGA_INTEL    = 1'b0,
     parameter bit                    ZERO_REG_ZERO = 0
 ) (
     // clock and reset
@@ -55,6 +56,11 @@ module ariane_regfile_fpga #(
   logic [CVA6Cfg.NrCommitPorts-1:0][         NUM_WORDS-1:0] we_dec;
   logic [            NUM_WORDS-1:0][LOG_NR_WRITE_PORTS-1:0] mem_block_sel;
   logic [            NUM_WORDS-1:0][LOG_NR_WRITE_PORTS-1:0] mem_block_sel_q;
+  logic [CVA6Cfg.NrCommitPorts-1:0][DATA_WIDTH-1:0] wdata_reg;
+  logic [        NR_READ_PORTS-1:0]                 read_after_write;
+
+  logic [        NR_READ_PORTS-1:0][           5:0] raddr_q;
+  logic [        NR_READ_PORTS-1:0][           5:0] raddr;
 
   // write adress decoder (for block selector)
   always_comb begin
@@ -88,29 +94,41 @@ module ariane_regfile_fpga #(
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       mem_block_sel_q <= '0;
+      raddr_q <= '0;
     end else begin
       mem_block_sel_q <= mem_block_sel;
+      raddr_q <= raddr_i;
     end
   end
 
   // distributed RAM blocks
   logic [NR_READ_PORTS-1:0][DATA_WIDTH-1:0] mem_read[CVA6Cfg.NrCommitPorts];
+  logic [NR_READ_PORTS-1:0][DATA_WIDTH-1:0] mem_read_sync[CVA6Cfg.NrCommitPorts];
   for (genvar j = 0; j < CVA6Cfg.NrCommitPorts; j++) begin : regfile_ram_block
     always_ff @(posedge clk_i) begin
       if (we_i[j] && ~waddr_i[j] != 0) begin
         mem[j][waddr_i[j]] <= wdata_i[j];
+        wdata_reg[j] <= wdata_i[j]; // register data written in case is needed to read next cycle
+      end
+      for (int k = 0; k < NR_READ_PORTS; k++) begin : block_read
+        mem_read_sync[j][k] = mem[j][raddr_i[k]]; // synchronous RAM
+        read_after_write[k] <='0;
+        if(waddr_i[j] == raddr_i[k])
+          read_after_write[k] <= we_i[j] && ~waddr_i[j] != 0; // Identify if we need to read the content that was written
       end
     end
     for (genvar k = 0; k < NR_READ_PORTS; k++) begin : block_read
-      assign mem_read[j][k] = mem[j][raddr_i[k]];
+      assign mem_read[j][k] = FPGA_INTEL ? ( read_after_write[k] ? wdata_reg[j]: mem_read_sync[j][k]) : mem[j][raddr_i[k]]; 
     end
   end
+  //with synchronous ram there is the need to adjust which address is used at the output MUX
+  assign raddr    = FPGA_INTEL ? raddr_q : raddr_i;
 
   // output MUX
   logic [NR_READ_PORTS-1:0][LOG_NR_WRITE_PORTS-1:0] block_addr;
   for (genvar k = 0; k < NR_READ_PORTS; k++) begin : regfile_read_port
-    assign block_addr[k] = mem_block_sel_q[raddr_i[k]];
-    assign rdata_o[k] = (ZERO_REG_ZERO && raddr_i[k] == '0) ? '0 : mem_read[block_addr[k]][k];
+    assign block_addr[k] = FPGA_INTEL ? mem_block_sel_q[raddr_q[k]] : mem_block_sel_q[raddr_i[k]];
+    assign rdata_o[k] = (ZERO_REG_ZERO && raddr[k] == '0) ? '0 : mem_read[block_addr[k]][k];
   end
 
   // random initialization of the memory to suppress assert warnings on Questa.
