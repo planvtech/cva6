@@ -1,0 +1,21 @@
+Fitter Status : Successful - Fri Sep 20 15:30:07 2024
+Quartus Prime Version : 24.1.0 Build 115 03/21/2024 SC Pro Edition
+Revision Name : Example-Project
+Top-level Entity Name : cva6_intel
+Family : Agilex 7
+Device : AGFB014R24B2E2V
+Timing Models : Final
+Power Models : Final
+Device Status : Final
+Logic utilization (in ALMs) : 53,956 / 487,200 ( 11 % )
+Total dedicated logic registers : 90351
+Total pins : 141 / 924 ( 15 % )
+Total block memory bits : 727,144 / 145,612,800 ( < 1 % )
+Total RAM Blocks : 83 / 7,110 ( 1 % )
+Total DSP Blocks : 2 / 4,510 ( < 1 % )
+Total eSRAMs : 0 / 2 ( 0 % )
+Total HSSI P-Tiles : 0 / 1 ( 0 % )
+Total HSSI E-Tile Channels : 0 / 24 ( 0 % )
+Total HSSI HPS : 0 / 1 ( 0 % )
+Total HSSI EHIPs : 0 / 4 ( 0 % )
+Total PLLs : 5 / 24 ( 21 % )

@@ -1,0 +1,2 @@
+22 serialization::archive 19 0 0 2 0 0 0 14 auto_fab_0.ddm 0 0 9 partition 0 0 0 1 1 
+ 18 root_partition.ddm 9 partition 0 1 1 

@@ -9,11 +9,12 @@
 
 int main()
 {
-    //init_uart(CLOCK_FREQUENCY, UART_BITRATE);
-    print_uart("Hello World!\r\n");
+    // init_uart(CLOCK_FREQUENCY, UART_BITRATE); //removed in intel setup
+    print_uart("Hello World!\r\n"); 
 
-    // int res = gpt_find_boot_partition((uint8_t *)0x80000000UL, 2 * 16384);
+    // int res = gpt_find_boot_partition((uint8_t *)0x80000000UL, 2 * 16384); //removed in intel setup
 
+    //removed in intel setup begin
     // if (res == 0)
     // {
     //     // jump to the address
@@ -22,6 +23,7 @@ int main()
     //         "la a1, _dtb;"
     //         "jr s0");
     // }
+    ////removed in intel setup end
 
     while (1)
     {

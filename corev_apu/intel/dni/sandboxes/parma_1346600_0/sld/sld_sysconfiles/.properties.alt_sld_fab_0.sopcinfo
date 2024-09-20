@@ -1,0 +1,4 @@
+22 serialization::archive 19 9 738226944 50 Version 24.1.0 Build 115 03/21/2024 SC Pro Edition 0 0 3 0 0 0 23 dms:copy_to_qdb:enabled 0 0 1 0
+0 0 1 26 dms:copy_to_qdb:partitions
+1 5 10 auto_fab_0 38 dms:copy_to_qdb:subfolder_in_partition
+2 5 15 sld_sysconfiles

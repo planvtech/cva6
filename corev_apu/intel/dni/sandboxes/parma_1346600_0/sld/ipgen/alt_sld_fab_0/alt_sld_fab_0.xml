@@ -1,0 +1,520 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<deploy
+ date="2024.09.20.00:22:15"
+ outputDirectory="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/">
+ <perimeter>
+  <parameter
+     name="AUTO_GENERATION_ID"
+     type="Integer"
+     defaultValue="0"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_UNIQUE_ID"
+     type="String"
+     defaultValue=""
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE_FAMILY"
+     type="String"
+     defaultValue="Agilex 7"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE"
+     type="String"
+     defaultValue="AGFB014R24B2E2V"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE_SPEEDGRADE"
+     type="String"
+     defaultValue="2"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_BOARD"
+     type="String"
+     defaultValue="default"
+     onHdl="0"
+     affectsHdl="1" />
+ </perimeter>
+ <entity kind="alt_sld_fab_0" version="1.0" name="alt_sld_fab_0">
+  <parameter name="AUTO_GENERATION_ID" value="0" />
+  <parameter name="AUTO_DEVICE" value="AGFB014R24B2E2V" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Agilex 7" />
+  <parameter name="AUTO_BOARD" value="default" />
+  <parameter name="AUTO_UNIQUE_ID" value="" />
+  <parameter name="AUTO_DEVICE_SPEEDGRADE" value="2" />
+  <generatedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/synth/alt_sld_fab_0.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/synth/alt_sld_fab_0.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0.ip" />
+  </sourceFiles>
+  <childSourceFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_wrapper_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/core/altera_instrumentation_fabric/alt_sld_fab_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/core/altera_instrumentation_fabric/com.altera.superfabric.jar" />
+   <file
+       path="/opt/Quartus/quartus/sopc_builder/model/lib/com.altera.utilities.jar" />
+   <file
+       path="/opt/Quartus/quartus/sopc_builder/model/lib/commons-lang3-3.9.jar" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/core/altera_super_splitter/altera_sld_splitter_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/jtag/altera_jtag_wys_atom/altera_jtag_wys_atom_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/jtag/altera_sld_jtag_hub/altera_sld_jtag_hub_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/core/altera_connection_identification_hub/altera_connection_identification_hub_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/conf_reset/conf_reset_hub/intel_configuration_debug_reset_release_hub_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/conf_reset/dbg_conf_reset/intel_configuration_reset_release_for_debug_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/conf_reset/user_input/intel_configuration_reset_release_to_debug_logic_hw.tcl" />
+  </childSourceFiles>
+  <messages>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_alt_sld_fab_0_10_mgvf7lq"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_alt_sld_fab_1920_5gvp6zq"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_altera_sld_splitter_1920_zh76hji"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: altera_jtag_wys_atom"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_altera_sld_jtag_hub_1920_j3vtkqa"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_altera_connection_identification_hub_1920_nx3nj7a"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_intel_configuration_debug_reset_release_hub_203_mfqd2xa"</message>
+   <message level="Info" culprit="conf_reset_src">"Generating: conf_reset_src"</message>
+   <message level="Info" culprit="grounded_conf_reset_src">"Generating: grounded_conf_reset_src"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: conf_reset_src"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: intel_configuration_reset_release_for_debug"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: grounded_conf_reset_src"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: intel_configuration_reset_release_to_debug_logic"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="alt_sld_fab_0"
+   version="1.0"
+   name="alt_sld_fab_0_alt_sld_fab_0_10_mgvf7lq">
+  <parameter name="AUTO_DEVICE" value="AGFB014R24B2E2V" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Agilex 7" />
+  <parameter name="AUTO_BOARD" value="default" />
+  <parameter name="AUTO_DEVICE_SPEEDGRADE" value="2" />
+  <generatedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/alt_sld_fab_0_10/synth/alt_sld_fab_0_alt_sld_fab_0_10_mgvf7lq.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/alt_sld_fab_0_10/synth/alt_sld_fab_0_alt_sld_fab_0_10_mgvf7lq.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_wrapper_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/sld/core/altera_instrumentation_fabric/alt_sld_fab_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/core/altera_instrumentation_fabric/com.altera.superfabric.jar" />
+   <file
+       path="/opt/Quartus/quartus/sopc_builder/model/lib/com.altera.utilities.jar" />
+   <file
+       path="/opt/Quartus/quartus/sopc_builder/model/lib/commons-lang3-3.9.jar" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/core/altera_super_splitter/altera_sld_splitter_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/jtag/altera_jtag_wys_atom/altera_jtag_wys_atom_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/jtag/altera_sld_jtag_hub/altera_sld_jtag_hub_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/core/altera_connection_identification_hub/altera_connection_identification_hub_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/conf_reset/conf_reset_hub/intel_configuration_debug_reset_release_hub_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/conf_reset/dbg_conf_reset/intel_configuration_reset_release_for_debug_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/conf_reset/user_input/intel_configuration_reset_release_to_debug_logic_hw.tcl" />
+  </childSourceFiles>
+  <instantiator instantiator="alt_sld_fab_0" as="alt_sld_fab_0" />
+  <messages>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_alt_sld_fab_0_10_mgvf7lq"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_alt_sld_fab_1920_5gvp6zq"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_altera_sld_splitter_1920_zh76hji"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: altera_jtag_wys_atom"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_altera_sld_jtag_hub_1920_j3vtkqa"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_altera_connection_identification_hub_1920_nx3nj7a"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_intel_configuration_debug_reset_release_hub_203_mfqd2xa"</message>
+   <message level="Info" culprit="conf_reset_src">"Generating: conf_reset_src"</message>
+   <message level="Info" culprit="grounded_conf_reset_src">"Generating: grounded_conf_reset_src"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: conf_reset_src"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: intel_configuration_reset_release_for_debug"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: grounded_conf_reset_src"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: intel_configuration_reset_release_to_debug_logic"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="alt_sld_fab"
+   version="19.2.0"
+   name="alt_sld_fab_0_alt_sld_fab_1920_5gvp6zq">
+  <parameter name="MAX_WIDTH" value="0" />
+  <parameter name="TOP_HUB" value="1" />
+  <parameter name="AUTO_BOARD" value="default" />
+  <parameter name="DEVICE_FAMILY" value="Agilex 7" />
+  <parameter
+     name="SETTINGS"
+     value="{fabric sld dir agent mfr_code 110 type_code 128 version 1 instance -1 ir_width 1 bridge_agent 0 prefer_host { } psig 9b67919e} " />
+  <parameter name="CLOCKS" value="{id {} } " />
+  <parameter name="DESIGN_HASH" value="63a14869f39c96e0673d" />
+  <parameter name="AUTO_DEVICE_SPEEDGRADE" value="2" />
+  <parameter name="MIRROR" value="0" />
+  <parameter
+     name="AGENT_REPORT"
+     value="{agent_hpath {uart_i|jtag_uart_0|cva6_intel_jtag_uart_0_altera_avalon_jtag_uart_1924_v3imxwq_alt_jtag_atlantic|inst|sld_jtag_endpoint_adapter_impl_inst|sld_agent_ep_inst|ep} instance_index {0} host_name {JTAG} host_hpath {} fabric_name {SLD fabric} } " />
+  <parameter
+     name="COMPOSED_SETTINGS"
+     value="{fabric sld dir agent mfr_code 110 type_code 128 version 1 instance 0 ir_width 1 bridge_agent 0 prefer_host {} } " />
+  <parameter name="AUTO_DEVICE" value="AGFB014R24B2E2V" />
+  <parameter
+     name="EP_INFOS"
+     value="{hpath {uart_i|jtag_uart_0|cva6_intel_jtag_uart_0_altera_avalon_jtag_uart_1924_v3imxwq_alt_jtag_atlantic|inst|sld_jtag_endpoint_adapter_impl_inst|sld_agent_ep_inst|ep} } " />
+  <parameter name="AGENTS" value="" />
+  <parameter name="NODE_COUNT" value="1" />
+  <generatedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/alt_sld_fab_1920/synth/alt_sld_fab_0_alt_sld_fab_1920_5gvp6zq.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/alt_sld_fab_1920/synth/alt_sld_fab_0_alt_sld_fab_1920_5gvp6zq.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/sld/core/altera_instrumentation_fabric/alt_sld_fab_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/core/altera_instrumentation_fabric/com.altera.superfabric.jar" />
+   <file
+       path="/opt/Quartus/quartus/sopc_builder/model/lib/com.altera.utilities.jar" />
+   <file
+       path="/opt/Quartus/quartus/sopc_builder/model/lib/commons-lang3-3.9.jar" />
+  </sourceFiles>
+  <childSourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/sld/core/altera_super_splitter/altera_sld_splitter_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/jtag/altera_jtag_wys_atom/altera_jtag_wys_atom_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/jtag/altera_sld_jtag_hub/altera_sld_jtag_hub_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/core/altera_connection_identification_hub/altera_connection_identification_hub_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/conf_reset/conf_reset_hub/intel_configuration_debug_reset_release_hub_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/conf_reset/dbg_conf_reset/intel_configuration_reset_release_for_debug_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/conf_reset/user_input/intel_configuration_reset_release_to_debug_logic_hw.tcl" />
+  </childSourceFiles>
+  <instantiator
+     instantiator="alt_sld_fab_0_alt_sld_fab_0_10_mgvf7lq"
+     as="alt_sld_fab_0" />
+  <messages>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_alt_sld_fab_1920_5gvp6zq"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_altera_sld_splitter_1920_zh76hji"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: altera_jtag_wys_atom"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_altera_sld_jtag_hub_1920_j3vtkqa"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_altera_connection_identification_hub_1920_nx3nj7a"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_intel_configuration_debug_reset_release_hub_203_mfqd2xa"</message>
+   <message level="Info" culprit="conf_reset_src">"Generating: conf_reset_src"</message>
+   <message level="Info" culprit="grounded_conf_reset_src">"Generating: grounded_conf_reset_src"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: conf_reset_src"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: intel_configuration_reset_release_for_debug"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: grounded_conf_reset_src"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: intel_configuration_reset_release_to_debug_logic"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="altera_sld_splitter"
+   version="19.2.0"
+   name="alt_sld_fab_0_altera_sld_splitter_1920_zh76hji">
+  <parameter
+     name="FRAGMENTS"
+     value="{{name clock type clock dir end ports { {tck clk in 1 0} } } {name node type conduit dir end ports { {tms tms in 1 1} {tdi tdi in 1 2} {tdo tdo out 1 0} {ena ena in 1 3} {usr1 usr1 in 1 4} {clr clr in 1 5} {clrn clrn in 1 6} {jtag_state_tlr jtag_state_tlr in 1 7} {jtag_state_rti jtag_state_rti in 1 8} {jtag_state_sdrs jtag_state_sdrs in 1 9} {jtag_state_cdr jtag_state_cdr in 1 10} {jtag_state_sdr jtag_state_sdr in 1 11} {jtag_state_e1dr jtag_state_e1dr in 1 12} {jtag_state_pdr jtag_state_pdr in 1 13} {jtag_state_e2dr jtag_state_e2dr in 1 14} {jtag_state_udr jtag_state_udr in 1 15} {jtag_state_sirs jtag_state_sirs in 1 16} {jtag_state_cir jtag_state_cir in 1 17} {jtag_state_sir jtag_state_sir in 1 18} {jtag_state_e1ir jtag_state_e1ir in 1 19} {jtag_state_pir jtag_state_pir in 1 20} {jtag_state_e2ir jtag_state_e2ir in 1 21} {jtag_state_uir jtag_state_uir in 1 22} {ir_in ir_in in 1 23} {irq irq out 1 1} {ir_out ir_out out 1 2} } clock clock assign {debug.controlledBy {link_0} } moduleassign {debug.virtualInterface.link_0 {debug.endpointLink {fabric sld index 1} } } } } " />
+  <parameter name="EXAMPLE" value="" />
+  <parameter name="ADD_INTERFACE_ASGN" value="1" />
+  <generatedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/altera_sld_splitter_1920/synth/alt_sld_fab_0_altera_sld_splitter_1920_zh76hji.sv"
+       attributes="TOP_LEVEL_FILE" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/altera_sld_splitter_1920/synth/alt_sld_fab_0_altera_sld_splitter_1920_zh76hji.sv"
+       attributes="TOP_LEVEL_FILE" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/sld/core/altera_super_splitter/altera_sld_splitter_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator instantiator="alt_sld_fab_0_alt_sld_fab_1920_5gvp6zq" as="splitter" />
+  <messages>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_altera_sld_splitter_1920_zh76hji"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="altera_jtag_wys_atom"
+   version="19.2.0"
+   name="altera_jtag_wys_atom">
+  <parameter name="SLD_INSERT_CONFIG_SF_WITH_JTAG_WYS" value="0" />
+  <parameter name="device_family" value="Agilex 7" />
+  <parameter name="DEVICE_FAMILY_ID" value="14" />
+  <generatedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/altera_jtag_wys_atom_1920/synth/altera_jtag_wys_atom.sv"
+       attributes="TOP_LEVEL_FILE" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/altera_jtag_wys_atom_1920/synth/altera_jtag_wys_atom.sv"
+       attributes="TOP_LEVEL_FILE" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/sld/jtag/altera_jtag_wys_atom/altera_jtag_wys_atom_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator instantiator="alt_sld_fab_0_alt_sld_fab_1920_5gvp6zq" as="jtagpins" />
+  <messages>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: altera_jtag_wys_atom"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="altera_sld_jtag_hub"
+   version="19.2.0"
+   name="alt_sld_fab_0_altera_sld_jtag_hub_1920_j3vtkqa">
+  <parameter name="CONN_INDEX" value="0" />
+  <parameter name="N_SEL_BITS" value="1" />
+  <parameter name="DEVICE_FAMILY" value="Agilex 7" />
+  <parameter name="N_NODE_IR_BITS" value="4" />
+  <parameter name="BRIDGE_START_INDEX" value="2" />
+  <parameter
+     name="SETTINGS"
+     value="{mfr_code 110 type_code 128 version 1 instance 0 ir_width 1 bridge_agent 0 prefer_host {} } " />
+  <parameter name="FORCE_IR_CAPTURE_FEATURE" value="1" />
+  <parameter name="USE_TCK_ENA" value="0" />
+  <parameter name="BROADCAST_FEATURE" value="0" />
+  <parameter name="NODE_INFO" value="00001100000000000110111000000000" />
+  <parameter name="COMPILATION_MODE" value="0" />
+  <parameter name="ENABLE_SOFT_CORE_CONTROLLER" value="0" />
+  <parameter name="NEGEDGE_TDO_LATCH" value="0" />
+  <parameter name="FORCE_PRE_1_4_FEATURE" value="0" />
+  <parameter name="COUNT" value="1" />
+  <parameter name="BRIDGE_HOST" value="0" />
+  <generatedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/altera_sld_jtag_hub_1920/synth/alt_sld_fab_0_altera_sld_jtag_hub_1920_j3vtkqa.vhd"
+       attributes="" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/altera_sld_jtag_hub_1920/synth/alt_sld_fab_0_altera_sld_jtag_hub_1920_j3vtkqa.vhd"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/sld/jtag/altera_sld_jtag_hub/altera_sld_jtag_hub_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator instantiator="alt_sld_fab_0_alt_sld_fab_1920_5gvp6zq" as="sldfabric" />
+  <messages>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_altera_sld_jtag_hub_1920_j3vtkqa"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="altera_connection_identification_hub"
+   version="19.2.0"
+   name="alt_sld_fab_0_altera_connection_identification_hub_1920_nx3nj7a">
+  <parameter name="COUNT" value="1" />
+  <parameter name="SETTINGS" value="{width 4 latency 0} " />
+  <parameter name="DESIGN_HASH" value="63a14869f39c96e0673d" />
+  <generatedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/altera_connection_identification_hub_1920/synth/alt_sld_fab_0_altera_connection_identification_hub_1920_nx3nj7a.sv"
+       attributes="TOP_LEVEL_FILE" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/altera_connection_identification_hub_1920/synth/alt_sld_fab_0_altera_connection_identification_hub_1920_nx3nj7a.sv"
+       attributes="TOP_LEVEL_FILE" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/sld/core/altera_connection_identification_hub/altera_connection_identification_hub_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator instantiator="alt_sld_fab_0_alt_sld_fab_1920_5gvp6zq" as="ident" />
+  <messages>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_altera_connection_identification_hub_1920_nx3nj7a"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="intel_configuration_debug_reset_release_hub"
+   version="20.3"
+   name="alt_sld_fab_0_intel_configuration_debug_reset_release_hub_203_mfqd2xa">
+  <parameter name="SOURCE_PROVIDED" value="0" />
+  <parameter name="device_family" value="Agilex 7" />
+  <parameter name="COUNT" value="1" />
+  <parameter name="SETTINGS" value="{is_source 0} " />
+  <parameter name="DEVICE_FAMILY_ID" value="3" />
+  <generatedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/intel_configuration_debug_reset_release_hub_203/synth/alt_sld_fab_0_intel_configuration_debug_reset_release_hub_203_mfqd2xa.v"
+       attributes="" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/intel_configuration_debug_reset_release_hub_203/synth/alt_sld_fab_0_intel_configuration_debug_reset_release_hub_203_mfqd2xa.v"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/sld/conf_reset/conf_reset_hub/intel_configuration_debug_reset_release_hub_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/sld/conf_reset/dbg_conf_reset/intel_configuration_reset_release_for_debug_hw.tcl" />
+   <file
+       path="/opt/Quartus/ip/altera/sld/conf_reset/user_input/intel_configuration_reset_release_to_debug_logic_hw.tcl" />
+  </childSourceFiles>
+  <instantiator
+     instantiator="alt_sld_fab_0_alt_sld_fab_1920_5gvp6zq"
+     as="configresetfabric" />
+  <messages>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: alt_sld_fab_0_intel_configuration_debug_reset_release_hub_203_mfqd2xa"</message>
+   <message level="Info" culprit="conf_reset_src">"Generating: conf_reset_src"</message>
+   <message level="Info" culprit="grounded_conf_reset_src">"Generating: grounded_conf_reset_src"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: conf_reset_src"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: intel_configuration_reset_release_for_debug"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: grounded_conf_reset_src"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: intel_configuration_reset_release_to_debug_logic"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="intel_configuration_debug_reset_release_hub_intel_configuration_reset_release_for_debug"
+   version="20.3"
+   name="conf_reset_src">
+  <generatedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/intel_configuration_debug_reset_release_hub_203/synth/conf_reset_src.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/intel_configuration_debug_reset_release_hub_203/synth/conf_reset_src.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </childGeneratedFiles>
+  <sourceFiles/>
+  <childSourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/sld/conf_reset/dbg_conf_reset/intel_configuration_reset_release_for_debug_hw.tcl" />
+  </childSourceFiles>
+  <instantiator
+     instantiator="alt_sld_fab_0_intel_configuration_debug_reset_release_hub_203_mfqd2xa"
+     as="conf_reset_src" />
+  <messages>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: conf_reset_src"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: intel_configuration_reset_release_for_debug"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="intel_configuration_debug_reset_release_hub_intel_configuration_reset_release_to_debug_logic"
+   version="20.3"
+   name="grounded_conf_reset_src">
+  <generatedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/intel_configuration_debug_reset_release_hub_203/synth/grounded_conf_reset_src.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/intel_configuration_debug_reset_release_hub_203/synth/grounded_conf_reset_src.v"
+       attributes="CONTAINS_INLINE_CONFIGURATION" />
+  </childGeneratedFiles>
+  <sourceFiles/>
+  <childSourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/sld/conf_reset/user_input/intel_configuration_reset_release_to_debug_logic_hw.tcl" />
+  </childSourceFiles>
+  <instantiator
+     instantiator="alt_sld_fab_0_intel_configuration_debug_reset_release_hub_203_mfqd2xa"
+     as="grounded_conf_reset_src" />
+  <messages>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: grounded_conf_reset_src"</message>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: intel_configuration_reset_release_to_debug_logic"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="intel_configuration_reset_release_for_debug"
+   version="20.3"
+   name="intel_configuration_reset_release_for_debug">
+  <generatedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/intel_configuration_reset_release_for_debug_203/synth/intel_configuration_reset_release_for_debug.v"
+       attributes="" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/intel_configuration_reset_release_for_debug_203/synth/intel_configuration_reset_release_for_debug.v"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/sld/conf_reset/dbg_conf_reset/intel_configuration_reset_release_for_debug_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator instantiator="conf_reset_src" as="conf_reset_src" />
+  <messages>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: intel_configuration_reset_release_for_debug"</message>
+  </messages>
+ </entity>
+ <entity
+   kind="intel_configuration_reset_release_to_debug_logic"
+   version="20.3"
+   name="intel_configuration_reset_release_to_debug_logic">
+  <generatedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/intel_configuration_reset_release_to_debug_logic_203/synth/intel_configuration_reset_release_to_debug_logic.v"
+       attributes="" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/dni/sandboxes/parma_1346600_0/sld/ipgen/alt_sld_fab_0/intel_configuration_reset_release_to_debug_logic_203/synth/intel_configuration_reset_release_to_debug_logic.v"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/opt/Quartus/ip/altera/sld/conf_reset/user_input/intel_configuration_reset_release_to_debug_logic_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator instantiator="grounded_conf_reset_src" as="grounded_conf_reset_src" />
+  <messages>
+   <message level="Info" culprit="alt_sld_fab_0">"Generating: intel_configuration_reset_release_to_debug_logic"</message>
+  </messages>
+ </entity>
+</deploy>

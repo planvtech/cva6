@@ -239,7 +239,59 @@ uart_src_sv:= corev_apu/fpga/src/apb_uart/src/slib_clock_div.sv     \
 uart_src_sv := $(addprefix $(root-dir), $(uart_src_sv))
 
 fpga_src :=  $(wildcard corev_apu/fpga/src/*.sv) $(wildcard corev_apu/fpga/src/ariane-ethernet/*.sv) common/local/util/tc_sram_fpga_wrapper.sv vendor/pulp-platform/fpga-support/rtl/SyncSpRamBeNx64.sv
-intel_src := $(shell find $(root-dir)/corev_apu/intel/src -type f \( -name "*.v" -o -name "*.sv" -o -name "*.vhd" \) -print)
+intel_src := $(shell find $(root-dir)/corev_apu/intel/src -type f \( -name "*.v" -o -name "*.sv" -o -name "*.svh" \) -print | sed 's|//|/|g')
+intel_src += $(shell find $(root-dir)/corev_apu/fpga/src -type f \( -name "*.v" -o -name "*.sv" \) -print | sed 's|//|/|g')
+intel_src += $(shell find $(root-dir)core/cvfpu/src/common_cells/src/ -maxdepth 1 -type f \( -name "*.v" -o -name "*.sv" -o -name "*.vhd" -o -name "*.svh" \) -print)
+intel_axi_src := $(shell find $(root-dir)/vendor/pulp-platform/axi/src -type f \( -name "*.v" -o -name "*.sv" \) -print | sed 's|//|/|g')
+
+intel_src += $(root-dir)corev_apu/rv_plic/rtl/top_pkg.sv \
+							$(root-dir)corev_apu/rv_plic/rtl/tlul_pkg.sv \
+							$(root-dir)corev_apu/rv_plic/rtl/rv_plic_reg_top.sv \
+							$(root-dir)corev_apu/rv_plic/rtl/rv_plic_reg_pkg.sv \
+							$(root-dir)corev_apu/rv_plic/rtl/rv_plic.sv \
+							$(root-dir)corev_apu/rv_plic/rtl/prim_subreg_ext.sv \
+							$(root-dir)corev_apu/rv_plic/rtl/prim_subreg.sv \
+							$(root-dir)vendor/pulp-platform/common_cells/src/cdc_fifo_gray.sv \
+							$(root-dir)riscv-dbg/src/dm_obi_top.sv \
+							$(root-dir)core/include/instr_tracer_pkg.sv \
+							$(root-dir)core/include/cv32a6_ima_sv32_fpga_config_pkg.sv \
+							$(root-dir)core/cvfpu/src/fpu_div_sqrt_mvp/hdl/div_sqrt_mvp_wrapper.sv \
+							$(root-dir)core/cache_subsystem/amo_alu.sv
+
+intel_filter := corev_apu/tb/ariane_testharness.sv \
+								corev_apu/tb/ariane_peripherals.sv \
+								corev_apu/tb/rvfi_tracer.sv \
+								corev_apu/tb/common/uart.sv \
+								corev_apu/tb/common/SimDTM.sv \
+								corev_apu/tb/common/SimJTAG.sv \
+								corev_apu/fpga/src/apb/src/apb_test.sv \
+								corev_apu/fpga/src/ariane_xilinx.sv \
+								corev_apu/fpga/ariane_peripherals_xilinx.sv \
+								corev_apu/fpga/src/apb/test/tb_apb_cdc.sv \
+								corev_apu/fpga/src/apb/test/tb_apb_regs.sv \
+								corev_apu/fpga/src/apb/test/tb_apb_demux.sv \
+								corev_apu/fpga/src/gpio/test/tb_gpio.sv \
+								vendor/pulp-platform/axi/src/axi_test.sv
+intel_filter := $(addprefix $(root-dir), $(intel_filter))								
+
+# intel_src += $(shell find $(root-dir)/corev_apu/fpga/src/*/ -type f \( -name "agilex.svh" \) -print)
+# intel_src_pulp := $(shell find $(root-dir)/vendor/pulp-platform/ -type f \( -name "*.v" -o -name "*.sv" -o -name "*.vhd" -o -name "*.svh" \) -print)
+# intel_src_clint := $(shell find $(root-dir)/corev_apu/clint/ -type f \( -name "*.v" -o -name "*.sv" -o -name "*.vhd" -o -name "*.svh" \) -print)
+# intel_src_riscv-dbg := $(shell find $(root-dir)/corev_apu/riscv-dbg/ -type f \( -name "*.v" -o -name "*.sv" -o -name "*.vhd" -o -name "*.svh" \) -print)
+# intel_src_rv_plic := $(shell find $(root-dir)/corev_apu/rv_plic/ -type f \( -name "*.v" -o -name "*.sv" -o -name "*.vhd" -o -name "*.svh" \) -print)
+# intel_src_reg_intf := $(shell find $(root-dir)/corev_apu/register_interface/include/ -type f \( -name "*.v" -o -name "*.sv" -o -name "*.vhd" -o -name "*.svh" \) -print)
+# intel_src_reg_intf := $(shell find $(root-dir)/corev_apu/register_interface/src/ -type f \( -name "reg_intf.sv" -o -name "apb_to_reg.sv" \) -print)
+# intel_src_axi_mem_if := $(shell find $(root-dir)/corev_apu/axi_mem_if/ -type f \( -name "*.v" -o -name "*.sv" -o -name "*.vhd" -o -name "*.svh" \) -print)
+# intel_src_common := $(shell find $(root-dir)/common/ -type f \( -name "sram.sv" -o -name "sram_cache.sv" -o -name "tc_sram_fpga_wrapper.sv" \) -print)
+# intel_src_core := $(shell find $(root-dir)/core/ -maxdepth 1 -type f \( -name "*.v" -o -name "*.sv" -o -name "*.vhd" -o -name "*.svh" \) -print)
+# intel_src_core_cache := $(shell find $(root-dir)/core/cache_subsystem/ -type f \( -name "*.v" -o -name "*.sv" -o -name "*.vhd" -o -name "*.svh" \) -print)
+# intel_src_core_cva6_mmu := $(shell find $(root-dir)/core/cva6_mmu/ -type f \( -name "*.v" -o -name "*.sv" -o -name "*.vhd" -o -name "*.svh" \) -print)
+# intel_src_core_cvxif := $(shell find $(root-dir)/core/cvxif_example/ -type f \( -name "*.v" -o -name "*.sv" -o -name "*.vhd" -o -name "*.svh" \) -print)
+# intel_src_core_frontend := $(shell find $(root-dir)/core/frontend/ -type f \( -name "*.v" -o -name "*.sv" -o -name "*.vhd" -o -name "*.svh" \) -print)
+# intel_src_core_include := $(shell find $(root-dir)/core/include/ -type f \( -name "*.v" -o -name "*.sv" -o -name "*.vhd" -o -name "*.svh" \) -print)
+# intel_src_core_pmp := $(shell find $(root-dir)/core/pmp/ -type f \( -name "*.v" -o -name "*.sv" -o -name "*.vhd" -o -name "*.svh" \) -print)
+
+
 fpga_src := $(addprefix $(root-dir), $(fpga_src)) src/bootrom/bootrom_$(XLEN).sv
 
 # look for testbenches
@@ -742,14 +794,14 @@ fpga: $(ariane_pkg) $(src) $(fpga_src) $(uart_src) $(src_flist)
 	@echo "[FPGA] Generate Bitstream"
 	$(MAKE) -C corev_apu/fpga BOARD=$(BOARD) XILINX_PART=$(XILINX_PART) XILINX_BOARD=$(XILINX_BOARD) CLK_PERIOD_NS=$(CLK_PERIOD_NS)
 
-intel: $(ariane_pkg) $(src) $(fpga_src) $(uart_src) $(src_flist)
+intel: $(ariane_pkg) $(src) $(fpga_src) $(src_flist)
 	@echo "[FPGA] Generate sources"
-	@echo $(uart_src)    > corev_apu/intel/scripts/sourcelist.txt
-	@echo $(ariane_pkg) >> corev_apu/intel/scripts/sourcelist.txt
+	@echo $(ariane_pkg) > corev_apu/intel/scripts/sourcelist.txt
 	@echo $(filter-out $(fpga_filter), $(src_flist))		>> corev_apu/intel/scripts/sourcelist.txt
-	@echo $(filter-out $(fpga_filter), $(src)) 	   >> corev_apu/intel/scripts/sourcelist.txt
-	@echo $(fpga_src)   >> corev_apu/intel/scripts/sourcelist.txt
-	@echo $(intel_src)   >> corev_apu/intel/scripts/sourcelist.txt
+	@echo $(filter-out $(fpga_filter) $(intel_filter), $(src)) 	   >> corev_apu/intel/scripts/sourcelist.txt
+	@echo $(filter-out $(intel_filter), $(fpga_src))		 >> corev_apu/intel/scripts/sourcelist.txt
+	@echo $(filter-out $(fpga_filter) $(intel_filter), $(intel_src))   >> corev_apu/intel/scripts/sourcelist.txt
+	@echo $(filter-out $(fpga_filter) $(intel_filter), $(intel_axi_src))   >> corev_apu/intel/scripts/sourcelist.txt
 	@echo "[FPGA] Generate Bitstream"
 	$(MAKE) -C corev_apu/intel INTEL_PART=$(INTEL_PART) INTEL_BOARD=$(INTEL_BOARD) CLK_PERIOD_NS=$(CLK_PERIOD_NS)
 

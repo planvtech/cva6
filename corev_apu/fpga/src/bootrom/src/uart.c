@@ -27,7 +27,7 @@ char is_transmit_empty_intel()
 
 void write_serial(char a)
 {
-    while (is_transmit_empty_intel() < 8) {};
+    while (is_transmit_empty_intel() < 8) {}; //original : while (is_transmit_empty() < 0) {}
 
     write_reg_u8(UART_THR, a);
 }

@@ -1,7 +1,8 @@
-../fpga/src/apb/include
-../fpga/src
-../../vendor/pulp-platform/common_cells/include
-../../cva6/vendor/pulp-platform/axi/include
-../../core/cache_subsystem/hpdcache/rtl/include
-../../core/include
-../register_interface/include
+"../fpga/src/apb/include"
+"../fpga/src"
+"../fpga/"
+"../../vendor/pulp-platform/common_cells/include"
+"../../vendor/pulp-platform/axi/include"
+"../../core/cache_subsystem/hpdcache/rtl/include"
+"../../core/include"
+"../register_interface/include"
