@@ -1,0 +1,80 @@
+
+::drc::add_waiver \
+	-description {we dont care about dealy on LEDs} \
+	-rule_id {TMC-20012} \
+	-query_string {Port == 'led[1]' && Reason == 'No output delay was set on the output port.'} \
+	-stages {{}} \
+	-tag {} \
+	-timestamp {2024-09-20*14:58:16} \
+	-owner {user} \
+	-no_warn
+
+::drc::add_waiver \
+	-description {We dont care about output delay on LEDs} \
+	-rule_id {TMC-20012} \
+	-query_string {Port == 'led[2]' && Reason == 'No output delay was set on the output port.'} \
+	-stages {{}} \
+	-tag {} \
+	-timestamp {2024-09-20*14:58:52} \
+	-owner {user} \
+	-no_warn
+
+::drc::add_waiver \
+	-description {We dont care about output delay on LEDs} \
+	-rule_id {TMC-20012} \
+	-query_string {Port == 'led[3]' && Reason == 'No output delay was set on the output port.'} \
+	-stages {{}} \
+	-tag {} \
+	-timestamp {2024-09-20*14:59:17} \
+	-owner {user} \
+	-no_warn
+
+::drc::add_waiver \
+	-description {This is not a clock} \
+	-rule_id {CLK-30026} \
+	-query_string {Clock == 'i_ariane|i_cva6|i_frontend|bht_gen.i_bht|gen_fpga_bht.row_index_q[0]' && Reason == 'Node was determined to feed a clock port but was found without an associated clock assignment.'} \
+	-stages {{}} \
+	-tag {} \
+	-timestamp {2024-09-20*15:00:49} \
+	-owner {user} \
+	-no_warn
+
+::drc::add_waiver \
+	-description {JTAG} \
+	-rule_id {CLK-30026} \
+	-query_string {Clock == 'altera_reserved_tck' && Reason == 'Node was determined to feed a clock port but was found without an associated clock assignment.'} \
+	-stages {{}} \
+	-tag {} \
+	-timestamp {2024-09-20*17:41:08} \
+	-owner {user} \
+	-no_warn
+
+::drc::add_waiver \
+	-description {asynchronous reset in DDR controller} \
+	-rule_id {RES-50001} \
+	-query_string {"Reset Source" == 'inst_ddr4|emif_fm_0|arch|arch_inst|non_hps.core_clks_rsts_inst|reset_sync_pri_sdc_anchor' && "Reset Source Clock" == 'inst_ddr4|emif_fm_0_core_usr_clk'} \
+	-stages {{}} \
+	-tag {} \
+	-timestamp {2024-09-20*17:44:20} \
+	-owner {user} \
+	-no_warn
+
+::drc::add_waiver \
+	-description {JTAG} \
+	-rule_id {TMC-20011} \
+	-query_string {Port == 'altera_reserved_tdi' && Reason == 'No input delay was set on the input port.'} \
+	-stages {{}} \
+	-tag {} \
+	-timestamp {2024-09-20*17:44:53} \
+	-owner {user} \
+	-no_warn
+
+::drc::add_waiver \
+	-description {sdc} \
+	-rule_id {TMC-20027} \
+	-query_string {Location == 'intel_signal_tap.sdc:48'} \
+	-stages {{}} \
+	-tag {} \
+	-timestamp {2024-09-20*17:45:38} \
+	-owner {user} \
+	-no_warn
