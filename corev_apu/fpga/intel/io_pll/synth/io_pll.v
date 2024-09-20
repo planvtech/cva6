@@ -14,7 +14,7 @@ module io_pll (
 		output wire  outclk_4  // outclk4.clk
 	);
 
-	io_pll_altera_iopll_1931_saopfla iopll_0 (
+	io_pll_altera_iopll_1931_2chfxvi iopll_0 (
 		.refclk   (refclk),   //   input,  width = 1,  refclk.clk
 		.locked   (locked),   //  output,  width = 1,  locked.export
 		.rst      (rst),      //   input,  width = 1,   reset.reset
