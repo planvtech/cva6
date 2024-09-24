@@ -79,7 +79,8 @@ module AsyncDpRam_sync
   output logic [DATA_WIDTH-1:0]   RdData_DO
 );
 
-  logic [DATA_WIDTH-1:0] mem [DATA_DEPTH-1:0]= '{default:0};
+// logic [DATA_WIDTH-1:0] mem [DATA_DEPTH-1:0]= '{default:0};
+(* ramstyle = "mlab" *) logic [DATA_WIDTH-1:0] mem [DATA_DEPTH-1:0]= '{default:0};
 
   // WRITE
   always_ff @(posedge Clk_CI)

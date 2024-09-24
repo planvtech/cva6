@@ -612,7 +612,7 @@ module issue_read_operands
     assign wdata_pack[i] = wdata_i[i];
     assign we_pack[i]    = we_gpr_i[i];
   end
-  if (CVA6Cfg.FpgaEn || FPGA_INTEL) begin : gen_fpga_regfile
+  if (CVA6Cfg.FpgaEn) begin : gen_fpga_regfile
     ariane_regfile_fpga #(
         .CVA6Cfg      (CVA6Cfg),
         .DATA_WIDTH   (CVA6Cfg.XLEN),
