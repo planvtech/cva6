@@ -1,9 +1,0 @@
-22 serialization::archive 19 0 0 9 0 0 0 22 alt_sld_fab_0.sopcinfo 0 0 10 text_model 0 0 0 1 1 
- 31 cva6_intel_jtag_uart_0.sopcinfo 10 text_model 0 1 1 
- 27 ed_synth_emif_fm_0.sopcinfo 10 text_model 0 1 1 
- 17 emif_cal.sopcinfo 10 text_model 0 1 1 
- 19 iddr_intel.sopcinfo 10 text_model 0 1 1 
- 15 io_pll.sopcinfo 10 text_model 0 1 1 
- 14 iobuf.sopcinfo 10 text_model 0 1 1 
- 19 oddr_intel.sopcinfo 10 text_model 0 1 1 
- 14 vJTAG.sopcinfo 10 text_model 0 1 1 

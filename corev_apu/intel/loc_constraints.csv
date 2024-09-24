@@ -4,6 +4,7 @@ PIN_C30 -to led[0]
 PIN_A30 -to led[1]
 PIN_D31 -to led[2]
 PIN_B31 -to led[3]
+PIN_L40 -to clk_ddr4_ch0_p
 PIN_F33 -to ddr4_dq[0]
 PIN_H33 -to ddr4_dq[1]
 PIN_G34 -to ddr4_dq[2]

@@ -560,6 +560,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/fpga/src/axi_spi_master/spi_master_rx.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/fpga/src/axi_spi_master/spi_master_tx.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/fpga/src/axi_spi_master/spi_master_axi_if.sv
+set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/fpga/src/bootrom/bootrom_32.sv
 set_global_assignment -name VERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/fpga/src/axi_dw_adapter/axi_dw_adapter_wr.v
 set_global_assignment -name VERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/fpga/src/axi_dw_adapter/axi_dw_adapter.v
 set_global_assignment -name VERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/fpga/src/axi_dw_adapter/axi_dw_adapter_rd.v
@@ -668,3 +669,4 @@ set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/vendor/pulp-platform/axi/src/axi_serializer.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/vendor/pulp-platform/axi/src/axi_join.sv
 set_global_assignment -name SYSTEMVERILOG_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/vendor/pulp-platform/axi/src/axi_delayer.sv
+set_global_assignment -name SDC_FILE /home/mustafa/projects/cva6_intel_fpga/cva6/corev_apu/intel/constraints/SDC1.sdc

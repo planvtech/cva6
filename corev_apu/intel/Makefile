@@ -37,6 +37,7 @@ all: create_project \
 	write_ip_files \
 	write_search_paths \
 	write_source_files \
+	write_timing_constraints \
 	sta
 
 clean:
@@ -63,25 +64,25 @@ write_settings:
 	done < settings.csv
 
 write_loc_constraints:
-	@echo "Reading from settings.csv and writing to $(PROJECT).qsf with modifications"
+	@echo "Reading from loc_constraints.csv and writing to $(PROJECT).qsf with modifications"
 	@while IFS= read -r line; do \
   	echo "set_location_assignment $$line" >> "$(PROJECT).qsf"; \
 	done < loc_constraints.csv
 
 write_io_standard_constraints:
-	@echo "Reading from settings.csv and writing to $(PROJECT).qsf with modifications"
+	@echo "Reading from io_standard_constraints.csv and writing to $(PROJECT).qsf with modifications"
 	@while IFS= read -r line; do \
 		echo "set_instance_assignment -name  $$line" >> "$(PROJECT).qsf"; \
 	done < io_standard_constraints.csv
 
 write_ip_files:
-	@echo "Reading from settings.csv and writing to $(PROJECT).qsf with modifications"
+	@echo "Reading from ip_files.csv and writing to $(PROJECT).qsf with modifications"
 	@while IFS= read -r line; do \
 		echo "set_global_assignment -name IP_FILE $$line" >> "$(PROJECT).qsf"; \
 	done < ip_files.csv
 
 write_search_paths:
-	@echo "Reading from settings.csv and writing to $(PROJECT).qsf with modifications"
+	@echo "Reading from search_paths.csv and writing to $(PROJECT).qsf with modifications"
 	@while IFS= read -r line; do \
 		echo "set_global_assignment -name SEARCH_PATH $$line" >> "$(PROJECT).qsf"; \
 	done < search_paths.csv
@@ -103,7 +104,9 @@ write_source_files:
 			fi; \
 		done; \
 	done < $(SOURCES_FILE)
-	
+write_timing_constraints:
+	@echo "Generating constraints file list"
+	find ./constraints -type f -name "*.sdc" -exec realpath {} \; | sed 's|^|set_global_assignment -name SDC_FILE |' >> "$(PROJECT).qsf" 
 map:
 	@echo "Running Quartus Map"
 	$(QUARTUS_PATH)quartus_syn $(PROJECT)
