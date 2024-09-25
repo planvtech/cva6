@@ -50,3 +50,7 @@ Bender.lock
 # Both following lines are needed to list contents of ISA manual build dir.
 !/vendor/riscv/riscv-isa-manual/build/
 !/vendor/riscv/riscv-isa-manual/build/*
+corev_apu/intel/dni*
+corev_apu/intel/output_files*
+corev_apu/intel/qdb*
+corev_apu/intel/tmp*
