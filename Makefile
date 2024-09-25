@@ -43,7 +43,7 @@ BOARD          ?= genesys2
 INTEL_BOARD		 ?= DK-DEV-AGF014E3ES
 INTEL_FAMILY	 ?= "AGILEX"
 INTEL_PART		 ?= AGFB014R24B2E2V
-
+PLATFORM			 = "PLAT_XILINX"
 # root path
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 root-dir := $(dir $(mkfile_path))
@@ -779,7 +779,7 @@ xil_debug_filter = $(addprefix $(root-dir), corev_apu/riscv-dbg/src/dm_obi_top.s
 xil_debug_filter += $(addprefix $(root-dir), corev_apu/riscv-dbg/src/dm_pkg.sv)
 
 src/bootrom/bootrom_$(XLEN).sv:
-	$(MAKE) -C corev_apu/fpga/src/bootrom BOARD=$(BOARD) XLEN=$(XLEN) bootrom_$(XLEN).sv
+	$(MAKE) -C corev_apu/fpga/src/bootrom BOARD=$(BOARD) XLEN=$(XLEN) PLATFORM=$(PLATFORM) bootrom_$(XLEN).sv
 
 fpga: $(ariane_pkg) $(src) $(fpga_src) $(uart_src) $(src_flist)
 	@echo "[FPGA] Generate sources"
@@ -790,6 +790,8 @@ fpga: $(ariane_pkg) $(src) $(fpga_src) $(uart_src) $(src_flist)
 	@echo read_verilog -sv {$(fpga_src)}   >> corev_apu/fpga/scripts/add_sources.tcl
 	@echo "[FPGA] Generate Bitstream"
 	$(MAKE) -C corev_apu/fpga BOARD=$(BOARD) XILINX_PART=$(XILINX_PART) XILINX_BOARD=$(XILINX_BOARD) CLK_PERIOD_NS=$(CLK_PERIOD_NS)
+
+intel: PLATFORM := "PLAT_INTEL"
 
 intel: $(ariane_pkg) $(src) $(fpga_src) $(src_flist)
 	@echo "[FPGA] Generate sources"

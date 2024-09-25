@@ -23,7 +23,8 @@ endif
 CC = $(RISCV)/bin/${CROSSCOMPILE}gcc
 OBJCOPY = $(RISCV)/bin/$(CROSSCOMPILE)objcopy
 SED = sed
-PLATFORM_DEFINES = -DCLOCK_FREQUENCY=$(CLOCK_FREQUENCY) -DUART_BITRATE=$(UART_BITRATE)
+
+PLATFORM_DEFINES = -DCLOCK_FREQUENCY=$(CLOCK_FREQUENCY) -DUART_BITRATE=$(UART_BITRATE) -D$(PLATFORM)
 
 ifeq ($(XLEN), 64)
 CFLAGS = $(PLATFORM_DEFINES) -O3 -ggdb -march=rv64im_zicsr -mabi=lp64 -Wall -mcmodel=medany -mexplicit-relocs -ffreestanding -DNOPRINT
@@ -62,6 +63,7 @@ $(MAIN): $(DTB) $(OBJS_C) $(OBJS_S) linker.lds
 	# $(CC) $(CFLAGS) $(LDFLAGS) $(INCLUDES) -Tlinker.lds $(OBJS_S) $(OBJS_C) -o $(MAIN)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(INCLUDES) -Tlinker.lds $(OBJS_S) $(OBJS_C) -o $(MAIN) -lgcc
 	@echo "LD    >= $(MAIN)"
+	@echo "BOOTROM PLATFORM IS : $(PLATFORM)"
 
 %.img: %.bin
 	dd if=$< of=$@ bs=128
