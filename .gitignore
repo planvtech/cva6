@@ -54,3 +54,7 @@ corev_apu/intel/dni*
 corev_apu/intel/output_files*
 corev_apu/intel/qdb*
 corev_apu/intel/tmp*
+corev_apu/intel/*.hex
+corev_apu/intel/*.qpf
+corev_apu/intel/*.qsf
+corev_apu/intel/*.summary
