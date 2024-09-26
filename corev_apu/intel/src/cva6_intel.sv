@@ -241,24 +241,70 @@ axi_xbar_intf #(
 // ---------------
 // Debug Module
 // ---------------
-dmi_jtag i_dmi_jtag (
-    .clk_i                ( clk                  ),
-    .rst_ni               ( ndmreset_n           ),
-    .dmi_rst_no           (                      ), // keep open
-    .testmode_i           ( test_en              ),
-    .dmi_req_valid_o      ( debug_req_valid      ),
-    .dmi_req_ready_i      ( debug_req_ready      ),
-    .dmi_req_o            ( debug_req            ),
-    .dmi_resp_valid_i     ( debug_resp_valid     ),
-    .dmi_resp_ready_o     ( debug_resp_ready     ),
-    .dmi_resp_i           ( debug_resp           ),
-    .tck_i                ( TCK    ),
-    .tms_i                ( TMS    ),
-    .trst_ni              ( trst_n ),
-    .td_i                 ( TDI    ),
-    .td_o                 ( TDO    ),
-    .tdo_oe_o             (        )
+
+logic vjtag_tdi, vjtag_tdo, vjtag_tck, vjtag_tms, vjtag_tlr, vjtag_cdr, vjtag_sdr, vjtag_udr;
+logic [9:0] vjtag_ir_i;
+
+vJTAG vJTAG_inst (
+    .tdi                (vjtag_tdi),                //  output,  width = 1, jtag.tdi
+    .tdo                (vjtag_tdo),                //   input,  width = 1,     .tdo
+    .ir_in              (vjtag_ir_i),              //  output,  width = 5,     .ir_in
+    .ir_out             ('0),             //   input,  width = 5,     .ir_out
+    .virtual_state_cdr  (vjtag_cdr),  //  output,  width = 1,     .virtual_state_cdr
+    .virtual_state_sdr  (vjtag_sdr),  //  output,  width = 1,     .virtual_state_sdr
+    .virtual_state_udr  (vjtag_udr),  //  output,  width = 1,     .virtual_state_udr
+    .tms                (vjtag_tms),                //  output,  width = 1,     .tms
+    .jtag_state_tlr     (vjtag_tlr),     //  output,  width = 1,     .jtag_state_tlr
+    .tck                (vjtag_tck)                 //  output,  width = 1,  tck.clk
 );
+
+dmi_vjtag #(
+    .IrLength ( 10 ),
+    // .IdcodeValue ( 32'hC341A0DD)
+    .IdcodeValue ( 32'h249511C3)
+  ) i_dmi_jtag (
+    .clk_i             (clk),
+    .rst_ni            (rst_n),
+    .testmode_i        (1'b0),
+    // JTAG
+    .tck_i                (vjtag_tck),
+    .trst_ni              (1'b1),
+    .td_i                 (vjtag_tdi),
+    .td_o                 (vjtag_tdo),
+    .tdo_oe_o             (),
+    .ir_in_i              (vjtag_ir_i),
+    .jtag_state_tlr_i     (vjtag_tlr),
+    .virtual_state_cdr_i  (vjtag_cdr),
+    .virtual_state_sdr_i  (vjtag_sdr),
+    .virtual_state_udr_i  (vjtag_udr),
+    // DMI
+    .dmi_rst_no        (),
+    .dmi_req_o         (debug_req),
+    .dmi_req_valid_o   (debug_req_valid),
+    .dmi_req_ready_i   (debug_req_ready),
+    .dmi_resp_i        (debug_resp),
+    .dmi_resp_ready_o  (debug_resp_ready),
+    .dmi_resp_valid_i  (debug_resp_valid)
+  );
+
+// dmi_jtag i_dmi_jtag (
+//     .clk_i                ( clk                  ),
+//     .rst_ni               ( ndmreset_n           ),
+//     .dmi_rst_no           (                      ), // keep open
+//     .testmode_i           ( test_en              ),
+//     .dmi_req_valid_o      ( debug_req_valid      ),
+//     .dmi_req_ready_i      ( debug_req_ready      ),
+//     .dmi_req_o            ( debug_req            ),
+//     .dmi_resp_valid_i     ( debug_resp_valid     ),
+//     .dmi_resp_ready_o     ( debug_resp_ready     ),
+//     .dmi_resp_i           ( debug_resp           ),
+//     .tck_i                ( TCK    ),
+//     .tms_i                ( TMS    ),
+//     .trst_ni              ( trst_n ),
+//     .td_i                 ( TDI    ),
+//     .td_o                 ( TDO    ),
+//     .tdo_oe_o             (        )
+// );
 
 ariane_axi::req_t    dm_axi_m_req;
 ariane_axi::resp_t   dm_axi_m_resp;
@@ -293,7 +339,8 @@ dm_top #(
     .dmactive_o       ( dmactive          ), // active debug session
     .debug_req_o      ( debug_req_irq     ),
     .unavailable_i    ( '0                ),
-    .hartinfo_i       ( {ariane_pkg::DebugHartInfo} ),
+    // .hartinfo_i       ( {ariane_pkg::DebugHartInfo} ),
+    .hartinfo_i        (),
     .slave_req_i      ( dm_slave_req      ),
     .slave_we_i       ( dm_slave_we       ),
     .slave_addr_i     ( dm_slave_addr     ),
@@ -353,7 +400,7 @@ if (CVA6Cfg.XLEN==32 ) begin
     .ID_WIDTH              (AxiIdWidthSlaves)
     )i_axi_dwidth_converter_dm_slave(
        .clk(clk),
-       .rst(~ndmreset_n),
+       .rst(rst),
        .s_axi_awid(master[ariane_soc::Debug].aw_id),
        .s_axi_awaddr(master[ariane_soc::Debug].aw_addr[31:0]),
        .s_axi_awlen(master[ariane_soc::Debug].aw_len),
@@ -548,7 +595,7 @@ if (CVA6Cfg.XLEN==32 ) begin
     .ID_WIDTH              (AxiIdWidthMaster)
     ) i_axi_dwidth_converter_dm_master(
        .clk(clk),
-       .rst(~ndmreset_n),
+       .rst(rst),
        .s_axi_awid(dm_axi_m_req.aw.id),
        .s_axi_awaddr(dm_axi_m_req.aw.addr[31:0]),
        .s_axi_awlen(dm_axi_m_req.aw.len),
@@ -1119,7 +1166,7 @@ cva6_intel_altera_mm_interconnect_1920_otvf3ky axi_to_avalon_ddr (
 //
 //clocks
 io_pll clocks (
-    .refclk   (pll_ref_clk_p),   // 300 MHz on Agilex 7  input,  width = 1,  refclk.clk
+    .refclk   (pll_ref_clk_p),   // 100 MHz on Agilex 7  input,  width = 1,  refclk.clk
     .locked   (pll_locked),   //  output,  width = 1,  locked.export
     .rst      (cpu_reset),      //   input,  width = 1,   reset.reset
     .outclk_0 (clk), //  output,  width = 1, outclk0.clk 50 MHz
