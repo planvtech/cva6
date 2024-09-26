@@ -12,6 +12,7 @@ int main()
     #ifndef PLAT_INTEL
 
     init_uart(CLOCK_FREQUENCY, UART_BITRATE); //removed in intel setup
+    spi_init(); //removed in intel setup
     
     #endif 
 

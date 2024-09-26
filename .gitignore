@@ -58,3 +58,6 @@ corev_apu/intel/*.hex
 corev_apu/intel/*.qpf
 corev_apu/intel/*.qsf
 corev_apu/intel/*.summary
+corev_apu/intel/*.chg
+corev_apu/intel/*.txt
+corev_apu/intel/*.backup
