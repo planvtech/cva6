@@ -104,6 +104,7 @@ write_source_files:
 			fi; \
 		done; \
 	done < $(SOURCES_FILE)
+
 write_timing_constraints:
 	@echo "Generating constraints file list"
 	find ./constraints -type f -name "*.sdc" -exec realpath {} \; | sed 's|^|set_global_assignment -name SDC_FILE |' >> "$(PROJECT).qsf" 
@@ -125,7 +126,13 @@ sta: asm
 
 clean:
 	@echo "Cleaning project files"
-	rm -f $(PROJECT).qsf $(PROJECT).map.rpt $(PROJECT).fit.rpt $(PROJECT).asm.rpt $(PROJECT).sta.rpt
+	rm -f $(PROJECT).qsf $(PROJECT).qpf $(PROJECT).map.rpt $(PROJECT).fit.rpt $(PROJECT).asm.rpt $(PROJECT).sta.rpt
 	rm -rf db incremental_db
+	rm -rf qdb
+	rm -rf tmp-clearbox
+	rm -rf dni
+	rm -f *.backup
+	rm -f *.hex
+	rm -rf output_files
 
 .PHONY: all write_search_paths write_source_files map fit asm sta clean

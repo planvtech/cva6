@@ -248,7 +248,6 @@ intel_src += $(root-dir)corev_apu/rv_plic/rtl/top_pkg.sv \
 							$(root-dir)vendor/pulp-platform/common_cells/src/cdc_fifo_gray.sv \
 							$(root-dir)riscv-dbg/src/dm_obi_top.sv \
 							$(root-dir)core/include/instr_tracer_pkg.sv \
-							$(root-dir)core/include/cv32a6_ima_sv32_fpga_config_pkg.sv \
 							$(root-dir)core/cvfpu/src/fpu_div_sqrt_mvp/hdl/div_sqrt_mvp_wrapper.sv \
 							$(root-dir)core/cache_subsystem/amo_alu.sv
 
@@ -815,6 +814,7 @@ clean:
 	rm -f tmp/*.ucdb tmp/*.log *.wlf *vstf wlft* *.ucdb
 	$(MAKE) -C corev_apu/fpga clean
 	$(MAKE) -C corev_apu/fpga/src/bootrom BOARD=$(BOARD) XLEN=$(XLEN) clean
+	$(MAKE) -C corev_apu/intel clean
 
 .PHONY:
 	build sim sim-verilate clean                                              \

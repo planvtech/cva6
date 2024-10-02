@@ -61,3 +61,8 @@ corev_apu/intel/*.summary
 corev_apu/intel/*.chg
 corev_apu/intel/*.txt
 corev_apu/intel/*.backup
+corev_apu/intel/*.rpt
+corev_apu/intel/*.qws
+corev_apu/riscv-dbg/src/dmi_vjtag_tap.sv
+corev_apu/riscv-dbg/src/dmi_vjtag.sv
+

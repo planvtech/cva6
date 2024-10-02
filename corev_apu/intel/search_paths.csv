@@ -6,3 +6,4 @@
 "../../core/cache_subsystem/hpdcache/rtl/include"
 "../../core/include"
 "../register_interface/include"
+"../"
