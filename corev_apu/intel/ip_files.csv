@@ -1,4 +1,5 @@
 ./ip/io_pll_test.ip
+./ip/test_mm_ccb_0.ip
 ./ip/io_pll.ip
 ./ip/iobuf.ip
 ./ip/oddr_intel.ip
