@@ -169,7 +169,7 @@
                 <ipxact:parameter parameterId="clockRate" type="longint">
                     <ipxact:name>clockRate</ipxact:name>
                     <ipxact:displayName>Clock rate</ipxact:displayName>
-                    <ipxact:value>200000000</ipxact:value>
+                    <ipxact:value>225000000</ipxact:value>
                 </ipxact:parameter>
                 <ipxact:parameter parameterId="clockRateKnown" type="bit">
                     <ipxact:name>clockRateKnown</ipxact:name>
@@ -283,7 +283,7 @@
                 <ipxact:parameter parameterId="clockRate" type="longint">
                     <ipxact:name>clockRate</ipxact:name>
                     <ipxact:displayName>Clock rate</ipxact:displayName>
-                    <ipxact:value>200000000</ipxact:value>
+                    <ipxact:value>187500000</ipxact:value>
                 </ipxact:parameter>
                 <ipxact:parameter parameterId="clockRateKnown" type="bit">
                     <ipxact:name>clockRateKnown</ipxact:name>
@@ -397,7 +397,7 @@
                 <ipxact:parameter parameterId="clockRate" type="longint">
                     <ipxact:name>clockRate</ipxact:name>
                     <ipxact:displayName>Clock rate</ipxact:displayName>
-                    <ipxact:value>100000000</ipxact:value>
+                    <ipxact:value>102272727</ipxact:value>
                 </ipxact:parameter>
                 <ipxact:parameter parameterId="clockRateKnown" type="bit">
                     <ipxact:name>clockRateKnown</ipxact:name>
@@ -547,7 +547,7 @@
         <ipxact:fileSet>
             <ipxact:name>QUARTUS_SYNTH</ipxact:name>
             <ipxact:file>
-                <ipxact:name>altera_iopll_1931/synth/io_pll_test_altera_iopll_1931_jbfshna.v</ipxact:name>
+                <ipxact:name>altera_iopll_1931/synth/io_pll_test_altera_iopll_1931_zsdxr3a.v</ipxact:name>
                 <ipxact:fileType>verilogSource</ipxact:fileType>
                 <ipxact:isIncludeFile>false</ipxact:isIncludeFile>
                 <ipxact:vendorExtensions>
@@ -555,7 +555,7 @@
                 </ipxact:vendorExtensions>
             </ipxact:file>
             <ipxact:file>
-                <ipxact:name>altera_iopll_1931/synth/io_pll_test_altera_iopll_1931_jbfshna_all_ip_params.tcl</ipxact:name>
+                <ipxact:name>altera_iopll_1931/synth/io_pll_test_altera_iopll_1931_zsdxr3a_all_ip_params.tcl</ipxact:name>
                 <ipxact:fileType/>
                 <ipxact:isIncludeFile>false</ipxact:isIncludeFile>
                 <ipxact:vendorExtensions>
@@ -563,7 +563,7 @@
                 </ipxact:vendorExtensions>
             </ipxact:file>
             <ipxact:file>
-                <ipxact:name>altera_iopll_1931/synth/io_pll_test_altera_iopll_1931_jbfshna_parameters.tcl</ipxact:name>
+                <ipxact:name>altera_iopll_1931/synth/io_pll_test_altera_iopll_1931_zsdxr3a_parameters.tcl</ipxact:name>
                 <ipxact:fileType/>
                 <ipxact:isIncludeFile>false</ipxact:isIncludeFile>
                 <ipxact:vendorExtensions>
@@ -571,7 +571,7 @@
                 </ipxact:vendorExtensions>
             </ipxact:file>
             <ipxact:file>
-                <ipxact:name>altera_iopll_1931/synth/io_pll_test_altera_iopll_1931_jbfshna.sdc</ipxact:name>
+                <ipxact:name>altera_iopll_1931/synth/io_pll_test_altera_iopll_1931_zsdxr3a.sdc</ipxact:name>
                 <ipxact:fileType/>
                 <ipxact:isIncludeFile>false</ipxact:isIncludeFile>
                 <ipxact:vendorExtensions>
@@ -579,7 +579,7 @@
                 </ipxact:vendorExtensions>
             </ipxact:file>
             <ipxact:file>
-                <ipxact:name>altera_iopll_1931/synth/io_pll_test_altera_iopll_1931_jbfshna_pin_map.tcl</ipxact:name>
+                <ipxact:name>altera_iopll_1931/synth/io_pll_test_altera_iopll_1931_zsdxr3a_pin_map.tcl</ipxact:name>
                 <ipxact:fileType/>
                 <ipxact:isIncludeFile>false</ipxact:isIncludeFile>
                 <ipxact:vendorExtensions>

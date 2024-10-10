@@ -122,7 +122,7 @@ asm: fit
 
 sta: asm
 	@echo "Running Quartus Timing Analysis"
-	$(QUARTUS_PATH)quartus_sta $(PROJECT)
+	$(QUARTUS_PATH)quartus_sta $(PROJECT) --do_report_timing
 
 clean:
 	@echo "Cleaning project files"
