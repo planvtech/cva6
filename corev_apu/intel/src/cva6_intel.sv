@@ -90,9 +90,6 @@ localparam type rvfi_probes_t = struct packed {
   logic csr;
   rvfi_probes_instr_t instr;
 };
-
-// 24 MByte in 8 byte words
-localparam NumWords = (24 * 1024 * 1024) / 8;
   
 // WARNING: If NBSlave is modified, Xilinx's IPs under fpga/xilinx need to be updated with the new AXI id width and regenerated.
 // Otherwise reads and writes to DRAM may be returned to the wrong master and the crossbar will freeze. See issue #568.
@@ -102,6 +99,10 @@ localparam AxiDataWidth = 64;
 localparam AxiIdWidthMaster = 4;
 localparam AxiIdWidthSlaves = AxiIdWidthMaster + $clog2(NBSlave); // 5
 localparam AxiUserWidth = CVA6Cfg.AxiUserWidth;
+
+// 64 kByte 
+localparam NumWords = (32 * 1024 * 8) / AxiDataWidth;
+localparam USE_SRAM = 0; // By default the design uses the DDR, set this parameter to use internal SRAM instead
 
 `AXI_TYPEDEF_ALL(axi_slave,
                  logic [    AxiAddrWidth-1:0],
@@ -242,10 +243,6 @@ axi_xbar_intf #(
 // Debug Module
 // ---------------
 
-// ---------------
-// Debug Module
-// ---------------
-
 logic vjtag_tdi, vjtag_tdo, vjtag_tck, vjtag_tms, vjtag_tlr, vjtag_cdr, vjtag_sdr, vjtag_udr;
 logic [9:0] vjtag_ir_i;
 
@@ -291,25 +288,6 @@ dmi_vjtag #(
     .dmi_resp_valid_i  (debug_resp_valid)
   );
 
-
-// dmi_jtag i_dmi_jtag (
-//     .clk_i                ( clk                  ),
-//     .rst_ni               ( ndmreset_n           ),
-//     .dmi_rst_no           (                      ), // keep open
-//     .testmode_i           ( test_en              ),
-//     .dmi_req_valid_o      ( debug_req_valid      ),
-//     .dmi_req_ready_i      ( debug_req_ready      ),
-//     .dmi_req_o            ( debug_req            ),
-//     .dmi_resp_valid_i     ( debug_resp_valid     ),
-//     .dmi_resp_ready_o     ( debug_resp_ready     ),
-//     .dmi_resp_i           ( debug_resp           ),
-//     .tck_i                ( TCK    ),
-//     .tms_i                ( TMS    ),
-//     .trst_ni              ( trst_n ),
-//     .td_i                 ( TDI    ),
-//     .td_o                 ( TDO    ),
-//     .tdo_oe_o             (        )
-// );
 
 ariane_axi::req_t    dm_axi_m_req;
 ariane_axi::resp_t   dm_axi_m_resp;
@@ -969,6 +947,145 @@ axi_riscv_atomics_wrap #(
    .slv    ( master[ariane_soc::DRAM] ),
    .mst    ( dram                     )
 );
+
+// the main memory can be internal SRAM or an external DDR
+generate
+    if (USE_SRAM) begin
+
+        logic                       sram_req;
+        logic                       sram_we;
+        logic [AxiAddrWidth-1:0]    sram_addr;
+        logic [AxiDataWidth/8-1:0]  sram_be;
+        logic [AxiDataWidth-1:0]    sram_wdata;
+        logic [AxiDataWidth-1:0]    sram_rdata;
+        logic [AxiUserWidth-1:0]    sram_wuser;
+        logic [AxiUserWidth-1:0]    sram_ruser;
+
+        axi2mem #(
+            .AXI_ID_WIDTH   ( ariane_axi_soc::IdWidthSlave ),
+            .AXI_ADDR_WIDTH ( AxiAddrWidth            ),
+            .AXI_DATA_WIDTH ( AxiDataWidth               ),
+            .AXI_USER_WIDTH ( AxiUserWidth               )
+            ) i_axi2mem (
+            .clk_i  ( clk               ),
+            .rst_ni ( ndmreset_n        ),
+            .slave  ( dram          ),
+            .req_o  ( sram_req          ),
+            .we_o   ( sram_we           ),
+            .addr_o ( sram_addr         ),
+            .be_o   ( sram_be           ),
+            .user_o ( sram_wuser        ),
+            .data_o ( sram_wdata        ),
+            .user_i ( sram_ruser        ),
+            .data_i ( sram_rdata        )
+        );
+
+        sram #(
+            .DATA_WIDTH ( AxiDataWidth ),
+            .USER_WIDTH ( AxiUserWidth ),
+            .USER_EN    ( 0    ),
+            .NUM_WORDS  ( NumWords     )
+            ) i_sram (
+            .clk_i      ( clk                                                                              ),
+            .rst_ni     ( ndmreset_n                                                                       ),
+            .req_i      ( sram_req                                                                         ),
+            .we_i       ( sram_we                                                                          ),
+            .addr_i     ( sram_addr[$clog2(NumWords)-1+$clog2(AxiDataWidth/8):$clog2(AxiDataWidth/8)] ),
+            .wuser_i    ( sram_wuser                                                                       ),
+            .wdata_i    ( sram_wdata                                                                       ),
+            .be_i       ( sram_be                                                                          ),
+            .ruser_o    ( sram_ruser                                                                       ),
+            .rdata_o    ( sram_rdata                                                                       )
+        );
+    end else begin
+        //axi4 to avalon converter
+        cva6_intel_altera_mm_interconnect_1920_otvf3ky axi_to_avalon_ddr (
+            .axi_bridge_0_m0_awid                                                      (axi_cdc_src_req.aw.id),                                 //   input,    width = 8,                                                     axi_bridge_0_m0.awid
+            .axi_bridge_0_m0_awaddr                                                    (axi_cdc_src_req.aw.addr),                               //   input,   width = 64,                                                                    .awaddr
+            .axi_bridge_0_m0_awlen                                                     (axi_cdc_src_req.aw.len),                                //   input,    width = 8,                                                                    .awlen
+            .axi_bridge_0_m0_awsize                                                    (axi_cdc_src_req.aw.size),                               //   input,    width = 3,                                                                    .awsize
+            .axi_bridge_0_m0_awburst                                                   (axi_cdc_src_req.aw.burst),                              //   input,    width = 2,                                                                    .awburst
+            .axi_bridge_0_m0_awlock                                                    (axi_cdc_src_req.aw.lock),                               //   input,    width = 1,                                                                    .awlock
+            .axi_bridge_0_m0_awcache                                                   (axi_cdc_src_req.aw.cache),                              //   input,    width = 4,                                                                    .awcache
+            .axi_bridge_0_m0_awprot                                                    (axi_cdc_src_req.aw.prot),                               //   input,    width = 3,                                                                    .awprot
+            .axi_bridge_0_m0_awvalid                                                   (axi_cdc_src_req.aw_valid),                              //   input,    width = 1,                                                                    .awvalid
+            .axi_bridge_0_m0_awready                                                   (axi_cdc_src_resp.aw_ready),                              //  output,    width = 1,                                                                    .awready
+            .axi_bridge_0_m0_wdata                                                     (axi_cdc_src_req.w.data),                                //   input,   width = 64,                                                                    .wdata
+            .axi_bridge_0_m0_wstrb                                                     (axi_cdc_src_req.w.strb),                                //   input,    width = 8,                                                                    .wstrb
+            .axi_bridge_0_m0_wlast                                                     (axi_cdc_src_req.w.last),                                //   input,    width = 1,                                                                    .wlast
+            .axi_bridge_0_m0_wvalid                                                    (axi_cdc_src_req.w_valid),                               //   input,    width = 1,                                                                    .wvalid
+            .axi_bridge_0_m0_wready                                                    (axi_cdc_src_resp.w_ready),                               //  output,    width = 1,                                                                    .wready
+            .axi_bridge_0_m0_bid                                                       (axi_cdc_src_resp.b.id),                                  //  output,    width = 8,                                                                    .bid
+            .axi_bridge_0_m0_bresp                                                     (axi_cdc_src_resp.b.resp),                                //  output,    width = 2,                                                                    .bresp
+            .axi_bridge_0_m0_bvalid                                                    (axi_cdc_src_resp.b_valid),                               //  output,    width = 1,                                                                    .bvalid
+            .axi_bridge_0_m0_bready                                                    (axi_cdc_src_req.b_ready),                               //   input,    width = 1,                                                                    .bready
+            .axi_bridge_0_m0_arid                                                      (axi_cdc_src_req.ar.id),                                 //   input,    width = 8,                                                                    .arid
+            .axi_bridge_0_m0_araddr                                                    (axi_cdc_src_req.ar.addr),                               //   input,   width = 64,                                                                    .araddr
+            .axi_bridge_0_m0_arlen                                                     (axi_cdc_src_req.ar.len),                                //   input,    width = 8,                                                                    .arlen
+            .axi_bridge_0_m0_arsize                                                    (axi_cdc_src_req.ar.size),                               //   input,    width = 3,                                                                    .arsize
+            .axi_bridge_0_m0_arburst                                                   (axi_cdc_src_req.ar.burst),                              //   input,    width = 2,                                                                    .arburst
+            .axi_bridge_0_m0_arlock                                                    (axi_cdc_src_req.ar.lock),                               //   input,    width = 1,                                                                    .arlock
+            .axi_bridge_0_m0_arcache                                                   (axi_cdc_src_req.ar.cache),                              //   input,    width = 4,                                                                    .arcache
+            .axi_bridge_0_m0_arprot                                                    (axi_cdc_src_req.ar.prot),                               //   input,    width = 3,                                                                    .arprot
+            .axi_bridge_0_m0_arvalid                                                   (axi_cdc_src_req.ar_valid),                              //   input,    width = 1,                                                                    .arvalid
+            .axi_bridge_0_m0_arready                                                   (axi_cdc_src_resp.ar_ready),                              //  output,    width = 1,                                                                    .arready
+            .axi_bridge_0_m0_rid                                                       (axi_cdc_src_resp.r.id),                                  //  output,    width = 8,                                                                    .rid
+            .axi_bridge_0_m0_rdata                                                     (axi_cdc_src_resp.r.data),                                //  output,   width = 64,                                                                    .rdata
+            .axi_bridge_0_m0_rresp                                                     (axi_cdc_src_resp.r.resp),                                //  output,    width = 2,                                                                    .rresp
+            .axi_bridge_0_m0_rlast                                                     (axi_cdc_src_resp.r.last),                                //  output,    width = 1,                                                                    .rlast
+            .axi_bridge_0_m0_rvalid                                                    (axi_cdc_src_resp.r_valid),                               //  output,    width = 1,                                                                    .rvalid
+            .axi_bridge_0_m0_rready                                                    (axi_cdc_src_req.r_ready),                                                                                
+            .emif_fm_0_ctrl_amm_0_address                                                          (ddr_sc_amm_address),       //  output,   width = 27,                                                            emif_fm_0_ctrl_amm_0.address
+            .emif_fm_0_ctrl_amm_0_write                                                            (ddr_sc_amm_write),         //  output,    width = 1,                                                                                .write
+            .emif_fm_0_ctrl_amm_0_read                                                             (ddr_sc_amm_read),          //  output,    width = 1,                                                                                .read
+            .emif_fm_0_ctrl_amm_0_readdata                                                         (ddr_sc_amm_rdata),      //   input,  width = 512,                                                                                .readdata
+            .emif_fm_0_ctrl_amm_0_writedata                                                        (ddr_sc_amm_wdata),     //  output,  width = 512,                                                                                .writedata
+            .emif_fm_0_ctrl_amm_0_burstcount                                                       (ddr_sc_amm_burstcount),    //  output,    width = 7,                                                                                .burstcount
+            .emif_fm_0_ctrl_amm_0_byteenable                                                       (ddr_sc_amm_byteenable),    //  output,   width = 64,                                                                                .byteenable
+            .emif_fm_0_ctrl_amm_0_readdatavalid                                                    (ddr_sc_amm_readdatavalid), //   input,    width = 1,                                                                                .readdatavalid
+            .emif_fm_0_ctrl_amm_0_waitrequest                                                      (ddr_sc_amm_wait_request),  //   input,    width = 1,                                                                                .waitrequest
+            .axi_bridge_0_m0_translator_clk_reset_reset_bridge_in_reset_reset          (~ndmreset_n),                       //   input,    width = 1,          axi_bridge_0_m0_translator_clk_reset_reset_bridge_in_reset.reset
+            .emif_fm_0_ctrl_amm_0_translator_reset_reset_bridge_in_reset_reset         (~ndmreset_n),                   //   input,    width = 1,         emif_fm_0_ctrl_amm_0_translator_reset_reset_bridge_in_reset.reset
+            .emif_fm_0_ctrl_amm_0_agent_rsp_fifo_clk_reset_reset_bridge_in_reset_reset (~ndmreset_n),                   //   input,    width = 1, emif_fm_0_ctrl_amm_0_agent_rsp_fifo_clk_reset_reset_bridge_in_reset.reset
+            .emif_fm_0_emif_usr_clk_clk                                                (clk) //   input,    width = 1,                                              emif_fm_0_emif_usr_clk.clk
+        );
+    
+        test_mm_ccb_0 mm_ccb_0 (
+            .m0_clk           (ddr_clock_out),                      //   input,    width = 1,   m0_clk.clk
+            .m0_reset         (rst),                                //   input,    width = 1, m0_reset.reset
+            .s0_clk           (clk),                //   input,    width = 1,   s0_clk.clk
+            .s0_reset         (~ndmreset_n), //   input,    width = 1, s0_reset.reset
+            .s0_waitrequest   (ddr_sc_amm_wait_request),            //  output,    width = 1,       s0.waitrequest
+            .s0_readdata      (ddr_sc_amm_rdata),               //  output,  width = 512,         .readdata
+            .s0_readdatavalid (ddr_sc_amm_readdatavalid),          //  output,    width = 1,         .readdatavalid
+            .s0_burstcount    (ddr_sc_amm_burstcount),             //   input,    width = 8,         .burstcount
+            .s0_writedata     (ddr_sc_amm_wdata),              //   input,  width = 512,         .writedata
+            .s0_address       (ddr_sc_amm_address),                //   input,   width = 27,         .address
+            .s0_write         (ddr_sc_amm_write),                  //   input,    width = 1,         .write
+            .s0_read          (ddr_sc_amm_read),                   //   input,    width = 1,         .read
+            .s0_byteenable    (ddr_sc_amm_byteenable),             //   input,   width = 64,         .byteenable
+            .s0_debugaccess   (1'b0),            //   input,    width = 1,         .debugaccess
+            .m0_waitrequest   (ddr_amm_wait_request),            //   input,    width = 1,       m0.waitrequest
+            .m0_readdata      (ddr_amm_rdata),               //   input,  width = 512,         .readdata
+            .m0_readdatavalid (ddr_amm_readdatavalid),          //   input,    width = 1,         .readdatavalid
+            .m0_burstcount    (ddr_amm_burstcount),             //  output,    width = 8,         .burstcount
+            .m0_writedata     (ddr_amm_wdata),              //  output,  width = 512,         .writedata
+            .m0_address       (ddr_amm_address),                //  output,   width = 27,         .address
+            .m0_write         (ddr_amm_write),                  //  output,    width = 1,         .write
+            .m0_read          (ddr_amm_read),                   //  output,    width = 1,         .read
+            .m0_byteenable    (ddr_amm_byteenable),             //  output,   width = 64,         .byteenable
+            .m0_debugaccess   ()             //  output,    width = 1,         .debugaccess
+        );
+        
+        
+        ariane_axi::req_t   axi_cdc_src_req, axi_cdc_dst_req;
+        ariane_axi::resp_t  axi_cdc_src_resp,axi_cdc_dst_resp;
+        
+        
+        `AXI_ASSIGN_TO_REQ(axi_cdc_src_req, dram)
+        `AXI_ASSIGN_FROM_RESP(dram, axi_cdc_src_resp)
+    end
+  endgenerate
 //
 //`ifdef PROTOCOL_CHECKER
 //logic pc_status;
@@ -1084,8 +1201,6 @@ ed_synth_emif_fm_0 inst_ddr4 (
     .amm_readdatavalid_0       (ddr_amm_readdatavalid)        //  output,     width = 1,                          .readdatavalid
 );
 
-
-
 emif_cal ddr_calibration (
     .calbus_read_0           (calbus_read),           //  output,     width = 1,     emif_calbus_0.calbus_read
     .calbus_write_0          (calbus_write),          //  output,     width = 1,                  .calbus_write
@@ -1097,120 +1212,10 @@ emif_cal ddr_calibration (
 );
 
 
-//axi4 to avalon converter
-cva6_intel_altera_mm_interconnect_1920_otvf3ky axi_to_avalon_ddr (
-        .axi_bridge_0_m0_awid                                                      (axi_cdc_src_req.aw.id),                                 //   input,    width = 8,                                                     axi_bridge_0_m0.awid
-        .axi_bridge_0_m0_awaddr                                                    (axi_cdc_src_req.aw.addr),                               //   input,   width = 64,                                                                    .awaddr
-        .axi_bridge_0_m0_awlen                                                     (axi_cdc_src_req.aw.len),                                //   input,    width = 8,                                                                    .awlen
-        .axi_bridge_0_m0_awsize                                                    (axi_cdc_src_req.aw.size),                               //   input,    width = 3,                                                                    .awsize
-        .axi_bridge_0_m0_awburst                                                   (axi_cdc_src_req.aw.burst),                              //   input,    width = 2,                                                                    .awburst
-        .axi_bridge_0_m0_awlock                                                    (axi_cdc_src_req.aw.lock),                               //   input,    width = 1,                                                                    .awlock
-        .axi_bridge_0_m0_awcache                                                   (axi_cdc_src_req.aw.cache),                              //   input,    width = 4,                                                                    .awcache
-        .axi_bridge_0_m0_awprot                                                    (axi_cdc_src_req.aw.prot),                               //   input,    width = 3,                                                                    .awprot
-        .axi_bridge_0_m0_awvalid                                                   (axi_cdc_src_req.aw_valid),                              //   input,    width = 1,                                                                    .awvalid
-        .axi_bridge_0_m0_awready                                                   (axi_cdc_src_resp.aw_ready),                              //  output,    width = 1,                                                                    .awready
-        .axi_bridge_0_m0_wdata                                                     (axi_cdc_src_req.w.data),                                //   input,   width = 64,                                                                    .wdata
-        .axi_bridge_0_m0_wstrb                                                     (axi_cdc_src_req.w.strb),                                //   input,    width = 8,                                                                    .wstrb
-        .axi_bridge_0_m0_wlast                                                     (axi_cdc_src_req.w.last),                                //   input,    width = 1,                                                                    .wlast
-        .axi_bridge_0_m0_wvalid                                                    (axi_cdc_src_req.w_valid),                               //   input,    width = 1,                                                                    .wvalid
-        .axi_bridge_0_m0_wready                                                    (axi_cdc_src_resp.w_ready),                               //  output,    width = 1,                                                                    .wready
-        .axi_bridge_0_m0_bid                                                       (axi_cdc_src_resp.b.id),                                  //  output,    width = 8,                                                                    .bid
-        .axi_bridge_0_m0_bresp                                                     (axi_cdc_src_resp.b.resp),                                //  output,    width = 2,                                                                    .bresp
-        .axi_bridge_0_m0_bvalid                                                    (axi_cdc_src_resp.b_valid),                               //  output,    width = 1,                                                                    .bvalid
-        .axi_bridge_0_m0_bready                                                    (axi_cdc_src_req.b_ready),                               //   input,    width = 1,                                                                    .bready
-        .axi_bridge_0_m0_arid                                                      (axi_cdc_src_req.ar.id),                                 //   input,    width = 8,                                                                    .arid
-        .axi_bridge_0_m0_araddr                                                    (axi_cdc_src_req.ar.addr),                               //   input,   width = 64,                                                                    .araddr
-        .axi_bridge_0_m0_arlen                                                     (axi_cdc_src_req.ar.len),                                //   input,    width = 8,                                                                    .arlen
-        .axi_bridge_0_m0_arsize                                                    (axi_cdc_src_req.ar.size),                               //   input,    width = 3,                                                                    .arsize
-        .axi_bridge_0_m0_arburst                                                   (axi_cdc_src_req.ar.burst),                              //   input,    width = 2,                                                                    .arburst
-        .axi_bridge_0_m0_arlock                                                    (axi_cdc_src_req.ar.lock),                               //   input,    width = 1,                                                                    .arlock
-        .axi_bridge_0_m0_arcache                                                   (axi_cdc_src_req.ar.cache),                              //   input,    width = 4,                                                                    .arcache
-        .axi_bridge_0_m0_arprot                                                    (axi_cdc_src_req.ar.prot),                               //   input,    width = 3,                                                                    .arprot
-        .axi_bridge_0_m0_arvalid                                                   (axi_cdc_src_req.ar_valid),                              //   input,    width = 1,                                                                    .arvalid
-        .axi_bridge_0_m0_arready                                                   (axi_cdc_src_resp.ar_ready),                              //  output,    width = 1,                                                                    .arready
-        .axi_bridge_0_m0_rid                                                       (axi_cdc_src_resp.r.id),                                  //  output,    width = 8,                                                                    .rid
-        .axi_bridge_0_m0_rdata                                                     (axi_cdc_src_resp.r.data),                                //  output,   width = 64,                                                                    .rdata
-        .axi_bridge_0_m0_rresp                                                     (axi_cdc_src_resp.r.resp),                                //  output,    width = 2,                                                                    .rresp
-        .axi_bridge_0_m0_rlast                                                     (axi_cdc_src_resp.r.last),                                //  output,    width = 1,                                                                    .rlast
-        .axi_bridge_0_m0_rvalid                                                    (axi_cdc_src_resp.r_valid),                               //  output,    width = 1,                                                                    .rvalid
-        .axi_bridge_0_m0_rready                                                    (axi_cdc_src_req.r_ready),                                                                                
-        .emif_fm_0_ctrl_amm_0_address                                                          (ddr_sc_amm_address),       //  output,   width = 27,                                                            emif_fm_0_ctrl_amm_0.address
-		.emif_fm_0_ctrl_amm_0_write                                                            (ddr_sc_amm_write),         //  output,    width = 1,                                                                                .write
-		.emif_fm_0_ctrl_amm_0_read                                                             (ddr_sc_amm_read),          //  output,    width = 1,                                                                                .read
-		.emif_fm_0_ctrl_amm_0_readdata                                                         (ddr_sc_amm_rdata),      //   input,  width = 512,                                                                                .readdata
-		.emif_fm_0_ctrl_amm_0_writedata                                                        (ddr_sc_amm_wdata),     //  output,  width = 512,                                                                                .writedata
-		.emif_fm_0_ctrl_amm_0_burstcount                                                       (ddr_sc_amm_burstcount),    //  output,    width = 7,                                                                                .burstcount
-		.emif_fm_0_ctrl_amm_0_byteenable                                                       (ddr_sc_amm_byteenable),    //  output,   width = 64,                                                                                .byteenable
-		.emif_fm_0_ctrl_amm_0_readdatavalid                                                    (ddr_sc_amm_readdatavalid), //   input,    width = 1,                                                                                .readdatavalid
-		.emif_fm_0_ctrl_amm_0_waitrequest                                                      (ddr_sc_amm_wait_request),  //   input,    width = 1,                                                                                .waitrequest
-		.axi_bridge_0_m0_translator_clk_reset_reset_bridge_in_reset_reset          (~ndmreset_n),                       //   input,    width = 1,          axi_bridge_0_m0_translator_clk_reset_reset_bridge_in_reset.reset
-		.emif_fm_0_ctrl_amm_0_translator_reset_reset_bridge_in_reset_reset         (~ndmreset_n),                   //   input,    width = 1,         emif_fm_0_ctrl_amm_0_translator_reset_reset_bridge_in_reset.reset
-		.emif_fm_0_ctrl_amm_0_agent_rsp_fifo_clk_reset_reset_bridge_in_reset_reset (~ndmreset_n),                   //   input,    width = 1, emif_fm_0_ctrl_amm_0_agent_rsp_fifo_clk_reset_reset_bridge_in_reset.reset
-		.emif_fm_0_emif_usr_clk_clk                                                (clk) //   input,    width = 1,                                              emif_fm_0_emif_usr_clk.clk
-	);
-
-    test_mm_ccb_0 mm_ccb_0 (
-    .m0_clk           (ddr_clock_out),                      //   input,    width = 1,   m0_clk.clk
-    .m0_reset         (rst),                                //   input,    width = 1, m0_reset.reset
-    .s0_clk           (clk),                //   input,    width = 1,   s0_clk.clk
-    .s0_reset         (~ndmreset_n), //   input,    width = 1, s0_reset.reset
-    .s0_waitrequest   (ddr_sc_amm_wait_request),            //  output,    width = 1,       s0.waitrequest
-    .s0_readdata      (ddr_sc_amm_rdata),               //  output,  width = 512,         .readdata
-    .s0_readdatavalid (ddr_sc_amm_readdatavalid),          //  output,    width = 1,         .readdatavalid
-    .s0_burstcount    (ddr_sc_amm_burstcount),             //   input,    width = 8,         .burstcount
-    .s0_writedata     (ddr_sc_amm_wdata),              //   input,  width = 512,         .writedata
-    .s0_address       (ddr_sc_amm_address),                //   input,   width = 27,         .address
-    .s0_write         (ddr_sc_amm_write),                  //   input,    width = 1,         .write
-    .s0_read          (ddr_sc_amm_read),                   //   input,    width = 1,         .read
-    .s0_byteenable    (ddr_sc_amm_byteenable),             //   input,   width = 64,         .byteenable
-    .s0_debugaccess   (1'b0),            //   input,    width = 1,         .debugaccess
-    .m0_waitrequest   (ddr_amm_wait_request),            //   input,    width = 1,       m0.waitrequest
-    .m0_readdata      (ddr_amm_rdata),               //   input,  width = 512,         .readdata
-    .m0_readdatavalid (ddr_amm_readdatavalid),          //   input,    width = 1,         .readdatavalid
-    .m0_burstcount    (ddr_amm_burstcount),             //  output,    width = 8,         .burstcount
-    .m0_writedata     (ddr_amm_wdata),              //  output,  width = 512,         .writedata
-    .m0_address       (ddr_amm_address),                //  output,   width = 27,         .address
-    .m0_write         (ddr_amm_write),                  //  output,    width = 1,         .write
-    .m0_read          (ddr_amm_read),                   //  output,    width = 1,         .read
-    .m0_byteenable    (ddr_amm_byteenable),             //  output,   width = 64,         .byteenable
-    .m0_debugaccess   ()             //  output,    width = 1,         .debugaccess
-)   ;
-
-
-    ariane_axi::req_t   axi_cdc_src_req, axi_cdc_dst_req;
-    ariane_axi::resp_t  axi_cdc_src_resp,axi_cdc_dst_resp;
-
-    // axi_cdc #(
-    //     .aw_chan_t  (ariane_axi::aw_chan_t),
-    //     .w_chan_t   (ariane_axi::w_chan_t),
-    //     .b_chan_t   (ariane_axi::b_chan_t),
-    //     .ar_chan_t  (ariane_axi::ar_chan_t),
-    //     .r_chan_t   (ariane_axi::r_chan_t),
-    //     .axi_req_t  (ariane_axi::req_t),
-    //     .axi_resp_t (ariane_axi::resp_t ),
-    //     /// Depth of the FIFO crossing the clock domain, given as 2**LOG_DEPTH.
-    //     .LogDepth  (8)
-    // ) axi_clock_converter(
-    //     // slave side - clocked by `src_clk_i`
-    //     .src_clk_i(clk),
-    //     .src_rst_ni(ndmreset_n),
-    //     .src_req_i(axi_cdc_src_req),
-    //     .src_resp_o(axi_cdc_src_resp),
-    //     // master side - clocked by `dst_clk_i`
-    //     .dst_clk_i(ddr_clock_out),
-    //     .dst_rst_ni(rst_n),
-    //     .dst_req_o(axi_cdc_dst_req),
-    //     .dst_resp_i(axi_cdc_dst_resp)
-    //   );
-
-`AXI_ASSIGN_TO_REQ(axi_cdc_src_req, dram)
-`AXI_ASSIGN_FROM_RESP(dram, axi_cdc_src_resp)
-      
-
 //
 //clocks
 io_pll clocks (
-    .refclk   (pll_ref_clk_p),   // 300 MHz on Agilex 7  input,  width = 1,  refclk.clk
+    .refclk   (pll_ref_clk_p),   // 100 MHz on Agilex 7  input,  width = 1,  refclk.clk
     .locked   (pll_locked),   //  output,  width = 1,  locked.export
     .rst      (cpu_reset),      //   input,  width = 1,   reset.reset
     .outclk_0 (clk), //  output,  width = 1, outclk0.clk 50 MHz
