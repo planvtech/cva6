@@ -404,7 +404,7 @@ if (CVA6Cfg.XLEN==32 ) begin
     .ID_WIDTH              (AxiIdWidthSlaves)
     )i_axi_dwidth_converter_dm_slave(
        .clk(clk),
-       .rst(~ndmreset_n),
+       .rst(rst),
        .s_axi_awid(master[ariane_soc::Debug].aw_id),
        .s_axi_awaddr(master[ariane_soc::Debug].aw_addr[31:0]),
        .s_axi_awlen(master[ariane_soc::Debug].aw_len),
@@ -599,7 +599,7 @@ if (CVA6Cfg.XLEN==32 ) begin
     .ID_WIDTH              (AxiIdWidthMaster)
     ) i_axi_dwidth_converter_dm_master(
        .clk(clk),
-       .rst(~ndmreset_n),
+       .rst(rst),
        .s_axi_awid(dm_axi_m_req.aw.id),
        .s_axi_awaddr(dm_axi_m_req.aw.addr[31:0]),
        .s_axi_awlen(dm_axi_m_req.aw.len),
@@ -1209,7 +1209,7 @@ cva6_intel_altera_mm_interconnect_1920_otvf3ky axi_to_avalon_ddr (
 
 //
 //clocks
-io_pll_test clocks (
+io_pll clocks (
     .refclk   (pll_ref_clk_p),   // 300 MHz on Agilex 7  input,  width = 1,  refclk.clk
     .locked   (pll_locked),   //  output,  width = 1,  locked.export
     .rst      (cpu_reset),      //   input,  width = 1,   reset.reset
