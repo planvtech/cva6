@@ -234,7 +234,7 @@ We currently provide support for the [Genesys 2 board](https://reference.digilen
    - UART
    - GPIOs connected to LEDs
 
-> The ethernet controller and the corresponding network connection, as well as the SDCard connection and the capability to boot linux are still work in progress and not functional at the moment. Expect some updates soon-ish. 
+> The ethernet controller and the corresponding network connection, as well as the SD Card connection and the capability to boot linux are still work in progress and not functional at the moment. Expect some updates soon-ish. 
 
 
 ## Programming the Memory Configuration File or bitstream
@@ -352,7 +352,7 @@ You can debug (and program) the FPGA using a modified version of OpenOCD include
 
 To get started, connect the micro USB port that is labeled with J13 to your machine. It is the same port that is used for the UART. Both use the JTAG interface and connect to the System Level Debugging (SLD) Hub instantiated inside the FPGA. Then the debugger connection goes to the virtual JTAG IP (vJTAG) which can be accessed with the modified version of OpenOCD.
 
-You can and start openocd with the `altera/cva6.cfg` configuration file:
+You can start openocd with the `altera/cva6.cfg` configuration file:
 
 ```
 ./$quartus_installation_path/qprogrammer/quartus/bin/openocd -f altera/cva6.cfg 
@@ -394,6 +394,7 @@ Info : Listening on port 4444 for telnet connections
 ```
 
 - **Common for both boards**
+
 Then you will be able to either connect through `telnet` or with `gdb`:
 
 ```
