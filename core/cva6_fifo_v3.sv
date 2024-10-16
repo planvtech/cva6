@@ -47,8 +47,8 @@ module cva6_fifo_v3 #(
   logic [ADDR_DEPTH:0] status_cnt_n, status_cnt_q;
   // actual memory
   dtype [FifoDepth - 1:0] mem_n, mem_q;
-  dtype                  data_ft_n,data_ft_q;
-  logic first_word_n,first_word_q;
+  dtype data_ft_n, data_ft_q;
+  logic first_word_n, first_word_q;
 
   // fifo ram signals for fpga target
   logic fifo_ram_we;
@@ -133,17 +133,17 @@ module cva6_fifo_v3 #(
       if (FALL_THROUGH) data_o = data_i;
       if (FPGA_INTEL) begin
         data_ft_n = data_i;
-        first_word_n ='1;
+        first_word_n = '1;
       end
       if (pop_i) begin
-        first_word_n ='0;
+        first_word_n = '0;
         status_cnt_n = status_cnt_q;
         read_pointer_n = read_pointer_q;
         write_pointer_n = write_pointer_q;
       end
     end
 
-    if (FPGA_EN) fifo_ram_read_address  = (FPGA_INTEL == 1) ? read_pointer_n:read_pointer_q;
+    if (FPGA_EN) fifo_ram_read_address = (FPGA_INTEL == 1) ? read_pointer_n : read_pointer_q;
 
   end
 
@@ -173,32 +173,32 @@ module cva6_fifo_v3 #(
   end
 
   if (FPGA_EN) begin : gen_fpga_queue
-    if(FPGA_INTEL) begin
-    AsyncDpRam_sync #(
-        .ADDR_WIDTH(ADDR_DEPTH),
-        .DATA_DEPTH(DEPTH),
-        .DATA_WIDTH($bits(dtype))
-    ) fifo_ram (
-        .Clk_CI   (clk_i),
-        .WrEn_SI  (fifo_ram_we),
-        .RdAddr_DI(fifo_ram_read_address),
-        .WrAddr_DI(fifo_ram_write_address),
-        .WrData_DI(fifo_ram_wdata),
-        .RdData_DO(fifo_ram_rdata)
-    );
+    if (FPGA_INTEL) begin
+      AsyncDpRam_sync #(
+          .ADDR_WIDTH(ADDR_DEPTH),
+          .DATA_DEPTH(DEPTH),
+          .DATA_WIDTH($bits(dtype))
+      ) fifo_ram (
+          .Clk_CI   (clk_i),
+          .WrEn_SI  (fifo_ram_we),
+          .RdAddr_DI(fifo_ram_read_address),
+          .WrAddr_DI(fifo_ram_write_address),
+          .WrData_DI(fifo_ram_wdata),
+          .RdData_DO(fifo_ram_rdata)
+      );
     end else begin
       AsyncDpRam #(
-        .ADDR_WIDTH(ADDR_DEPTH),
-        .DATA_DEPTH(DEPTH),
-        .DATA_WIDTH($bits(dtype))
-    ) fifo_ram (
-        .Clk_CI   (clk_i),
-        .WrEn_SI  (fifo_ram_we),
-        .RdAddr_DI(fifo_ram_read_address),
-        .WrAddr_DI(fifo_ram_write_address),
-        .WrData_DI(fifo_ram_wdata),
-        .RdData_DO(fifo_ram_rdata)
-    );
+          .ADDR_WIDTH(ADDR_DEPTH),
+          .DATA_DEPTH(DEPTH),
+          .DATA_WIDTH($bits(dtype))
+      ) fifo_ram (
+          .Clk_CI   (clk_i),
+          .WrEn_SI  (fifo_ram_we),
+          .RdAddr_DI(fifo_ram_read_address),
+          .WrAddr_DI(fifo_ram_write_address),
+          .WrData_DI(fifo_ram_wdata),
+          .RdData_DO(fifo_ram_rdata)
+      );
     end
   end else begin : gen_asic_queue
     always_ff @(posedge clk_i or negedge rst_ni) begin

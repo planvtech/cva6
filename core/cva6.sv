@@ -361,7 +361,7 @@ module cva6
   // --------------
   // ID <-> ISSUE
   // --------------
-  scoreboard_entry_t [ariane_pkg::SUPERSCALAR:0] issue_entry_id_issue,issue_entry_id_issue_prev;
+  scoreboard_entry_t [ariane_pkg::SUPERSCALAR:0] issue_entry_id_issue, issue_entry_id_issue_prev;
   logic [ariane_pkg::SUPERSCALAR:0][31:0] orig_instr_id_issue;
   logic [ariane_pkg::SUPERSCALAR:0] issue_entry_valid_id_issue;
   logic [ariane_pkg::SUPERSCALAR:0] is_ctrl_fow_id_issue;
