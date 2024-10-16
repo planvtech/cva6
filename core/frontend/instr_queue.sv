@@ -469,8 +469,8 @@ ariane_pkg::FETCH_FIFO_DEPTH
     assign push_instr_fifo[i] = push_instr[i] & ~address_overflow;
     cva6_fifo_v3 #(
         .FPGA_INTEL(CVA6Cfg.FpgaEn),
-        .DEPTH  (ariane_pkg::FETCH_FIFO_DEPTH),
-        .dtype  (instr_data_t),
+        .DEPTH(ariane_pkg::FETCH_FIFO_DEPTH),
+        .dtype(instr_data_t),
         .FPGA_EN(CVA6Cfg.FpgaEn)
     ) i_fifo_instr_data (
         .clk_i     (clk_i),
