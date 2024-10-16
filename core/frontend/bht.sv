@@ -251,7 +251,8 @@ module bht #(
         if (!rst_ni) begin
           //initialize output
           bht_prediction_o[i] = '0;
-        end else if (check_row_index == i) begin
+        end else begin
+        // end else if (check_row_index == i) begin
           //When asynchronous RAM is used, addresses can be calculated on the same cycle as data is read
           if (!FPGA_INTEL) bht_ram_read_address_0[i*$clog2(NR_ROWS)+:$clog2(NR_ROWS)] = index;
           //When synchronous RAM is used and data is read right after writing, we need some buffering
