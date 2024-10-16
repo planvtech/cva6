@@ -160,7 +160,7 @@ module bht #(
     // Extra buffering signals needed when synchronous RAM is used
 
     always_ff @(posedge clk_i or negedge rst_ni) begin
-      if (!rst_ni) beginR
+      if (!rst_ni) begin
         bht_updated_valid <= '0;
         bht_update_taken <= '0;
         bht_ram_wdata_b <= '0;
