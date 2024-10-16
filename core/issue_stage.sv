@@ -209,8 +209,7 @@ module issue_stage
       .branchpredict_sbe_t(branchpredict_sbe_t),
       .fu_data_t(fu_data_t),
       .scoreboard_entry_t(scoreboard_entry_t),
-      .rs3_len_t(rs3_len_t),
-      .FPGA_INTEL   (CVA6Cfg.FpgaEn)
+      .rs3_len_t(rs3_len_t)
   ) i_issue_read_operands (
       .flush_i            (flush_unissued_instr_i),
       .issue_instr_i      (issue_instr_sb_iro),
