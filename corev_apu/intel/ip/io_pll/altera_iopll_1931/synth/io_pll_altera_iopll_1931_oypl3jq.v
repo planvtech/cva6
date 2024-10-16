@@ -15,7 +15,7 @@
 // Wrappers for other families can be found in altera_pll.v (pre Arria 10) and twentynm_iopll.v
 
 `timescale 1ps/1ps
-module io_pll_altera_iopll_1931_saopfla 
+module io_pll_altera_iopll_1931_oypl3jq 
 (
     // interface refclk
     input wire refclk,
@@ -175,9 +175,9 @@ tennm_iopll #(
     .c0_ph_mux_prst(0),
     .c0_prst(1),
     .c1_bypass_en("false"),
-    .c1_even_duty_en("false"),
-    .c1_high(10),
-    .c1_low(10),
+    .c1_even_duty_en("true"),
+    .c1_high(3),
+    .c1_low(2),
     .c1_out_en(counter1_enable),
     .c1_ph_mux_prst(0),
     .c1_prst(1),
@@ -278,7 +278,7 @@ tennm_iopll #(
     .n_counter_low(256),
     .n_counter_odd_div_duty_en("false"),
     .outclk0("0 ps"),
-    .outclk1("50.0 MHz"),
+    .outclk1("200.0 MHz"),
     .outclk2("125.0 MHz"),
     .outclk3("200.0 MHz"),
     .outclk4("125.0 MHz"),
@@ -387,7 +387,7 @@ endmodule
 // It also delays the other signal by one clock cycle
 // =================================================================================
 
-module dps_pulse_gen_io_pll_altera_iopll_1931_saopfla (
+module dps_pulse_gen_io_pll_altera_iopll_1931_oypl3jq (
     input  wire clk,            // the DPS clock
     input  wire rst,            // active high reset
     input  wire user_phase_en,  // the user's phase_en signal

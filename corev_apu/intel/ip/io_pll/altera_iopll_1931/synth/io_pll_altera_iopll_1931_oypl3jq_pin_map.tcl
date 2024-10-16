@@ -21,17 +21,17 @@
 # FILE DESCRIPTION
 # ----------------
 # This file contains the traversal routines that are used by
-# io_pll_altera_iopll_1931_saopfla.sdc scripts. 
+# io_pll_altera_iopll_1931_oypl3jq.sdc scripts. 
 #
 # These routines are only meant to support the SDC. 
 # Trying to using them in a different context can have unexpected 
 # results.
 
-set ::GLOBAL_top_io_pll_altera_iopll_1931_saopfla_corename_debug 0
+set ::GLOBAL_top_io_pll_altera_iopll_1931_oypl3jq_corename_debug 0
 
 set script_dir [file dirname [info script]]
 
-source [file join $script_dir io_pll_altera_iopll_1931_saopfla_parameters.tcl]
+source [file join $script_dir io_pll_altera_iopll_1931_oypl3jq_parameters.tcl]
 
 proc get_warnings_disabled {} {
     set local_disable_warnings true
@@ -46,7 +46,7 @@ proc get_warnings_disabled {} {
     }
     return $local_disable_warnings 
 }
-set ::GLOBAL_top_io_pll_altera_iopll_1931_saopfla_corename_disable_warnings [get_warnings_disabled]
+set ::GLOBAL_top_io_pll_altera_iopll_1931_oypl3jq_corename_disable_warnings [get_warnings_disabled]
 
 # ----------------------------------------------------------------
 #
@@ -60,7 +60,7 @@ proc ai_post_message {msg_type msg {msg_context sta_only}} {
 # ----------------------------------------------------------------
 
     if {$msg_type == "debug"} {
-        if {$::GLOBAL_top_io_pll_altera_iopll_1931_saopfla_corename_debug} {
+        if {$::GLOBAL_top_io_pll_altera_iopll_1931_oypl3jq_corename_debug} {
             puts $msg
         }
     } else {
@@ -94,13 +94,13 @@ proc ai_initialize_pll_db { pll_db_par } {
 # ----------------------------------------------------------------
 	upvar $pll_db_par local_pll_db
 
-	global ::GLOBAL_top_io_pll_altera_iopll_1931_saopfla_corename
+	global ::GLOBAL_top_io_pll_altera_iopll_1931_oypl3jq_corename
 
-	ai_post_message info "Initializing PLL database for CORE $::GLOBAL_top_io_pll_altera_iopll_1931_saopfla_corename"
-	set instance_list [ai_get_core_instance_list $::GLOBAL_top_io_pll_altera_iopll_1931_saopfla_corename]
+	ai_post_message info "Initializing PLL database for CORE $::GLOBAL_top_io_pll_altera_iopll_1931_oypl3jq_corename"
+	set instance_list [ai_get_core_instance_list $::GLOBAL_top_io_pll_altera_iopll_1931_oypl3jq_corename]
 
 	foreach instname $instance_list {
-		ai_post_message info "Finding port-to-pin mapping for CORE: $::GLOBAL_top_io_pll_altera_iopll_1931_saopfla_corename INSTANCE: $instname"
+		ai_post_message info "Finding port-to-pin mapping for CORE: $::GLOBAL_top_io_pll_altera_iopll_1931_oypl3jq_corename INSTANCE: $instname"
 
 		set clock_data_dicts [ai_get_pll_pins $instname]
 		lassign $clock_data_dicts base_clock_data_dict gen_clock_data_dict
@@ -142,7 +142,7 @@ proc ai_get_core_full_instance_list {corename} {
                                
 	if {[ llength $instance_list ] == 0} {
 
-        if {!$::GLOBAL_top_io_pll_altera_iopll_1931_saopfla_corename_disable_warnings} {
+        if {!$::GLOBAL_top_io_pll_altera_iopll_1931_oypl3jq_corename_disable_warnings} {
             ai_post_message warning "The auto-constraining script was not able to detect any instance for core < $corename >" all
             ai_post_message warning "Verify the following:"
             ai_post_message warning " The core < $corename > is instantiated within another component (wrapper)" all
@@ -153,14 +153,14 @@ proc ai_get_core_full_instance_list {corename} {
 	return $instance_list
 }
 proc ai_get_registers {pattern} {
-    if {$::GLOBAL_top_io_pll_altera_iopll_1931_saopfla_corename_disable_warnings} {
+    if {$::GLOBAL_top_io_pll_altera_iopll_1931_oypl3jq_corename_disable_warnings} {
         return [get_registers -nowarn -no_duplicates $pattern]
     } else {
         return [get_registers -no_duplicates $pattern]
     }
 }
 proc ai_get_pins {pattern} {
-    if {$::GLOBAL_top_io_pll_altera_iopll_1931_saopfla_corename_disable_warnings} {
+    if {$::GLOBAL_top_io_pll_altera_iopll_1931_oypl3jq_corename_disable_warnings} {
         return [get_pins -nowarn -no_duplicates $pattern]
     } else {
         return [get_pins -no_duplicates $pattern]
@@ -522,8 +522,8 @@ proc ai_get_pll_pins { instname } {
 #
 # ----------------------------------------------------------------
 
-    set base_clock_data_dict $::GLOBAL_top_io_pll_altera_iopll_1931_saopfla_base_clock_data
-    set gen_clock_data_dict $::GLOBAL_top_io_pll_altera_iopll_1931_saopfla_gen_clock_data
+    set base_clock_data_dict $::GLOBAL_top_io_pll_altera_iopll_1931_oypl3jq_base_clock_data
+    set gen_clock_data_dict $::GLOBAL_top_io_pll_altera_iopll_1931_oypl3jq_gen_clock_data
     # First regsub the instance name for the pin names and patterns.
     set base_clock_data_dict [ai_subst_instname $base_clock_data_dict $instname]
     set gen_clock_data_dict [ai_subst_instname $gen_clock_data_dict $instname]

@@ -21,7 +21,7 @@
 # FILE DESCRIPTION
 # ----------------
 # This file contains the timing constraints for the Altera PLL.
-#    * The helper routines are defined in io_pll_altera_iopll_1931_saopfla_pin_map.tcl
+#    * The helper routines are defined in io_pll_altera_iopll_1931_oypl3jq_pin_map.tcl
 #
 # NOTE
 # ----
@@ -30,8 +30,8 @@ set debug 0
 
 set script_dir [file dirname [info script]]
 
-source "$script_dir/io_pll_altera_iopll_1931_saopfla_parameters.tcl"
-source "$script_dir/io_pll_altera_iopll_1931_saopfla_pin_map.tcl"
+source "$script_dir/io_pll_altera_iopll_1931_oypl3jq_parameters.tcl"
+source "$script_dir/io_pll_altera_iopll_1931_oypl3jq_pin_map.tcl"
 
 ####################
 #                  #
@@ -68,18 +68,18 @@ if {[catch {load_package atoms
 
 
 
-if {[info exists ::GLOBAL_top_io_pll_altera_iopll_1931_saopfla_corename_ai_pll_db]} {
+if {[info exists ::GLOBAL_top_io_pll_altera_iopll_1931_oypl3jq_corename_ai_pll_db]} {
     # Clean-up stale content
-    unset ::GLOBAL_top_io_pll_altera_iopll_1931_saopfla_corename_ai_pll_db
+    unset ::GLOBAL_top_io_pll_altera_iopll_1931_oypl3jq_corename_ai_pll_db
 }
-if {[catch {ai_initialize_pll_db ::GLOBAL_top_io_pll_altera_iopll_1931_saopfla_corename_ai_pll_db} err_initializing_db]} {
+if {[catch {ai_initialize_pll_db ::GLOBAL_top_io_pll_altera_iopll_1931_oypl3jq_corename_ai_pll_db} err_initializing_db]} {
     post_message -type warning "Failed to find atom information in IOPLL SDC: $err_initializing_db"
 }
 
 # If multiple instances of this core are present in the
 # design they will all be constrained through the
 # following loop
-set instances [ array names ::GLOBAL_top_io_pll_altera_iopll_1931_saopfla_corename_ai_pll_db ]
+set instances [ array names ::GLOBAL_top_io_pll_altera_iopll_1931_oypl3jq_corename_ai_pll_db ]
 foreach { inst } $instances {
 	if { [ info exists pins ] } {
 		# Clean-up stale content
@@ -106,7 +106,7 @@ foreach { inst } $instances {
 	}
 
     # These dictionaries hold all the clock information.
-    lassign $::GLOBAL_top_io_pll_altera_iopll_1931_saopfla_corename_ai_pll_db($inst) base_clock_data_dict gen_clock_data_dict
+    lassign $::GLOBAL_top_io_pll_altera_iopll_1931_oypl3jq_corename_ai_pll_db($inst) base_clock_data_dict gen_clock_data_dict
 	
 	# ------------------------ #
 	# -                      - #

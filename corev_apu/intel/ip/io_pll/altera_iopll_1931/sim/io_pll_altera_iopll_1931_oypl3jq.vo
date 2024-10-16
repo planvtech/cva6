@@ -15,7 +15,7 @@
 // Wrappers for other families can be found in altera_pll.v (pre Arria 10) and twentynm_iopll.v
 
 `timescale 1ps/1ps
-module io_pll_altera_iopll_1931_2chfxvi 
+module io_pll_altera_iopll_1931_oypl3jq 
 (
     // interface refclk
     input wire refclk,
@@ -182,30 +182,30 @@ tennm_iopll #(
     .c1_ph_mux_prst(0),
     .c1_prst(1),
     .c2_bypass_en("false"),
-    .c2_even_duty_en("true"),
+    .c2_even_duty_en("false"),
     .c2_high(4),
-    .c2_low(3),
+    .c2_low(4),
     .c2_out_en(counter2_enable),
     .c2_ph_mux_prst(0),
     .c2_prst(1),
     .c3_bypass_en("false"),
-    .c3_even_duty_en("false"),
-    .c3_high(2),
+    .c3_even_duty_en("true"),
+    .c3_high(3),
     .c3_low(2),
     .c3_out_en(counter3_enable),
     .c3_ph_mux_prst(0),
     .c3_prst(1),
     .c4_bypass_en("false"),
-    .c4_even_duty_en("true"),
+    .c4_even_duty_en("false"),
     .c4_high(4),
-    .c4_low(3),
+    .c4_low(4),
     .c4_out_en(counter4_enable),
-    .c4_ph_mux_prst(6),
-    .c4_prst(2),
+    .c4_ph_mux_prst(0),
+    .c4_prst(3),
     .c5_bypass_en("false"),
-    .c5_even_duty_en("true"),
+    .c5_even_duty_en("false"),
     .c5_high(5),
-    .c5_low(4),
+    .c5_low(5),
     .c5_out_en(counter5_enable),
     .c5_ph_mux_prst(0),
     .c5_prst(1),
@@ -267,26 +267,26 @@ tennm_iopll #(
     .feedback("direct"),
     .iopll_type("TOP_BOTTOM"),
     .m_counter_bypass_en("false"),
-    .m_counter_even_duty_en("true"),
-    .m_counter_high(18),
-    .m_counter_low(17),
+    .m_counter_even_duty_en("false"),
+    .m_counter_high(5),
+    .m_counter_low(5),
     .m_counter_scratch(1),
     .manu_clk_sw_en("false"),
     .merging_permitted("false"),
-    .n_counter_bypass_en("false"),
-    .n_counter_high(2),
-    .n_counter_low(2),
+    .n_counter_bypass_en("true"),
+    .n_counter_high(256),
+    .n_counter_low(256),
     .n_counter_odd_div_duty_en("false"),
     .outclk0("0 ps"),
-    .outclk1("175.0 MHz"),
+    .outclk1("200.0 MHz"),
     .outclk2("125.0 MHz"),
-    .outclk3("218.75 MHz"),
+    .outclk3("200.0 MHz"),
     .outclk4("125.0 MHz"),
-    .outclk5("97.222222 MHz"),
+    .outclk5("100.0 MHz"),
     .outclk6("0 ps"),
     .outclk7("0 ps"),
     .outclk8("0 ps"),
-    .pfd("25.0 MHz"),
+    .pfd("100.0 MHz"),
     .phase_shift_0("0 ps"),
     .phase_shift_1("0 ps"),
     .phase_shift_2("0 ps"),
@@ -302,7 +302,7 @@ tennm_iopll #(
     .self_reset_en("false"),
     .simple_pll("false"),
     .uc_channel_base_addr(16'h0),
-    .vco("875.0 MHz")
+    .vco("1000.0 MHz")
 ) tennm_pll (
     .clken(2'b00),
     .cnt_sel(4'b0),
@@ -387,7 +387,7 @@ endmodule
 // It also delays the other signal by one clock cycle
 // =================================================================================
 
-module dps_pulse_gen_io_pll_altera_iopll_1931_2chfxvi (
+module dps_pulse_gen_io_pll_altera_iopll_1931_oypl3jq (
     input  wire clk,            // the DPS clock
     input  wire rst,            // active high reset
     input  wire user_phase_en,  // the user's phase_en signal
