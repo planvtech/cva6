@@ -1,24 +1,22 @@
-// Copyright 2022 Thales Research and Technology
+// Copyright 2024 PlanV Technologies
 //
 // Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // SPDX-License-Identifier: Apache-2.0 WITH SHL-2.0
 // You may obtain a copy of the License at https://solderpad.org/licenses
 //
-// Inferable, Asynchronous Dual-Port RAM, there are a write port and a read port
+// Inferable, Synchronous Dual-Port RAM, there are a write port and a read port fully independent
 //
 //
-// This module is designed to work with both Xilinx and Microchip FPGA tools by following the respective
+// This module is designed to work with both Xilinx, Microchip and Altera FPGA tools by following the respective
 // guidelines:
 // - Xilinx UG901 Vivado Design Suite User Guide: Synthesis
 // - Inferring Microchip PolarFire RAM Blocks
+// - Altera Quartus II Handbook Volume 1: Design and Synthesis (p. 768)
 //
-// Intel FPGA (Altera) doesn't seem to support asynchronous RAM
-//
-// Current Maintainers:: Sébastien Jacq - sjthales on github.com
+// Current Maintainers:: Angela Gonzalez - PlanV Technologies
 
- 
-module AsyncDpRam
+module SyncDpRam_ind_r_w
 #(
   parameter ADDR_WIDTH = 10,
   parameter DATA_DEPTH = 1024, // usually 2**ADDR_WIDTH, but can be lower
@@ -36,7 +34,8 @@ module AsyncDpRam
   output logic [DATA_WIDTH-1:0]   RdData_DO
 );
 
-  logic [DATA_WIDTH-1:0] mem [DATA_DEPTH-1:0]= '{default:0};
+// logic [DATA_WIDTH-1:0] mem [DATA_DEPTH-1:0]= '{default:0};
+(* ramstyle = "mlab" *) logic [DATA_WIDTH-1:0] mem [DATA_DEPTH-1:0]= '{default:0};
 
   // WRITE
   always_ff @(posedge Clk_CI)
@@ -44,10 +43,8 @@ module AsyncDpRam
     if (WrEn_SI) begin
       mem[WrAddr_DI] <= WrData_DI;
     end
+    RdData_DO = mem[RdAddr_DI];
   end
-
- // READ
-  assign RdData_DO = mem[RdAddr_DI];
   
   ////////////////////////////
   // assertions
