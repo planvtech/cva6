@@ -174,7 +174,7 @@ module cva6_fifo_v3 #(
 
   if (FPGA_EN) begin : gen_fpga_queue
     if (FPGA_INTEL) begin
-      AsyncDpRam_sync #(
+      SyncDpRam_ind_r_w #(
           .ADDR_WIDTH(ADDR_DEPTH),
           .DATA_DEPTH(DEPTH),
           .DATA_WIDTH($bits(dtype))

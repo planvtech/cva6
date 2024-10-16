@@ -275,7 +275,7 @@ module bht #(
 
     for (genvar i = 0; i < CVA6Cfg.INSTR_PER_FETCH; i++) begin : gen_bht_ram
       if (FPGA_INTEL) begin
-        AsyncThreePortRam_sync #(
+        SyncThreePortRam #(
             .ADDR_WIDTH($clog2(NR_ROWS)),
             .DATA_DEPTH(NR_ROWS),
             .DATA_WIDTH(BRAM_WORD_BITS)
