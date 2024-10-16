@@ -1,4 +1,5 @@
 // Copyright 2018 ETH Zurich and University of Bologna.
+// Copyright 2024 - PlanV Technologies for additionnal contribution.
 // Copyright and related rights are licensed under the Solderpad Hardware
 // License, Version 0.51 (the "License"); you may not use this file except in
 // compliance with the License. You may obtain a copy of the License at
@@ -9,6 +10,8 @@
 // specific language governing permissions and limitations under the License.
 
 // Author: Florian Zaruba <zarubaf@iis.ee.ethz.ch>
+// Additional contributions by:
+//                 Angela Gonzalez - PlanV Technologies
 
 module cva6_fifo_v3 #(
     parameter bit FALL_THROUGH = 1'b0,  // fifo is in fall-through mode
@@ -78,7 +81,6 @@ module cva6_fifo_v3 #(
     first_word_n = first_word_q;
     if (FPGA_EN) begin
       fifo_ram_we            = '0;
-      // fifo_ram_read_address  = (FPGA_INTEL == 1) ? read_pointer_n:read_pointer_q;
       fifo_ram_write_address = '0;
       fifo_ram_wdata         = '0;
       data_o                 = (DEPTH == 0) ? data_i : (first_word_q ? data_ft_q : fifo_ram_rdata);
@@ -112,11 +114,6 @@ module cva6_fifo_v3 #(
     if (pop_i && ~empty_o) begin
       data_ft_n = data_i;
       first_word_n = FPGA_INTEL && first_word_q && push_i;
-      // if (first_word_q && push_i) 
-      //   // data_o = data_ft_q;
-      //   data_ft_n = data_i;
-      // else
-      //   first_word_n ='0;
       // read from the queue is a default assignment
       // but increment the read pointer...
       if (read_pointer_n == FifoDepth[ADDR_DEPTH-1:0] - 1) read_pointer_n = '0;
