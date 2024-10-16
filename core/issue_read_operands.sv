@@ -21,8 +21,7 @@ module issue_read_operands
     parameter type branchpredict_sbe_t = logic,
     parameter type fu_data_t = logic,
     parameter type scoreboard_entry_t = logic,
-    parameter type rs3_len_t = logic,
-    parameter bit  FPGA_INTEL    = 1'b0
+    parameter type rs3_len_t = logic
 ) (
     // Subsystem Clock - SUBSYSTEM
     input logic clk_i,
@@ -601,10 +600,10 @@ module issue_read_operands
 
   //adjust address to read from register file (when synchronous RAM is used reads take one cycle, so we advance the address)   
   for (genvar i = 0; i <= SUPERSCALAR; i++) begin
-    assign raddr_pack[i*OPERANDS_PER_INSTR+0] = FPGA_INTEL ? issue_instr_i_prev[i].rs1[4:0] : issue_instr_i[i].rs1[4:0];
-    assign raddr_pack[i*OPERANDS_PER_INSTR+1] = FPGA_INTEL ? issue_instr_i_prev[i].rs2[4:0] : issue_instr_i[i].rs2[4:0];
+    assign raddr_pack[i*OPERANDS_PER_INSTR+0] = CVA6Cfg.FpgaEn && CVA6Cfg.FpgaAltera ? issue_instr_i_prev[i].rs1[4:0] : issue_instr_i[i].rs1[4:0];
+    assign raddr_pack[i*OPERANDS_PER_INSTR+1] = CVA6Cfg.FpgaEn && CVA6Cfg.FpgaAltera ? issue_instr_i_prev[i].rs2[4:0] : issue_instr_i[i].rs2[4:0];
     if (OPERANDS_PER_INSTR == 3) begin
-      assign raddr_pack[i*OPERANDS_PER_INSTR+2] = FPGA_INTEL ? issue_instr_i_prev[i].result[4:0] : issue_instr_i[i].result[4:0];
+      assign raddr_pack[i*OPERANDS_PER_INSTR+2] = CVA6Cfg.FpgaEn && CVA6Cfg.FpgaAltera ? issue_instr_i_prev[i].result[4:0] : issue_instr_i[i].result[4:0];
     end
   end
 
@@ -617,7 +616,6 @@ module issue_read_operands
     ariane_regfile_fpga #(
         .CVA6Cfg      (CVA6Cfg),
         .DATA_WIDTH   (CVA6Cfg.XLEN),
-        .FPGA_INTEL   (FPGA_INTEL),
         .NR_READ_PORTS(CVA6Cfg.NrRgprPorts),
         .ZERO_REG_ZERO(1)
     ) i_ariane_regfile_fpga (

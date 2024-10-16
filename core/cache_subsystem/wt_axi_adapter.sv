@@ -311,7 +311,7 @@ module wt_axi_adapter
   end
 
   cva6_fifo_v3 #(
-      .FPGA_INTEL(CVA6Cfg.FpgaEn),
+      .FPGA_ALTERA(CVA6Cfg.FpgaAltera),
       .dtype(icache_req_t),
       .DEPTH(ReqFifoDepth),
       .FPGA_EN(CVA6Cfg.FpgaEn)
@@ -330,7 +330,7 @@ module wt_axi_adapter
   );
 
   cva6_fifo_v3 #(
-      .FPGA_INTEL(CVA6Cfg.FpgaEn),
+      .FPGA_ALTERA(CVA6Cfg.FpgaAltera),
       .dtype(dcache_req_t),
       .DEPTH(ReqFifoDepth),
       .FPGA_EN(CVA6Cfg.FpgaEn)

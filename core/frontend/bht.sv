@@ -24,7 +24,6 @@
 module bht #(
     parameter config_pkg::cva6_cfg_t CVA6Cfg = config_pkg::cva6_cfg_empty,
     parameter type bht_update_t = logic,
-    parameter bit FPGA_INTEL = 1'b0,
     parameter int unsigned NR_ENTRIES = 1024
 ) (
     // Subsystem Clock - SUBSYSTEM
@@ -161,7 +160,7 @@ module bht #(
     // Extra buffering signals needed when synchronous RAM is used
 
     always_ff @(posedge clk_i or negedge rst_ni) begin
-      if (!rst_ni) begin
+      if (!rst_ni) beginR
         bht_updated_valid <= '0;
         bht_update_taken <= '0;
         bht_ram_wdata_b <= '0;
@@ -170,7 +169,7 @@ module bht #(
         bht_ram_write_address_q <= '0;
         update_row_index_q <= '0;
       end else begin
-        if (FPGA_INTEL) begin
+        if (CVA6Cfg.FpgaAltera) begin
           for (int i = 0; i < CVA6Cfg.INSTR_PER_FETCH; i++) begin
             bht_updated_valid[i][1] <= bht_updated_valid[i][0];
             bht_updated_valid[i][0] <= bht_updated[i].valid;
@@ -191,9 +190,9 @@ module bht #(
     end
 
     // Assignment of indexes checked to generate data written in the RAM. When synchronous RAM is used these signals need to be delayed
-    assign check_update_row_index = FPGA_INTEL ? update_row_index_q : update_row_index;
-    assign check_bht_update_taken = FPGA_INTEL ? bht_update_taken : bht_update_i.taken;
-    assign check_row_index        = FPGA_INTEL ? row_index_q : row_index;
+    assign check_update_row_index = CVA6Cfg.FpgaAltera ? update_row_index_q : update_row_index;
+    assign check_bht_update_taken = CVA6Cfg.FpgaAltera ? bht_update_taken : bht_update_i.taken;
+    assign check_row_index        = CVA6Cfg.FpgaAltera ? row_index_q : row_index;
     // -------------------------
     // prediction assignment & update Branch History Table
     // -------------------------
@@ -220,12 +219,12 @@ module bht #(
       for (int i = 0; i < CVA6Cfg.INSTR_PER_FETCH; i++) begin
 
         //When synchronous RAM is used, addresses are needed as soon as available
-        if (FPGA_INTEL) bht_ram_read_address_0[i*$clog2(NR_ROWS)+:$clog2(NR_ROWS)] = index;
-        if (FPGA_INTEL) bht_ram_read_address_1[i*$clog2(NR_ROWS)+:$clog2(NR_ROWS)] = update_pc;
+        if (CVA6Cfg.FpgaAltera) bht_ram_read_address_0[i*$clog2(NR_ROWS)+:$clog2(NR_ROWS)] = index;
+        if (CVA6Cfg.FpgaAltera) bht_ram_read_address_1[i*$clog2(NR_ROWS)+:$clog2(NR_ROWS)] = update_pc;
 
         if (check_update_row_index == i) begin
           //When asynchronous RAM is used, the address can be updated on the cycle when data is read
-          if (!FPGA_INTEL) bht_ram_read_address_1[i*$clog2(NR_ROWS)+:$clog2(NR_ROWS)] = update_pc;
+          if (!CVA6Cfg.FpgaAltera) bht_ram_read_address_1[i*$clog2(NR_ROWS)+:$clog2(NR_ROWS)] = update_pc;
           bht[i].saturation_counter = bht_ram_rdata_1[i*BRAM_WORD_BITS+:2];
 
           if (bht[i].saturation_counter == 2'b11) begin
@@ -246,7 +245,7 @@ module bht #(
           end
 
           //The data written in the RAM will have the valid bit from current input (async RAM) or the one from one clock cycle before (sync RAM)
-          bht_ram_wdata[i*BRAM_WORD_BITS+:BRAM_WORD_BITS] = FPGA_INTEL ? {bht_updated_valid[i][0], bht_updated[i].saturation_counter} :
+          bht_ram_wdata[i*BRAM_WORD_BITS+:BRAM_WORD_BITS] = CVA6Cfg.FpgaAltera ? {bht_updated_valid[i][0], bht_updated[i].saturation_counter} :
                                                                            {bht_updated[i].valid, bht_updated[i].saturation_counter};
         end
 
@@ -257,14 +256,14 @@ module bht #(
         end else begin
           // end else if (check_row_index == i) begin
           //When asynchronous RAM is used, addresses can be calculated on the same cycle as data is read
-          if (!FPGA_INTEL) bht_ram_read_address_0[i*$clog2(NR_ROWS)+:$clog2(NR_ROWS)] = index;
+          if (!CVA6Cfg.FpgaAltera) bht_ram_read_address_0[i*$clog2(NR_ROWS)+:$clog2(NR_ROWS)] = index;
           //When synchronous RAM is used and data is read right after writing, we need some buffering
           // This is one cycle of buffering
-          if (FPGA_INTEL && bht_updated_valid[i][0] && vpc_q == bht_updated_pc[i][0]) begin
+          if (CVA6Cfg.FpgaAltera && bht_updated_valid[i][0] && vpc_q == bht_updated_pc[i][0]) begin
             bht_prediction_o[i].valid = bht_ram_wdata[i*BRAM_WORD_BITS+2];
             bht_prediction_o[i].taken = bht_ram_wdata[i*BRAM_WORD_BITS+1];
             //This is two cycles of buffering
-          end else if (FPGA_INTEL && bht_updated_valid[i][1] && vpc_q == bht_updated_pc[i][1]) begin
+          end else if (CVA6Cfg.FpgaAltera && bht_updated_valid[i][1] && vpc_q == bht_updated_pc[i][1]) begin
             bht_prediction_o[i].valid = bht_ram_wdata_b[i*BRAM_WORD_BITS+2];
             bht_prediction_o[i].taken = bht_ram_wdata_b[i*BRAM_WORD_BITS+1];
             //In any other case we can safely read from the RAM as data is available
@@ -277,7 +276,7 @@ module bht #(
     end
 
     for (genvar i = 0; i < CVA6Cfg.INSTR_PER_FETCH; i++) begin : gen_bht_ram
-      if (FPGA_INTEL) begin
+      if (CVA6Cfg.FpgaAltera) begin
         SyncThreePortRam #(
             .ADDR_WIDTH($clog2(NR_ROWS)),
             .DATA_DEPTH(NR_ROWS),

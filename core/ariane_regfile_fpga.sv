@@ -30,7 +30,6 @@ module ariane_regfile_fpga #(
     parameter config_pkg::cva6_cfg_t CVA6Cfg       = config_pkg::cva6_cfg_empty,
     parameter int unsigned           DATA_WIDTH    = 32,
     parameter int unsigned           NR_READ_PORTS = 2,
-    parameter bit                    FPGA_INTEL    = 1'b0,
     parameter bit                    ZERO_REG_ZERO = 0
 ) (
     // clock and reset
@@ -119,11 +118,11 @@ module ariane_regfile_fpga #(
       end
     end
     for (genvar k = 0; k < NR_READ_PORTS; k++) begin : block_read
-      assign mem_read[j][k] = FPGA_INTEL ? ( read_after_write[k] ? wdata_reg[j]: mem_read_sync[j][k]) : mem[j][raddr_i[k]];
+      assign mem_read[j][k] = CVA6Cfg.FpgaAltera ? ( read_after_write[k] ? wdata_reg[j]: mem_read_sync[j][k]) : mem[j][raddr_i[k]];
     end
   end
   //with synchronous ram there is the need to adjust which address is used at the output MUX
-  assign raddr = FPGA_INTEL ? raddr_q : raddr_i;
+  assign raddr = CVA6Cfg.FpgaAltera ? raddr_q : raddr_i;
 
   // output MUX
   logic [NR_READ_PORTS-1:0][LOG_NR_WRITE_PORTS-1:0] block_addr;

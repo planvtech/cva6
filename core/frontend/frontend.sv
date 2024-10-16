@@ -19,7 +19,6 @@ module frontend
   import ariane_pkg::*;
 #(
     parameter config_pkg::cva6_cfg_t CVA6Cfg = config_pkg::cva6_cfg_empty,
-    parameter bit FPGA_INTEL = 1'b0,
     parameter type bp_resolve_t = logic,
     parameter type fetch_entry_t = logic,
     parameter type icache_dreq_t = logic,
@@ -487,7 +486,7 @@ module frontend
   //while for ASIC, BTB is implemented in D flip-flop
   //and can be read at the same cycle.
   assign vpc_btb = (CVA6Cfg.FpgaEn) ? icache_dreq_i.vaddr : icache_vaddr_q;
-  assign vpc_bht = (FPGA_INTEL && icache_dreq_i.valid) ? icache_dreq_i.vaddr : icache_vaddr_q;
+  assign vpc_bht = (CVA6Cfg.FpgaEn && CVA6Cfg.FpgaAltera && icache_dreq_i.valid) ? icache_dreq_i.vaddr : icache_vaddr_q;
 
   if (CVA6Cfg.BTBEntries == 0) begin
     assign btb_prediction = '0;
@@ -514,7 +513,6 @@ module frontend
     bht #(
         .CVA6Cfg   (CVA6Cfg),
         .bht_update_t(bht_update_t),
-        .FPGA_INTEL(FPGA_INTEL),
         .NR_ENTRIES(CVA6Cfg.BHTEntries)
     ) i_bht (
         .clk_i,

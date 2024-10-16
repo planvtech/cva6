@@ -15,7 +15,7 @@
 
 module cva6_fifo_v3 #(
     parameter bit FALL_THROUGH = 1'b0,  // fifo is in fall-through mode
-    parameter bit FPGA_INTEL = 1'b0,  // fifo is in fall-through mode
+    parameter bit FPGA_ALTERA = 1'b0,  // fifo is in fall-through mode
     parameter int unsigned DATA_WIDTH = 32,  // default data width if the fifo is of type logic
     parameter int unsigned DEPTH = 8,  // depth can be arbitrary from 0 to 2**32
     parameter type dtype = logic [DATA_WIDTH-1:0],
@@ -96,7 +96,7 @@ module cva6_fifo_v3 #(
         fifo_ram_we = 1'b1;
         fifo_ram_write_address = write_pointer_q;
         fifo_ram_wdata = data_i;
-        first_word_n = FPGA_INTEL && first_word_q && pop_i;
+        first_word_n = FPGA_ALTERA && first_word_q && pop_i;
       end else begin
         // push the data onto the queue
         mem_n[write_pointer_q] = data_i;
@@ -113,7 +113,7 @@ module cva6_fifo_v3 #(
 
     if (pop_i && ~empty_o) begin
       data_ft_n = data_i;
-      first_word_n = FPGA_INTEL && first_word_q && push_i;
+      first_word_n = FPGA_EN && FPGA_ALTERA && first_word_q && push_i;
       // read from the queue is a default assignment
       // but increment the read pointer...
       if (read_pointer_n == FifoDepth[ADDR_DEPTH-1:0] - 1) read_pointer_n = '0;
@@ -126,9 +126,9 @@ module cva6_fifo_v3 #(
     if (push_i && pop_i && ~full_o && ~empty_o) status_cnt_n = status_cnt_q;
 
     // FIFO is in pass through mode -> do not change the pointers
-    if ((FALL_THROUGH || FPGA_INTEL) && (status_cnt_q == 0) && push_i) begin
+    if ((FALL_THROUGH || (FPGA_EN && FPGA_ALTERA)) && (status_cnt_q == 0) && push_i) begin
       if (FALL_THROUGH) data_o = data_i;
-      if (FPGA_INTEL) begin
+      if (FPGA_EN && FPGA_ALTERA) begin
         data_ft_n = data_i;
         first_word_n = '1;
       end
@@ -140,7 +140,7 @@ module cva6_fifo_v3 #(
       end
     end
 
-    if (FPGA_EN) fifo_ram_read_address = (FPGA_INTEL == 1) ? read_pointer_n : read_pointer_q;
+    if (FPGA_EN) fifo_ram_read_address = (FPGA_ALTERA == 1) ? read_pointer_n : read_pointer_q;
 
   end
 
@@ -170,7 +170,7 @@ module cva6_fifo_v3 #(
   end
 
   if (FPGA_EN) begin : gen_fpga_queue
-    if (FPGA_INTEL) begin
+    if (FPGA_ALTERA) begin
       SyncDpRam_ind_r_w #(
           .ADDR_WIDTH(ADDR_DEPTH),
           .DATA_DEPTH(DEPTH),
