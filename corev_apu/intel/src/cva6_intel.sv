@@ -927,6 +927,16 @@ logic [6:0]   ddr_sc_amm_burstcount;
 logic [63:0]  ddr_sc_amm_byteenable;
 logic ddr_sc_amm_readdatavalid;
 
+logic calbus_read, calbus_write, calbus_clk, ddr_pll_locked, ddr_rst_req, ddr_rst_done;
+logic [19:0] calbus_addr;
+logic [31:0] calbus_wdata;
+logic [31:0] calbus_rdata;
+logic [4095:0] calbus_seq_param_tbl;
+logic cal_success;
+logic ddr_amm_wait_request;
+
+assign ddr_amm_wait_request = ~ddr_amm_ready;
+
 AXI_BUS #(
    .AXI_ADDR_WIDTH ( AxiAddrWidth     ),
    .AXI_DATA_WIDTH ( AxiDataWidth     ),
@@ -1145,15 +1155,7 @@ generate
 // assign dram.r_user = '0;
 // assign dram.b_user = '0;
 //
-logic calbus_read, calbus_write, calbus_clk, ddr_pll_locked, ddr_rst_req, ddr_rst_done;
-logic [19:0] calbus_addr;
-logic [31:0] calbus_wdata;
-logic [31:0] calbus_rdata;
-logic [4095:0] calbus_seq_param_tbl;
-logic cal_success;
-logic ddr_amm_wait_request;
 
-assign ddr_amm_wait_request = ~ddr_amm_ready;
 
 // assign led[1] = cal_success;
 
