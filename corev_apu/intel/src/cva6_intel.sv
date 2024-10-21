@@ -382,7 +382,7 @@ if (CVA6Cfg.XLEN==32 ) begin
     .ID_WIDTH              (AxiIdWidthSlaves)
     )i_axi_dwidth_converter_dm_slave(
        .clk(clk),
-       .rst(rst),
+       .rst(ndmreset_n),
        .s_axi_awid(master[ariane_soc::Debug].aw_id),
        .s_axi_awaddr(master[ariane_soc::Debug].aw_addr[31:0]),
        .s_axi_awlen(master[ariane_soc::Debug].aw_len),
@@ -577,7 +577,7 @@ if (CVA6Cfg.XLEN==32 ) begin
     .ID_WIDTH              (AxiIdWidthMaster)
     ) i_axi_dwidth_converter_dm_master(
        .clk(clk),
-       .rst(rst),
+       .rst(ndmreset_n),
        .s_axi_awid(dm_axi_m_req.aw.id),
        .s_axi_awaddr(dm_axi_m_req.aw.addr[31:0]),
        .s_axi_awlen(dm_axi_m_req.aw.len),
