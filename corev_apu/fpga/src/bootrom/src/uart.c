@@ -27,7 +27,7 @@ char is_transmit_empty_intel()
 
 void write_serial(char a)
 {
-    #ifndef PLAT_INTEL
+    #ifndef PLAT_AGILEX
         while (is_transmit_empty() < 0) {};
     #else
         while (is_transmit_empty_intel() < 8) {};
