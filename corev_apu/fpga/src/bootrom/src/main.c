@@ -9,7 +9,7 @@
 
 int main()
 {
-    #ifndef PLAT_INTEL
+    #ifndef PLAT_AGILEX
 
     init_uart(CLOCK_FREQUENCY, UART_BITRATE); //removed in intel setup
     spi_init(); //removed in intel setup
@@ -18,7 +18,7 @@ int main()
 
     print_uart("Hello World!\r\n"); 
 
-    #ifndef PLAT_INTEL
+    #ifndef PLAT_AGILEX
 
     int res = gpt_find_boot_partition((uint8_t *)0x80000000UL, 2 * 16384); //removed in intel setup
 
