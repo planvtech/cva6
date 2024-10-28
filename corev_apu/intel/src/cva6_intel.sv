@@ -1216,7 +1216,7 @@ emif_cal ddr_calibration (
 
 //
 //clocks
-io_pll clocks (
+io_pll_test clocks (
     .refclk   (pll_ref_clk_p),   // 100 MHz on Agilex 7  input,  width = 1,  refclk.clk
     .locked   (pll_locked),   //  output,  width = 1,  locked.export
     .rst      (cpu_reset),      //   input,  width = 1,   reset.reset
