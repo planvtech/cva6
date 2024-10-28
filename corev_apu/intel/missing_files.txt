@@ -1,3 +1,5 @@
-ALLOW_RAM_RETIMING ON
-ALLOW_DSP_RETIMING ON
-FITTER_EARLY_RETIMING ON
+check the timing issues,
+check the invalid sdc line
+change the intel keywords to altera
+make intel target=cv32a6_custom_thales
+make intel target=cv32a6_ima_sv32_fpga

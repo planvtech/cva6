@@ -780,10 +780,7 @@ fpga: $(ariane_pkg) $(src) $(fpga_src) $(uart_src) $(src_flist)
 	@echo "[FPGA] Generate Bitstream"
 	$(MAKE) -C corev_apu/fpga BOARD=$(BOARD) XILINX_PART=$(XILINX_PART) XILINX_BOARD=$(XILINX_BOARD) CLK_PERIOD_NS=$(CLK_PERIOD_NS)
 
-intel: 
-	ifeq ($(INTEL_FAMILY), "AGILEX")
-		PLATFORM := "PLAT_AGILEX"
-	endif
+intel: PLATFORM := "PLAT_AGILEX"
 
 intel: $(ariane_pkg) $(src) $(fpga_src) $(src_flist)
 	@echo "[FPGA] Generate sources"
