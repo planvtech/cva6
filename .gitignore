@@ -63,6 +63,19 @@ corev_apu/intel/*.txt
 corev_apu/intel/*.backup
 corev_apu/intel/*.rpt
 corev_apu/intel/*.qws
+corev_apu/altera/dni*
+corev_apu/altera/output_files*
+corev_apu/altera/qdb*
+corev_apu/altera/tmp*
+corev_apu/altera/*.hex
+corev_apu/altera/*.qpf
+corev_apu/altera/*.qsf
+corev_apu/altera/*.summary
+corev_apu/altera/*.chg
+corev_apu/altera/*.txt
+corev_apu/altera/*.backup
+corev_apu/altera/*.rpt
+corev_apu/altera/*.qws
 corev_apu/riscv-dbg/src/dmi_vjtag_tap.sv
 corev_apu/riscv-dbg/src/dmi_vjtag.sv
 

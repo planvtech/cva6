@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<preferences>
+ <debug showDebugMenu="0" />
+ <window width="1635" height="1030" x="236" y="113" />
+ <generation
+   path=""
+   ipxact="1"
+   greybox="1"
+   simulation="VERILOG"
+   modelsim_flow="TRADITIONAL" />
+</preferences>

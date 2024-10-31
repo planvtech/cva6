@@ -1,0 +1,18 @@
+# system info io_pll_test on 2024.10.04.12:47:39
+system_info:
+name,value
+DEVICE,AGFB014R24B2E2V
+DEVICE_FAMILY,Agilex 7
+GENERATION_ID,0
+#
+#
+# Files generated for io_pll_test on 2024.10.04.12:47:39
+files:
+filepath,kind,attributes,module,is_top
+sim/io_pll_test.v,VERILOG,CONTAINS_INLINE_CONFIGURATION,io_pll_test,true
+altera_iopll_1931/sim/io_pll_test_altera_iopll_1931_zsdxr3a.vo,VERILOG,,io_pll_test_altera_iopll_1931_zsdxr3a,false
+#
+# Map from instance-path to kind of module
+instances:
+instancePath,module
+io_pll_test.iopll_0,io_pll_test_altera_iopll_1931_zsdxr3a
