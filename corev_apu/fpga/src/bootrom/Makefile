@@ -1,8 +1,5 @@
 XLEN ?= 64
 CROSSCOMPILE ?= riscv-none-elf-
-TEST ?=
-benchmarks = ../../../../verif/tests/riscv-tests/benchmarks/
-common = ../../../../verif/tests/custom/common/
 
 ifeq ($(BOARD), nexys_video)
 DRAM_SIZE_64 ?= 0x20000000 #512MB
@@ -59,7 +56,6 @@ endif
 
 $(MAIN): $(DTB) $(OBJS_C) $(OBJS_S) linker.lds
 	$(CC) $(CFLAGS) $(LDFLAGS) $(INCLUDES) -Tlinker.lds $(OBJS_S) $(OBJS_C) -o $(MAIN)
-
 	@echo "LD    >= $(MAIN)"
 	@echo "BOOTROM PLATFORM IS : $(PLATFORM)"
 
