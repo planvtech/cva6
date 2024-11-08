@@ -167,8 +167,7 @@ package ariane_pkg;
 
   // leave as is (fails with >8 entries and wider fetch width)
   localparam int unsigned FETCH_FIFO_DEPTH = 4;
-
-  localparam int unsigned SUPERSCALAR = cva6_config_pkg::CVA6ConfigSuperscalarEn;
+  localparam int unsigned FETCH_ADDR_FIFO_DEPTH = 2;
 
   typedef enum logic [2:0] {
     NoCF,    // No control flow prediction
@@ -201,6 +200,14 @@ package ariane_pkg;
     CVXIF,      // 9
     ACCEL       // 10
   } fu_t;
+
+  // Index of writeback ports
+  localparam FLU_WB = 0;
+  localparam STORE_WB = 1;
+  localparam LOAD_WB = 2;
+  localparam FPU_WB = 3;
+  localparam ACC_WB = 4;
+  localparam X_WB = 4;
 
   localparam EXC_OFF_RST = 8'h80;
 

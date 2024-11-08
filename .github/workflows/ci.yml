@@ -17,6 +17,12 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Get specific submodule hash
+      id: core-v-submodule-hash
+      run: |
+        cd verif/core-v-verif
+        echo "hash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
     - name: Cache toolchain
       id: cache-toolchain
       uses: actions/cache@v3
@@ -42,9 +48,7 @@ jobs:
           cache-name: cache-spike
       with:
           path: tools/spike/
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('verif/regress/install-spike.sh',
-              'verif/core-v-verif/vendor/riscv/riscv-isa-sim/**/*',
-              'verif/core-v-verif/vendor/riscv/riscv-isa-sim/*') }}
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('verif/regress/install-spike.sh')}}-${{ steps.core-v-submodule-hash.outputs.hash }}
 
     - name: Prepare
       run: |
@@ -72,6 +76,12 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Get specific submodule hash
+      id: core-v-submodule-hash
+      run: |
+        cd verif/core-v-verif
+        echo "hash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
     - name: Cache toolchain
       id: cache-toolchain
       uses: actions/cache@v3
@@ -97,9 +107,7 @@ jobs:
           cache-name: cache-spike
       with:
           path: tools/spike/
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('verif/regress/install-spike.sh',
-              'verif/core-v-verif/vendor/riscv/riscv-isa-sim/**/*',
-              'verif/core-v-verif/vendor/riscv/riscv-isa-sim/*') }}
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('verif/regress/install-spike.sh')}}-${{ steps.core-v-submodule-hash.outputs.hash }}
 
     - name: Run Tests
       run: |
@@ -134,6 +142,12 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Get specific submodule hash
+      id: core-v-submodule-hash
+      run: |
+        cd verif/core-v-verif
+        echo "hash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
     - name: Cache toolchain
       id: cache-toolchain
       uses: actions/cache@v3
@@ -159,9 +173,7 @@ jobs:
           cache-name: cache-spike
       with:
           path: tools/spike/
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('verif/regress/install-spike.sh',
-              'verif/core-v-verif/vendor/riscv/riscv-isa-sim/**/*',
-              'verif/core-v-verif/vendor/riscv/riscv-isa-sim/*') }}
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('verif/regress/install-spike.sh')}}-${{ steps.core-v-submodule-hash.outputs.hash }}
 
     - name: Run Tests
       run: |

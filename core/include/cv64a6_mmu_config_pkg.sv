@@ -12,7 +12,6 @@ package cva6_config_pkg;
   localparam CVA6ConfigXlen = 64;
 
   localparam CVA6ConfigBExtEn = 1;  // UVM
-  localparam CVA6ConfigNrCommitPorts = 1;  // UVM  
   localparam CVA6ConfigRvfiTrace = 1;
 
   localparam CVA6ConfigAxiIdWidth = 4;  // axi_pkg.sv
@@ -28,10 +27,12 @@ package cva6_config_pkg;
 
   localparam config_pkg::cva6_user_cfg_t cva6_cfg = '{
       XLEN: unsigned'(CVA6ConfigXlen),
+      VLEN: unsigned'(64),
       FpgaEn: bit'(0),
       FpgaAltera: bit'(0),
       TechnoCut: bit'(0),
-      NrCommitPorts: unsigned'(CVA6ConfigNrCommitPorts),
+      SuperscalarEn: bit'(0),
+      NrCommitPorts: unsigned'(1),
       AxiAddrWidth: unsigned'(CVA6ConfigAxiAddrWidth),
       AxiDataWidth: unsigned'(CVA6ConfigAxiDataWidth),
       AxiIdWidth: unsigned'(CVA6ConfigAxiIdWidth),
@@ -68,10 +69,10 @@ package cva6_config_pkg;
       DmBaseAddress: 64'h0,
       TvalEn: bit'(0),
       DirectVecOnly: bit'(1),
-      NrPMPEntries: unsigned'(16),
-      PMPCfgRstVal: {16{64'h0}},
-      PMPAddrRstVal: {16{64'h0}},
-      PMPEntryReadOnly: 16'd0,
+      NrPMPEntries: unsigned'(64),
+      PMPCfgRstVal: {64{64'h0}},
+      PMPAddrRstVal: {64{64'h0}},
+      PMPEntryReadOnly: 64'd0,
       NOCType: config_pkg::NOC_TYPE_AXI4_ATOP,
       NrNonIdempotentRules: unsigned'(2),
       NonIdempotentAddrBase: 1024'({64'b0, 64'b0}),

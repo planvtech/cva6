@@ -70,7 +70,14 @@ class uvmt_cva6_base_test_c extends uvm_test;
    constraint env_cfg_cons {
       env_cfg.enabled         == 1;
       env_cfg.is_active       == UVM_ACTIVE;
-      env_cfg.trn_log_enabled == 1;
+      if (!env_cfg.performance_mode) {
+         env_cfg.trn_log_enabled == 1;
+      } else {
+         env_cfg.trn_log_enabled           == 0;
+         env_cfg.cov_model_enabled         == 0;
+         env_cfg.force_disable_csr_checks  == 1;
+         env_cfg.scoreboard_enabled        == 0;
+      }
    }
 
    constraint axi_agent_cfg_cons {
@@ -236,6 +243,12 @@ function void uvmt_cva6_base_test_c::build_phase(uvm_phase phase);
    pkg_to_cfg       ();
    cfg_hrtbt_monitor();
    assign_cfg       ();
+
+   if (test_cfg.mem_vp_enabled == 1) begin
+     set_type_override_by_type(uvml_mem_c#(cva6_config_pkg::CVA6ConfigAxiAddrWidth)::get_type(),
+                               uvml_mem_vp_c#(cva6_config_pkg::CVA6ConfigAxiAddrWidth)::get_type());
+   end
+
    create_cntxt     ();
    assign_cntxt     ();
    create_env       ();

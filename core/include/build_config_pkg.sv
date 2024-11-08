@@ -32,7 +32,7 @@ package build_config_pkg;
     config_pkg::cva6_cfg_t cfg;
 
     cfg.XLEN = CVA6Cfg.XLEN;
-    cfg.VLEN = (CVA6Cfg.XLEN == 32) ? 32 : 64;
+    cfg.VLEN = CVA6Cfg.VLEN;
     cfg.PLEN = (CVA6Cfg.XLEN == 32) ? 34 : 56;
     cfg.GPLEN = (CVA6Cfg.XLEN == 32) ? 34 : 41;
     cfg.IS_XLEN32 = IS_XLEN32;
@@ -44,7 +44,12 @@ package build_config_pkg;
     cfg.FpgaEn = CVA6Cfg.FpgaEn;
     cfg.FpgaAltera = CVA6Cfg.FpgaAltera;
     cfg.TechnoCut = CVA6Cfg.TechnoCut;
-    cfg.NrCommitPorts = CVA6Cfg.NrCommitPorts;
+
+    cfg.SuperscalarEn = CVA6Cfg.SuperscalarEn;
+    cfg.NrCommitPorts = CVA6Cfg.SuperscalarEn ? unsigned'(2) : CVA6Cfg.NrCommitPorts;
+    cfg.NrIssuePorts = unsigned'(CVA6Cfg.SuperscalarEn ? 2 : 1);
+    cfg.SpeculativeSb = CVA6Cfg.SuperscalarEn;
+
     cfg.NrLoadPipeRegs = CVA6Cfg.NrLoadPipeRegs;
     cfg.NrStorePipeRegs = CVA6Cfg.NrStorePipeRegs;
     cfg.AxiAddrWidth = CVA6Cfg.AxiAddrWidth;
@@ -80,7 +85,9 @@ package build_config_pkg;
     cfg.XF16Vec = bit'(XF16Vec);
     cfg.XF16ALTVec = bit'(XF16ALTVec);
     cfg.XF8Vec = bit'(XF8Vec);
-    cfg.NrRgprPorts = unsigned'(2 << ariane_pkg::SUPERSCALAR);
+    // Can take 2 or 3 in single issue. 4 or 6 in dual issue.
+    cfg.NrRgprPorts = unsigned'(CVA6Cfg.SuperscalarEn ? 4 : 2);
+    // cfg.NrRgprPorts = unsigned'(CVA6Cfg.SuperscalarEn ? 6 : 3);
     cfg.NrWbPorts = unsigned'(NrWbPorts);
     cfg.EnableAccelerator = bit'(EnableAccelerator);
     cfg.PerfCounterEn = CVA6Cfg.PerfCounterEn;
@@ -141,7 +148,7 @@ package build_config_pkg;
     cfg.FETCH_USER_EN = CVA6Cfg.FetchUserEn;
     cfg.AXI_USER_EN = CVA6Cfg.DataUserEn | CVA6Cfg.FetchUserEn;
 
-    cfg.FETCH_WIDTH = 32 << ariane_pkg::SUPERSCALAR;
+    cfg.FETCH_WIDTH = unsigned'(CVA6Cfg.SuperscalarEn ? 64 : 32);
     cfg.FETCH_ALIGN_BITS = $clog2(cfg.FETCH_WIDTH / 8);
     cfg.INSTR_PER_FETCH = cfg.FETCH_WIDTH / (CVA6Cfg.RVC ? 16 : 32);
     cfg.LOG2_INSTR_PER_FETCH = cfg.INSTR_PER_FETCH > 1 ? $clog2(cfg.INSTR_PER_FETCH) : 1;
@@ -160,6 +167,16 @@ package build_config_pkg;
     cfg.SharedTlbDepth = CVA6Cfg.SharedTlbDepth;
     cfg.VpnLen = VpnLen;
     cfg.PtLevels = PtLevels;
+
+    cfg.X_NUM_RS = cfg.NrRgprPorts / cfg.NrIssuePorts;
+    cfg.X_ID_WIDTH = cfg.TRANS_ID_BITS;
+    cfg.X_RFR_WIDTH = cfg.XLEN;
+    cfg.X_RFW_WIDTH = cfg.XLEN;
+    cfg.X_NUM_HARTS = 1;
+    cfg.X_HARTID_WIDTH = cfg.XLEN;
+    cfg.X_DUALREAD = 0;
+    cfg.X_DUALWRITE = 0;
+    cfg.X_ISSUE_REGISTER_SPLIT = 0;
 
     return cfg;
   endfunction

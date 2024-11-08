@@ -48,6 +48,8 @@ package config_pkg;
   typedef struct packed {
     // General Purpose Register Size (in bits)
     int unsigned                 XLEN;
+    // Virtual address Size (in bits)
+    int unsigned                 VLEN;
     // Atomic RISC-V extension
     bit                          RVA;
     // Bit manipulation RISC-V extension
@@ -103,11 +105,11 @@ package config_pkg;
     // PMP entries number
     int unsigned                 NrPMPEntries;
     // PMP CSR configuration reset values
-    logic [15:0][63:0]           PMPCfgRstVal;
+    logic [63:0][63:0]           PMPCfgRstVal;
     // PMP CSR address reset values
-    logic [15:0][63:0]           PMPAddrRstVal;
+    logic [63:0][63:0]           PMPAddrRstVal;
     // PMP CSR read-only bits
-    bit [15:0]                   PMPEntryReadOnly;
+    bit [63:0]                   PMPEntryReadOnly;
     // PMA non idempotent rules number
     int unsigned                 NrNonIdempotentRules;
     // PMA NonIdempotent region base address
@@ -172,7 +174,9 @@ package config_pkg;
     bit                          FpgaAltera;
     // Is Techno Cut instanciated
     bit                          TechnoCut;
-    // Number of commit ports
+    // Enable superscalar* with 2 issue ports and 2 commit ports.
+    bit                          SuperscalarEn;
+    // Number of commit ports. Forced to 2 if SuperscalarEn.
     int unsigned                 NrCommitPorts;
     // Load cycle latency number
     int unsigned                 NrLoadPipeRegs;
@@ -218,7 +222,12 @@ package config_pkg;
     /// core can retire per cycle. It can be beneficial to have more commit
     /// ports than issue ports, for the scoreboard to empty out in case one
     /// instruction stalls a little longer.
+
+    bit          SuperscalarEn;
     int unsigned NrCommitPorts;
+    int unsigned NrIssuePorts;
+    bit          SpeculativeSb;
+
     int unsigned NrLoadPipeRegs;
     int unsigned NrStorePipeRegs;
     /// AXI parameters.
@@ -280,9 +289,9 @@ package config_pkg;
     bit                          TvalEn;
     bit                          DirectVecOnly;
     int unsigned                 NrPMPEntries;
-    logic [15:0][63:0]           PMPCfgRstVal;
-    logic [15:0][63:0]           PMPAddrRstVal;
-    bit [15:0]                   PMPEntryReadOnly;
+    logic [63:0][63:0]           PMPCfgRstVal;
+    logic [63:0][63:0]           PMPAddrRstVal;
+    bit [63:0]                   PMPEntryReadOnly;
     noc_type_e                   NOCType;
     int unsigned                 NrNonIdempotentRules;
     logic [NrMaxRules-1:0][63:0] NonIdempotentAddrBase;
@@ -337,6 +346,17 @@ package config_pkg;
     vm_mode_t MODE_SV;
     int unsigned SV;
     int unsigned SVX;
+
+    int unsigned X_NUM_RS;
+    int unsigned X_ID_WIDTH;
+    int unsigned X_RFR_WIDTH;
+    int unsigned X_RFW_WIDTH;
+    int unsigned X_NUM_HARTS;
+    int unsigned X_HARTID_WIDTH;
+    int unsigned X_DUALREAD;
+    int unsigned X_DUALWRITE;
+    int unsigned X_ISSUE_REGISTER_SPLIT;
+
   } cva6_cfg_t;
 
   /// Empty configuration to sanity check proper parameter passing. Whenever
@@ -354,7 +374,9 @@ package config_pkg;
     assert (Cfg.NrNonIdempotentRules <= NrMaxRules);
     assert (Cfg.NrExecuteRegionRules <= NrMaxRules);
     assert (Cfg.NrCachedRegionRules <= NrMaxRules);
-    assert (Cfg.NrPMPEntries <= 16);
+    assert (Cfg.NrPMPEntries <= 64);
+    assert (!(Cfg.SuperscalarEn && Cfg.RVF));
+    assert (!(Cfg.SuperscalarEn && Cfg.RVZCMP));
 `endif
     // pragma translate_on
   endfunction
@@ -378,11 +400,15 @@ package config_pkg;
   function automatic logic is_inside_execute_regions(cva6_cfg_t Cfg, logic [63:0] address);
     // if we don't specify any region we assume everything is accessible
     logic [NrMaxRules-1:0] pass;
-    pass = '0;
-    for (int unsigned k = 0; k < Cfg.NrExecuteRegionRules; k++) begin
-      pass[k] = range_check(Cfg.ExecuteRegionAddrBase[k], Cfg.ExecuteRegionLength[k], address);
+    if (Cfg.NrExecuteRegionRules != 0) begin
+      pass = '0;
+      for (int unsigned k = 0; k < Cfg.NrExecuteRegionRules; k++) begin
+        pass[k] = range_check(Cfg.ExecuteRegionAddrBase[k], Cfg.ExecuteRegionLength[k], address);
+      end
+      return |pass;
+    end else begin
+      return 1;
     end
-    return |pass;
   endfunction : is_inside_execute_regions
 
   function automatic logic is_inside_cacheable_regions(cva6_cfg_t Cfg, logic [63:0] address);

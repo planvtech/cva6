@@ -135,21 +135,22 @@ module load_store_unit
     output logic                                      dtlb_miss_o,
 
     // Data cache request output - CACHES
-    input  dcache_req_o_t  [ 2:0]                   dcache_req_ports_i,
+    input  dcache_req_o_t [2:0] dcache_req_ports_i,
     // Data cache request input - CACHES
-    output dcache_req_i_t  [ 2:0]                   dcache_req_ports_o,
+    output dcache_req_i_t [2:0] dcache_req_ports_o,
     // TO_BE_COMPLETED - TO_BE_COMPLETED
-    input  logic                                    dcache_wbuffer_empty_i,
+    input  logic                dcache_wbuffer_empty_i,
     // TO_BE_COMPLETED - TO_BE_COMPLETED
-    input  logic                                    dcache_wbuffer_not_ni_i,
+    input  logic                dcache_wbuffer_not_ni_i,
     // AMO request - CACHE
-    output amo_req_t                                amo_req_o,
+    output amo_req_t            amo_req_o,
     // AMO response - CACHE
-    input  amo_resp_t                               amo_resp_i,
+    input  amo_resp_t           amo_resp_i,
+
     // PMP configuration - CSR_REGFILE
-    input  riscv::pmpcfg_t [15:0]                   pmpcfg_i,
+    input riscv::pmpcfg_t [CVA6Cfg.NrPMPEntries-1:0]                   pmpcfg_i,
     // PMP address - CSR_REGFILE
-    input  logic           [15:0][CVA6Cfg.PLEN-3:0] pmpaddr_i,
+    input logic           [CVA6Cfg.NrPMPEntries-1:0][CVA6Cfg.PLEN-3:0] pmpaddr_i,
 
     // RVFI inforamtion - RVFI
     output lsu_ctrl_t                    rvfi_lsu_ctrl_o,
@@ -255,6 +256,10 @@ module load_store_unit
         .clk_i(clk_i),
         .rst_ni(rst_ni),
         .flush_i(flush_i),
+        .enable_translation_i,
+        .enable_g_translation_i,
+        .en_ld_st_translation_i,
+        .en_ld_st_g_translation_i,
         .icache_areq_i(icache_areq_i),
         .icache_areq_o(icache_areq_o),
         // misaligned bypass
@@ -272,10 +277,29 @@ module load_store_unit
         .lsu_exception_o(mmu_exception),
 
         .priv_lvl_i      (priv_lvl_i),
+        .v_i,
         .ld_st_priv_lvl_i(ld_st_priv_lvl_i),
+        .ld_st_v_i,
+        .sum_i,
+        .vs_sum_i,
+        .mxr_i,
+        .vmxr_i,
 
         .hlvx_inst_i    (mmu_hlvx_inst),
         .hs_ld_st_inst_i(mmu_hs_ld_st_inst),
+        .satp_ppn_i,
+        .vsatp_ppn_i,
+        .hgatp_ppn_i,
+        .asid_i,
+        .vs_asid_i,
+        .asid_to_be_flushed_i,
+        .vmid_i,
+        .vmid_to_be_flushed_i,
+        .vaddr_to_be_flushed_i,
+        .gpaddr_to_be_flushed_i,
+        .flush_tlb_i,
+        .flush_tlb_vvma_i,
+        .flush_tlb_gvma_i,
 
         .itlb_miss_o(itlb_miss_o),
         .dtlb_miss_o(dtlb_miss_o),
@@ -283,8 +307,7 @@ module load_store_unit
         .req_port_i(dcache_req_ports_i[0]),
         .req_port_o(dcache_req_ports_o[0]),
         .pmpcfg_i,
-        .pmpaddr_i,
-        .*
+        .pmpaddr_i
     );
 
   end else begin : gen_no_mmu
@@ -390,6 +413,9 @@ module load_store_unit
       .exception_t(exception_t),
       .lsu_ctrl_t(lsu_ctrl_t)
   ) i_load_unit (
+      .clk_i,
+      .rst_ni,
+      .flush_i,
       .valid_i   (ld_valid_i),
       .lsu_ctrl_i(lsu_ctrl),
       .pop_ld_o  (pop_ld),
@@ -412,12 +438,11 @@ module load_store_unit
       .page_offset_o        (page_offset),
       .page_offset_matches_i(page_offset_matches),
       .store_buffer_empty_i (store_buffer_empty),
+      .commit_tran_id_i,
       // to memory arbiter
       .req_port_i           (dcache_req_ports_i[1]),
       .req_port_o           (dcache_req_ports_o[1]),
-      .dcache_wbuffer_not_ni_i,
-      .commit_tran_id_i,
-      .*
+      .dcache_wbuffer_not_ni_i
   );
 
   // ----------------------------
@@ -540,17 +565,22 @@ module load_store_unit
     data_misaligned = 1'b0;
 
     if (lsu_ctrl.valid) begin
-      case (lsu_ctrl.operation)
-        // double word
-        LD, SD, FLD, FSD,
-                AMO_LRD, AMO_SCD,
-                AMO_SWAPD, AMO_ADDD, AMO_ANDD, AMO_ORD,
-                AMO_XORD, AMO_MAXD, AMO_MAXDU, AMO_MIND,
-                AMO_MINDU, HLV_D, HSV_D: begin
-          if (CVA6Cfg.IS_XLEN64 && lsu_ctrl.vaddr[2:0] != 3'b000) begin
-            data_misaligned = 1'b1;
+      if (CVA6Cfg.IS_XLEN64) begin
+        case (lsu_ctrl.operation)
+          // double word
+          LD, SD, FLD, FSD,
+                  AMO_LRD, AMO_SCD,
+                  AMO_SWAPD, AMO_ADDD, AMO_ANDD, AMO_ORD,
+                  AMO_XORD, AMO_MAXD, AMO_MAXDU, AMO_MIND,
+                  AMO_MINDU, HLV_D, HSV_D: begin
+            if (lsu_ctrl.vaddr[2:0] != 3'b000) begin
+              data_misaligned = 1'b1;
+            end
           end
-        end
+          default: ;
+        endcase
+      end
+      case (lsu_ctrl.operation)
         // word
         LW, LWU, SW, FLW, FSW,
                 AMO_LRW, AMO_SCW,
@@ -573,82 +603,93 @@ module load_store_unit
     end
 
     if (data_misaligned) begin
-
-      if (lsu_ctrl.fu == LOAD) begin
-        misaligned_exception.cause = riscv::LD_ADDR_MISALIGNED;
-        misaligned_exception.valid = 1'b1;
-        if (CVA6Cfg.TvalEn)
-          misaligned_exception.tval = {{CVA6Cfg.XLEN - CVA6Cfg.VLEN{1'b0}}, lsu_ctrl.vaddr};
-        if (CVA6Cfg.RVH) begin
-          misaligned_exception.tval2 = '0;
-          misaligned_exception.tinst = lsu_ctrl.tinst;
-          misaligned_exception.gva   = ld_st_v_i;
+      case (lsu_ctrl.fu)
+        LOAD: begin
+          misaligned_exception.cause = riscv::LD_ADDR_MISALIGNED;
+          misaligned_exception.valid = 1'b1;
+          if (CVA6Cfg.TvalEn)
+            misaligned_exception.tval = {{CVA6Cfg.XLEN - CVA6Cfg.VLEN{1'b0}}, lsu_ctrl.vaddr};
+          if (CVA6Cfg.RVH) begin
+            misaligned_exception.tval2 = '0;
+            misaligned_exception.tinst = lsu_ctrl.tinst;
+            misaligned_exception.gva   = ld_st_v_i;
+          end
         end
+        STORE: begin
 
-      end else if (lsu_ctrl.fu == STORE) begin
-        misaligned_exception.cause = riscv::ST_ADDR_MISALIGNED;
-        misaligned_exception.valid = 1'b1;
-        if (CVA6Cfg.TvalEn)
-          misaligned_exception.tval = {{CVA6Cfg.XLEN - CVA6Cfg.VLEN{1'b0}}, lsu_ctrl.vaddr};
-        if (CVA6Cfg.RVH) begin
-          misaligned_exception.tval2 = '0;
-          misaligned_exception.tinst = lsu_ctrl.tinst;
-          misaligned_exception.gva   = ld_st_v_i;
+          misaligned_exception.cause = riscv::ST_ADDR_MISALIGNED;
+          misaligned_exception.valid = 1'b1;
+          if (CVA6Cfg.TvalEn)
+            misaligned_exception.tval = {{CVA6Cfg.XLEN - CVA6Cfg.VLEN{1'b0}}, lsu_ctrl.vaddr};
+          if (CVA6Cfg.RVH) begin
+            misaligned_exception.tval2 = '0;
+            misaligned_exception.tinst = lsu_ctrl.tinst;
+            misaligned_exception.gva   = ld_st_v_i;
+          end
         end
-      end
+        default: ;
+      endcase
     end
 
     if (CVA6Cfg.MmuPresent && en_ld_st_translation_i && lsu_ctrl.overflow) begin
 
-      if (lsu_ctrl.fu == LOAD) begin
-        misaligned_exception.cause = riscv::LD_ACCESS_FAULT;
-        misaligned_exception.valid = 1'b1;
-        if (CVA6Cfg.TvalEn)
-          misaligned_exception.tval = {{CVA6Cfg.XLEN - CVA6Cfg.VLEN{1'b0}}, lsu_ctrl.vaddr};
-        if (CVA6Cfg.RVH) begin
-          misaligned_exception.tval2 = '0;
-          misaligned_exception.tinst = lsu_ctrl.tinst;
-          misaligned_exception.gva   = ld_st_v_i;
+      case (lsu_ctrl.fu)
+        LOAD: begin
+          misaligned_exception.cause = riscv::LOAD_PAGE_FAULT;
+          misaligned_exception.valid = 1'b1;
+          if (CVA6Cfg.TvalEn)
+            misaligned_exception.tval = {{CVA6Cfg.XLEN - CVA6Cfg.VLEN{1'b0}}, lsu_ctrl.vaddr};
+          if (CVA6Cfg.RVH) begin
+            misaligned_exception.tval2 = '0;
+            misaligned_exception.tinst = lsu_ctrl.tinst;
+            misaligned_exception.gva   = ld_st_v_i;
+          end
         end
-
-      end else if (lsu_ctrl.fu == STORE) begin
-        misaligned_exception.cause = riscv::ST_ACCESS_FAULT;
-        misaligned_exception.valid = 1'b1;
-        if (CVA6Cfg.TvalEn)
-          misaligned_exception.tval = {{CVA6Cfg.XLEN - CVA6Cfg.VLEN{1'b0}}, lsu_ctrl.vaddr};
-        if (CVA6Cfg.RVH) begin
-          misaligned_exception.tval2 = '0;
-          misaligned_exception.tinst = lsu_ctrl.tinst;
-          misaligned_exception.gva   = ld_st_v_i;
+        STORE: begin
+          misaligned_exception.cause = riscv::STORE_PAGE_FAULT;
+          misaligned_exception.valid = 1'b1;
+          if (CVA6Cfg.TvalEn)
+            misaligned_exception.tval = {{CVA6Cfg.XLEN - CVA6Cfg.VLEN{1'b0}}, lsu_ctrl.vaddr};
+          if (CVA6Cfg.RVH) begin
+            misaligned_exception.tval2 = '0;
+            misaligned_exception.tinst = lsu_ctrl.tinst;
+            misaligned_exception.gva   = ld_st_v_i;
+          end
         end
-      end
+        default: ;
+      endcase
     end
 
     if (CVA6Cfg.MmuPresent && CVA6Cfg.RVH && en_ld_st_g_translation_i && !en_ld_st_translation_i && lsu_ctrl.g_overflow) begin
 
-      if (lsu_ctrl.fu == LOAD) begin
-        misaligned_exception.cause = riscv::LOAD_GUEST_PAGE_FAULT;
-        misaligned_exception.valid = 1'b1;
-        if (CVA6Cfg.TvalEn)
-          misaligned_exception.tval = {{CVA6Cfg.XLEN - CVA6Cfg.VLEN{1'b0}}, lsu_ctrl.vaddr};
-        if (CVA6Cfg.RVH) begin
-          misaligned_exception.tval2 = '0;
-          misaligned_exception.tinst = lsu_ctrl.tinst;
-          misaligned_exception.gva   = ld_st_v_i;
+      case (lsu_ctrl.fu)
+        LOAD: begin
+          misaligned_exception.cause = riscv::LOAD_GUEST_PAGE_FAULT;
+          misaligned_exception.valid = 1'b1;
+          if (CVA6Cfg.TvalEn)
+            misaligned_exception.tval = {{CVA6Cfg.XLEN - CVA6Cfg.VLEN{1'b0}}, lsu_ctrl.vaddr};
+          if (CVA6Cfg.RVH) begin
+            misaligned_exception.tval2 = '0;
+            misaligned_exception.tinst = lsu_ctrl.tinst;
+            misaligned_exception.gva   = ld_st_v_i;
+          end
         end
-      end else if (lsu_ctrl.fu == STORE) begin
-        misaligned_exception.cause = riscv::STORE_GUEST_PAGE_FAULT;
-        misaligned_exception.valid = 1'b1;
-        if (CVA6Cfg.TvalEn)
-          misaligned_exception.tval = {{CVA6Cfg.XLEN - CVA6Cfg.VLEN{1'b0}}, lsu_ctrl.vaddr};
-        if (CVA6Cfg.RVH) begin
-          misaligned_exception.tval2 = '0;
-          misaligned_exception.tinst = lsu_ctrl.tinst;
-          misaligned_exception.gva   = ld_st_v_i;
+        STORE: begin
+          misaligned_exception.cause = riscv::STORE_GUEST_PAGE_FAULT;
+          misaligned_exception.valid = 1'b1;
+          if (CVA6Cfg.TvalEn)
+            misaligned_exception.tval = {{CVA6Cfg.XLEN - CVA6Cfg.VLEN{1'b0}}, lsu_ctrl.vaddr};
+          if (CVA6Cfg.RVH) begin
+            misaligned_exception.tval2 = '0;
+            misaligned_exception.tinst = lsu_ctrl.tinst;
+            misaligned_exception.gva   = ld_st_v_i;
+          end
         end
-      end
+        default: ;
+      endcase
     end
   end
+
 
   // ------------------
   // LSU Control
@@ -675,17 +716,20 @@ module load_store_unit
       .CVA6Cfg(CVA6Cfg),
       .lsu_ctrl_t(lsu_ctrl_t)
   ) lsu_bypass_i (
+      .clk_i,
+      .rst_ni,
+      .flush_i,
       .lsu_req_i      (lsu_req_i),
       .lsu_req_valid_i(lsu_valid_i),
       .pop_ld_i       (pop_ld),
       .pop_st_i       (pop_st),
 
       .lsu_ctrl_o(lsu_ctrl),
-      .ready_o   (lsu_ready_o),
-      .*
+      .ready_o   (lsu_ready_o)
   );
 
   assign rvfi_lsu_ctrl_o = lsu_ctrl;
 
 endmodule
+
 

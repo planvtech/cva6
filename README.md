@@ -1,7 +1,4 @@
-![Build Status](https://github.com/openhwgroup/cva6/actions/workflows/ci.yml/badge.svg?branch=master)
-
-
-# CVA6 RISC-V CPU
+# CVA6 RISC-V CPU [![Build Status](https://github.com/openhwgroup/cva6/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/openhwgroup/cva6/actions/workflows/ci.yml) [![CVA6 dashboard](https://riscv-ci.pages.thales-invia.fr/dashboard/badge.svg)](https://riscv-ci.pages.thales-invia.fr/dashboard/) [![GitHub release](https://img.shields.io/github/release/openhwgroup/cva6?include_prereleases=&sort=semver&color=blue)](https://github.com/openhwgroup/cva6/releases/)
 
 CVA6 is a 6-stage, single-issue, in-order CPU which implements the 64-bit RISC-V instruction set. It fully implements I, M, A and C extensions as specified in Volume I: User-Level ISA V 2.3 as well as the draft privilege extension 1.10. It implements three privilege levels M, S, U to fully support a Unix-like operating system. Furthermore, it is compliant to the draft external debug spec 0.13.
 
@@ -27,16 +24,18 @@ cd cva6
 git submodule update --init --recursive
 ```
 
-2. Install the GCC Toolchain [build prerequisites](util/gcc-toolchain-builder/README.md#Prerequisites) then [the toolchain itself](util/gcc-toolchain-builder/README.md#Getting-started).
+2. Install the GCC Toolchain [build prerequisites](util/toolchain-builder/README.md#Prerequisites) then [the toolchain itself](util/toolchain-builder/README.md#Getting-started).
 
 :warning: It is **strongly recommended** to use the toolchain built with the provided scripts.
 
-3. Set the RISCV environment variable.
+3. Install `cmake`, version 3.14 or higher.
+
+4. Set the RISCV environment variable.
 ```sh
 export RISCV=/path/to/toolchain/installation/directory
 ```
 
-4. Install `help2man` and `device-tree-compiler` packages. 
+5. Install `help2man` and `device-tree-compiler` packages.
 
 For Debian-based Linux distributions, run :
 
@@ -44,13 +43,13 @@ For Debian-based Linux distributions, run :
 sudo apt-get install help2man device-tree-compiler
 ```
 
-5. Install the riscv-dv requirements:
+6. Install the riscv-dv requirements:
 
 ```sh
 pip3 install -r verif/sim/dv/requirements.txt
 ```
 
-6. Run these commands to install a custom Spike and Verilator (i.e. these versions must be used to simulate the CVA6) and [these](#running-regression-tests-simulations) tests suites.
+7. Run these commands to install a custom Spike and Verilator (i.e. these versions must be used to simulate the CVA6) and [these](#running-regression-tests-simulations) tests suites.
 ```sh
 # DV_SIMULATORS is detailed in the next section
 export DV_SIMULATORS=veri-testharness,spike
@@ -93,7 +92,7 @@ cd ./verif/sim
 
 python3 cva6.py --target cv32a60x --iss=$DV_SIMULATORS --iss_yaml=cva6.yaml \
 --c_tests ../tests/custom/hello_world/hello_world.c \
---linker=../tests/custom/common/test.ld \
+--linker=../../config/gen_from_riscv_config/linker/link.ld \
 --gcc_opts="-static -mcmodel=medany -fvisibility=hidden -nostdlib \
 -nostartfiles -g ../tests/custom/common/syscalls.c \
 ../tests/custom/common/crt.S -lgcc \
@@ -512,6 +511,10 @@ If you use CVA6 in your academic work you can cite us:
 </details>
 <br/>
 
+
+# Resources and Ecosystem
+
+The CVA6 core is part of a vivid ecosystem. In [this document](RESOURCES.md), we gather pointers to this ecosystem (building blocks, designs, partners...)
 
 # Acknowledgements
 

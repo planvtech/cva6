@@ -27,8 +27,9 @@
 `include "uvml_hrtbt_macros.sv"
 `include "uvml_sb_macros.sv"
 
+`include "uvml_mem_macros.sv"
+`include "uvma_axi_macros.sv"
 `include "uvma_clknrst_macros.sv"
-`include "uvma_cvxif_macros.sv"
 `include "uvma_isacov_macros.sv"
 `include "uvme_cva6_macros.sv"
 
@@ -44,7 +45,6 @@ package uvme_cva6_pkg;
    import uvml_sb_pkg     ::*;
    import uvml_trn_pkg    ::*;
    import uvma_clknrst_pkg::*;
-   import uvma_cvxif_pkg::*;
    import uvma_axi_pkg::*;
    import uvml_mem_pkg  ::*;
    import uvma_core_cntrl_pkg::*;
@@ -52,10 +52,13 @@ package uvme_cva6_pkg;
    import uvmc_rvfi_scoreboard_pkg::*;
    import uvmc_rvfi_reference_model_pkg::*;
    import uvma_isacov_pkg::*;
+   import uvma_interrupt_pkg::*;
    import config_pkg::*;
+
    import "DPI-C" function void read_elf(input string filename);
    import "DPI-C" function byte get_section(output longint address, output longint len);
    import "DPI-C" context function void read_section_sv(input longint address, inout byte buffer[]);
+   import "DPI-C" function byte read_symbol (input string symbol_name, inout longint unsigned address);
 
   // Default legal opcode and funct7 for RV32I instructions
   bit [6:0]  legal_i_opcode[$] = '{7'b0000011,
@@ -73,9 +76,13 @@ package uvme_cva6_pkg;
   bit [6:0]  legal_i_funct7[$] = '{7'b0000000,
                                    7'b0100000};
 
+  parameter config_pkg::cva6_cfg_t RTLCVA6Cfg = build_config_pkg::build_config(cva6_config_pkg::cva6_cfg);
+
    // Constants / Structs / Enums
    `include "uvme_cva6_constants.sv"
    `include "uvme_cva6_tdefs.sv"
+
+   `include "uvml_mem_vp.sv"
 
    // Objects
    `include "uvma_cva6_core_cntrl_cntxt.sv"
@@ -96,10 +103,10 @@ package uvme_cva6_pkg;
    `include "uvma_cva6_core_cntrl_agent.sv"
    `include "uvme_cva6_sb.sv"
    `include "uvme_cva6_vsqr.sv"
-   `include "uvme_cvxif_covg.sv"
    `include "uvme_isa_covg.sv"
    `include "uvme_illegal_instr_covg.sv"
    `include "uvme_exception_covg.sv"
+   `include "uvme_interrupt_covg.sv"
    `include "uvme_cva6_config_covg.sv"
    `include "uvme_axi_covg.sv"
    `include "uvme_axi_ext_covg.sv"

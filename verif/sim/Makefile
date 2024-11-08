@@ -63,9 +63,13 @@ endif
 spike_yaml ?= $(CVA6_REPO_DIR)/config/gen_from_riscv_config/$(target)/spike/spike.yaml
 
 # Set up flags for Spike solo and tandem invocations, but only if parameter file exists.
+spike_params_final = $(spike_params)
 ifneq ($(wildcard $(spike_yaml)),)
-  spike_params += --yaml-param $(spike_yaml)
-  spike-yaml-plusarg = +config_file=$(CVA6_REPO_DIR)/config/gen_from_riscv_config/$(target)/spike/spike.yaml
+  spike_params_final := $(spike_params_final) --param-file $(spike_yaml)
+  spike-yaml-plusarg = +config_file=$(spike_yaml)
+  spike-yaml-makearg = config_file=$(spike_yaml)
+else
+  spike_params_final := $(spike_params_final) --extension=cvxif
 endif
 
 ##############################################
@@ -130,17 +134,13 @@ else
 	cov-run-opt  =
 endif
 
-ifdef cvxif
-	spike_extension = --extension=cvxif
-endif
-
 ###############################################################################
 # Spike specific commands, variables
 ###############################################################################
 spike:
 	LD_LIBRARY_PATH="$$(realpath ../../tools/spike/lib):$$LD_LIBRARY_PATH" \
-		$(tool_path)/spike $(spike_stepout) $(spike_extension) --log-commits --isa=$(variant) --priv=$(priv) $(spike_params) -l $(elf)
-	cp $(log).iss $(log)
+		$(tool_path)/spike $(spike_stepout) $(spike_extension) --log-commits --isa=$(variant) --priv=$(priv) $(spike_params_final) -l $(elf)
+	grep -v '^\([[]\|/top/\)' $(log).iss > $(log)
 
 ###############################################################################
 # UVM specific commands, variables
@@ -162,9 +162,8 @@ export DV_UVMA_CORE_CNTRL_PATH = $(CORE_V_VERIF)/lib/uvm_agents/uvma_core_cntrl
 export DV_UVMA_RVFI_PATH      = $(CORE_V_VERIF)/lib/uvm_agents/uvma_rvfi
 export DV_UVMA_ISACOV_PATH    = $(CORE_V_VERIF)/lib/uvm_agents/uvma_isacov
 export DV_UVMA_CLKNRST_PATH   = $(CORE_V_VERIF)/lib/uvm_agents/uvma_clknrst
-export DV_UVMA_CVXIF_PATH     = $(CORE_V_VERIF)/lib/uvm_agents/uvma_cvxif
 export DV_UVMA_AXI_PATH       = $(CORE_V_VERIF)/lib/uvm_agents/uvma_axi5
-export DV_UVMA_INTERRUPT_PATH = $(CORE_V_VERIF)/lib/uvm_agents/uvma_interrupt
+export DV_UVMA_INTERRUPT_PATH = $(DV_UVME_PATH)/uvma_interrupt
 export DV_UVMA_DEBUG_PATH     = $(CORE_V_VERIF)/lib/uvm_agents/uvma_debug
 export DV_UVMA_OBI_PATH       = $(CORE_V_VERIF)/lib/uvm_agents/uvma_obi
 export DV_UVMC_RVFI_SCOREBOARD_PATH      = $(CORE_V_VERIF)/lib/uvm_components/uvmc_rvfi_scoreboard/
@@ -185,24 +184,27 @@ export SPIKE_PATH = $(CORE_V_VERIF)/vendor/riscv/riscv-isa-sim/
 
 COMMON_COMP_UVM_FLAGS = \
 	  +incdir+$(CVA6_REPO_DIR)/verif/env/uvme +incdir+$(CVA6_REPO_DIR)/verif/tb/uvmt \
+	  +core_name=$(target) \
 	  $(if $(spike-tandem), +define+SPIKE_TANDEM=1)
 
 COMMON_PLUS_ARGS = \
 	++$(elf) \
 	+elf_file=$(elf) \
+	+core_name=$(target) \
         $(spike-yaml-plusarg) \
 	+tohost_addr=$(shell $$RISCV/bin/$(CV_SW_PREFIX)nm -B $(elf) | grep -w tohost | cut -d' ' -f1) \
 	+signature=$(elf).signature_output +UVM_TESTNAME=uvmt_cva6_firmware_test_c \
-	$(spike-yaml-plusarg) \
 	+report_file=$(log).yaml +core_name=$(target)
 
 ifneq ($(UVM_VERBOSITY),)
 COMMON_PLUS_ARGS += +UVM_VERBOSITY=$(UVM_VERBOSITY)
 endif
 
+# Libraries that provide symbols for other libs must come first.
 COMMON_RUN_ARGS = \
 	$(COMMON_PLUS_ARGS) $(issrun_opts) \
 	-sv_lib $(SPIKE_INSTALL_DIR)/lib/libcustomext \
+	-sv_lib $(SPIKE_INSTALL_DIR)/lib/libyaml-cpp \
 	-sv_lib $(SPIKE_INSTALL_DIR)/lib/libriscv \
 	-sv_lib $(SPIKE_INSTALL_DIR)/lib/libfesvr \
 	-sv_lib $(SPIKE_INSTALL_DIR)/lib/libdisasm
@@ -222,8 +224,8 @@ ALL_XRUN_UVM_FLAGS      = -elaborate -messages -sv +incdir+$(XCELIUM_HOME)/tools
 	  -xmerror CUNOTB -nowarn CUDEFB -nowarn CUSRCH -warn_multiple_driver -relax_svbtis -timescale 1ns/1ps -status -access +rwc -log   $(XRUN_WORK_DIR)/tb_compile.log
 
 ALL_XRUN_SIMV_UVM_FLAGS      =  +sv_lib=$(CVA6_REPO_DIR)/tools/spike/lib/libdisasm +signature=I-ADD-01.signature_output
-		          
-XRUN_RUN_FLAGS := -R -messages -status -64bit -licqueue -noupdate -log xrun.log -uvmhome CDNS-1.2  +UVM_VERBOSITY=UVM_LOW -svseed 1 		
+
+XRUN_RUN_FLAGS := -R -messages -status -64bit -licqueue -noupdate -log xrun.log -uvmhome CDNS-1.2  +UVM_VERBOSITY=UVM_LOW -svseed 1
 
 XRUN_DISABLED_WARNINGS := BIGWIX 	\
                         ZROMCW 		\
@@ -236,7 +238,7 @@ XRUN_DISABLED_WARNINGS 	:= $(patsubst %, -nowarn %, $(XRUN_DISABLED_WARNINGS))
 
 XRUN_RUN = $(XRUN_RUN_FLAGS) 		\
 	   $(ALL_XRUN_SIMV_UVM_FLAGS)	\
-	   $(XRUN_DISABLED_WARNINGS)	
+	   $(XRUN_DISABLED_WARNINGS)
 
 ifneq ($(DEBUG),)               # If RTL DEBUG support requested
   ifneq ($(VERDI),)             #   If VERDI interactive mode requested, use GUI and do not run simulation
@@ -257,11 +259,11 @@ ifneq ($(DEBUG),)               # If RTL DEBUG support requested
 endif
 
 ifneq ($(SPIKE_TANDEM),)
-ALL_SIMV_UVM_FLAGS += +scoreboard_enabled=1
-ALL_XRUN_SIMV_UVM_FLAGS += +scoreboard_enabled=1
+ALL_SIMV_UVM_FLAGS += +tandem_enabled=1
+ALL_XRUN_SIMV_UVM_FLAGS += +tandem_enabled=1
 else
-ALL_SIMV_UVM_FLAGS += +scoreboard_enabled=0
-ALL_XRUN_SIMV_UVM_FLAGS += +scoreboard_enabled=0
+ALL_SIMV_UVM_FLAGS += +tandem_enabled=0
+ALL_XRUN_SIMV_UVM_FLAGS += +tandem_enabled=0
 endif
 
 ### VCS UVM rules
@@ -271,9 +273,10 @@ vcs_uvm_comp:
 	cd $(VCS_WORK_DIR) && vcs $(COMMON_COMP_UVM_FLAGS) $(ALL_UVM_FLAGS) \
 	  -f $(FLIST_CORE) -f $(FLIST_TB) \
 	  -f $(CVA6_UVMT_DIR)/uvmt_cva6.flist \
-	  $(cov-comp-opt) +define+UNSUPPORTED_WITH+ $(isscomp_opts)\
+	  $(cov-comp-opt) $(isscomp_opts)\
 	  -ignore initializer_driver_checks \
-	  -top uvmt_cva6_tb
+	  -top uvmt_cva6_tb \
+	  $(if $(gate), -sdf Max:uvmt_cva6_tb.cva6_dut_wrap.cva6_tb_wrapper_i.i_cva6:$(CVA6_REPO_DIR)/pd/synth/cva6_$(TARGET_CFG)_synth.sdf +neg_tchk, +notimingcheck)
 
 vcs_uvm_run: vcs_uvm_comp
 	$(if $(TRACE_FAST), unset VERDI_HOME ;) \
@@ -295,7 +298,7 @@ vcs-uvm: vcs_uvm_comp vcs_uvm_run
 
 
 ### XRUN UVM rules
-xrun_uvm_comp: 
+xrun_uvm_comp:
 	@echo "[XRUN] Building Model"
 	mkdir -p $(XRUN_WORK_DIR)
 	cd $(XRUN_WORK_DIR) && \
@@ -306,11 +309,13 @@ xrun_uvm_comp:
           $(cov-comp-opt) $(isscomp_opts)\
 	  -top uvmt_cva6_tb
 
+# Libraries that provide symbols for other libs must come first.
 xrun_uvm_run:
 	@echo "[XRUN] Running"
 	cd $(XRUN_WORK_DIR) && 	\
 	  xrun 			\
 	  $(XRUN_RUN)			\
+	  +sv_lib=$(SPIKE_INSTALL_DIR)/lib/libyaml-cpp \
 	  +sv_lib=$(SPIKE_INSTALL_DIR)/lib/libriscv \
 	  +sv_lib=$(SPIKE_INSTALL_DIR)/lib/libfesvr \
 	  +sv_lib=$(SPIKE_INSTALL_DIR)/lib/libdisasm \
@@ -320,7 +325,7 @@ xrun_uvm_run:
 	  +UVM_TESTNAME=uvmt_cva6_firmware_test_c	\
 	  +tohost_addr=$(shell ${RISCV}/bin/${CV_SW_PREFIX}nm -B $(elf) | grep -w tohost | cut -d' ' -f1)          \
 	  $(cov-comp-opt) $(issrun_opts)
-	  			
+
 
 xrun-uvm: xrun_uvm_comp xrun_uvm_run
 	$(tool_path)/spike-dasm --isa=$(variant) < ./xrun_results/trace_rvfi_hart_00.dasm > $(log)
@@ -428,7 +433,8 @@ xrun-testharness:
 
 questa-testharness:
 	mkdir -p $(path_var)/tmp
-	make -C $(path_var) sim target=$(target) defines=$(subst +define+,,$(isscomp_opts)) batch-mode=1 elf_file=$(elf) \
+	make -C $(path_var) sim target=$(target) defines=$(subst +define+,,$(isscomp_opts)+core_name=$(target)) batch-mode=1 elf_file=$(elf) \
+	    report_file=$(log).yaml $(spike-yaml-makearg)
 	# TODO: Add support for waveform collection.
 	$(tool_path)/spike-dasm --isa=$(variant) < $(path_var)/trace_rvfi_hart_00.dasm > $(log)
 	grep $(isspostrun_opts) $(path_var)/trace_rvfi_hart_00.dasm
@@ -437,7 +443,7 @@ questa-testharness:
 # Common targets and rules
 ###############################################################################
 
-clean_all: vcs_clean_all 
+clean_all: vcs_clean_all
 	rm -f *.txt
 	rm -f trace*.log
 	rm -f trace*.dasm

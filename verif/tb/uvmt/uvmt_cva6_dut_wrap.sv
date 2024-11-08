@@ -29,11 +29,12 @@ module uvmt_cva6_dut_wrap # (
 
                            (
                             uvma_clknrst_if                     clknrst_if,
-                            uvma_cvxif_intf                     cvxif_if,
                             uvma_axi_intf                       axi_if,
                             uvmt_axi_switch_intf                axi_switch_vif,
                             uvmt_default_inputs_intf            default_inputs_vif,
                             uvme_cva6_core_cntrl_if             core_cntrl_if,
+                            uvma_interrupt_if                   interrupt_vif,
+                            uvma_debug_if                       debug_if,
                             output logic[31:0]                  tb_exit_o,
                             output rvfi_instr_t [CVA6Cfg.NrCommitPorts-1:0] rvfi_o,
                             output rvfi_csr_t                   rvfi_csr_o
@@ -58,8 +59,8 @@ module uvmt_cva6_dut_wrap # (
          .clk_i                  ( clknrst_if.clk                 ),
          .rst_ni                 ( clknrst_if.reset_n             ),
          .boot_addr_i            ( boot_addr                      ),
-         .cvxif_resp             ( cvxif_if.cvxif_resp_o          ),
-         .cvxif_req              ( cvxif_if.cvxif_req_i           ),
+         .irq_i                  ( interrupt_vif.irq              ),
+         .debug_if               ( debug_if                       ),
          .axi_slave              ( axi_if                         ),
          .axi_switch_vif         ( axi_switch_vif                 ),
          .default_inputs_vif     ( default_inputs_vif             ),
@@ -67,17 +68,5 @@ module uvmt_cva6_dut_wrap # (
          .rvfi_csr_o             ( rvfi_csr_o                     ),
          .rvfi_o                 ( rvfi_o                         )
 );
-
-  assign cvxif_if.cvxif_resp_o.x_compressed_ready = 0;
-  assign cvxif_if.cvxif_resp_o.x_compressed_resp  = 0;
-  assign cvxif_if.cvxif_resp_o.x_issue_ready      = 1;
-  assign cvxif_if.cvxif_resp_o.x_issue_resp       = 0;
-  assign cvxif_if.cvxif_resp_o.x_result_valid     = 0;
-  assign cvxif_if.cvxif_resp_o.x_result.id        = 0;
-  assign cvxif_if.cvxif_resp_o.x_result.data      = 0;
-  assign cvxif_if.cvxif_resp_o.x_result.rd        = 0;
-  assign cvxif_if.cvxif_resp_o.x_result.we        = 0;
-  assign cvxif_if.cvxif_resp_o.x_result.exc       = 0;
-  assign cvxif_if.cvxif_resp_o.x_result.exccode   = 0;
 
 endmodule

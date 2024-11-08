@@ -13,8 +13,14 @@ if ! [ -n "$RISCV" ]; then
   return
 fi
 
+if ! [ -n "$DV_SIMULATORS" ]; then
+  DV_SIMULATORS=veri-testharness,spike
+fi
+
 # install the required tools
-source ./verif/regress/install-verilator.sh
+if [[ "$DV_SIMULATORS" == *"veri-testharness"* ]]; then
+  source ./verif/regress/install-verilator.sh
+fi
 source ./verif/regress/install-spike.sh
 source verif/regress/install-riscv-tests.sh
 
@@ -24,14 +30,16 @@ if ! [ -n "$DV_TARGET" ]; then
   DV_TARGET=cv64a6_imafdc_sv39
 fi
 
-if ! [ -n "$DV_SIMULATORS" ]; then
-  DV_SIMULATORS=veri-testharness,spike
-fi
-
 if ! [ -n "$DV_TESTLISTS" ]; then
   DV_TESTLISTS="../tests/testlist_riscv-tests-$DV_TARGET-p.yaml \
                 ../tests/testlist_riscv-tests-$DV_TARGET-v.yaml"
 fi
+
+if ! [ -n "$UVM_VERBOSITY" ]; then
+    export UVM_VERBOSITY=UVM_NONE
+fi
+
+export DV_OPTS="$DV_OPTS --issrun_opts=+tb_performance_mode+debug_disable=1+UVM_VERBOSITY=$UVM_VERBOSITY"
 
 cd verif/sim
 for TESTLIST in $DV_TESTLISTS

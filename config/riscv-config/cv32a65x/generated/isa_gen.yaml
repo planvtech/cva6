@@ -16,7 +16,7 @@
 
 hart_ids: [0]
 hart0:
-    ISA: RV32IMCZicsr_Zicntr_Zifencei_Zcb_Zba_Zbb_Zbc_Zbs
+    ISA: RV32IMCZicsr_Zcb_Zba_Zbb_Zbc_Zbs
     User_Spec_Version: '2.3'
     supported_xlen:
       - 32
@@ -90,8 +90,9 @@ hart0:
                     warl:
                         dependency_fields: []
                         legal:
-             # All bits writable (first value of bitmask w/o cleared bits)
-                          - base[29:0] bitmask [0x3FFFFFFF, 0x00000000]
+             # The 30 bits of 'base' are suffixed with 2'b00
+             # ==> all values are legal, alignment 4 bytes is implied
+                          - base[29:0] in [0x00000000:0x3FFFFFFF]
                         wr_illegal:
                           - Unchanged
                 description: Vector base address.
@@ -105,6 +106,7 @@ hart0:
                     warl:
                         dependency_fields: []
                         legal:
+             # Only Direct mode.
                           - mode[1:0] in [0x0]
                         wr_illegal:
                           - Unchanged
@@ -334,9 +336,9 @@ hart0:
                 lsb: 23
         rv64:
             accessible: false
-        description: The mstatus register keeps track of and controls the hart’s current
+        description: The mstatus register keeps track of and controls the hart's current
             operating state.
-        address: 768
+        address: 0x300
         priv_mode: M
     mip:
         reset-val: 0
@@ -710,6 +712,23 @@ hart0:
         description: MXLEN-bit read-only register containing the integer ID of the
             hardware thread running the code.
         address: 3860
+        priv_mode: M
+    mconfigptr:
+        rv32:
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
+        rv64:
+            accessible: false
+        reset-val: 0x0
+        description: MXLEN-bit read-only register that holds the physical address
+            of a configuration data structure.
+        address: 0xF15
         priv_mode: M
     mscratch:
         rv32:
@@ -1692,14 +1711,7 @@ hart0:
         priv_mode: M
     mcountinhibit:
         rv32:
-            accessible: true
-            type:
-                ro_constant: 0x0
-            fields: []
-            shadow:
-            shadow_type: rw
-            msb: 31
-            lsb: 0
+            accessible: false
         rv64:
             accessible: false
         reset-val: 0x0
@@ -2229,7 +2241,7 @@ hart0:
                     warl:
                         dependency_fields: []
                         legal:
-                          - pmp0cfg[7:0] in [0x00:0xFF]
+                          - pmp0cfg[7:0] bitmask [0x8f, 0x0]
                         wr_illegal:
                           - unchanged
                 description: pmp configuration bits
@@ -2243,7 +2255,7 @@ hart0:
                     warl:
                         dependency_fields: []
                         legal:
-                          - pmp1cfg[7:0] in [0x00:0xFF]
+                          - pmp1cfg[7:0] bitmask [0x8f, 0x0]
                         wr_illegal:
                           - unchanged
                 description: pmp configuration bits
@@ -2257,7 +2269,7 @@ hart0:
                     warl:
                         dependency_fields: []
                         legal:
-                          - pmp2cfg[7:0] in [0x00:0xFF]
+                          - pmp2cfg[7:0] bitmask [0x8f, 0x0]
                         wr_illegal:
                           - unchanged
                 description: pmp configuration bits
@@ -2271,7 +2283,7 @@ hart0:
                     warl:
                         dependency_fields: []
                         legal:
-                          - pmp3cfg[7:0] in [0x00:0xFF]
+                          - pmp3cfg[7:0] bitmask [0x8f, 0x0]
                         wr_illegal:
                           - unchanged
                 description: pmp configuration bits
@@ -2299,7 +2311,7 @@ hart0:
                     warl:
                         dependency_fields: []
                         legal:
-                          - pmp4cfg[7:0] in [0x00:0xFF]
+                          - pmp4cfg[7:0] bitmask [0x8f, 0x0]
                         wr_illegal:
                           - unchanged
                 description: pmp configuration bits
@@ -2313,7 +2325,7 @@ hart0:
                     warl:
                         dependency_fields: []
                         legal:
-                          - pmp5cfg[7:0] in [0x00:0xFF]
+                          - pmp5cfg[7:0] bitmask [0x8f, 0x0]
                         wr_illegal:
                           - unchanged
                 description: pmp configuration bits
@@ -2327,7 +2339,7 @@ hart0:
                     warl:
                         dependency_fields: []
                         legal:
-                          - pmp6cfg[7:0] in [0x00:0xFF]
+                          - pmp6cfg[7:0] bitmask [0x8f, 0x0]
                         wr_illegal:
                           - unchanged
                 description: pmp configuration bits
@@ -2341,7 +2353,7 @@ hart0:
                     warl:
                         dependency_fields: []
                         legal:
-                          - pmp7cfg[7:0] in [0x00:0xFF]
+                          - pmp7cfg[7:0] bitmask [0x8f, 0x0]
                         wr_illegal:
                           - unchanged
                 description: pmp configuration bits
@@ -2366,12 +2378,7 @@ hart0:
             pmp8cfg:
                 implemented: true
                 type:
-                    warl:
-                        dependency_fields: []
-                        legal:
-                          - pmp8cfg[7:0] in [0x00:0xFF]
-                        wr_illegal:
-                          - unchanged
+                    ro_constant: 0x0
                 description: pmp configuration bits
                 shadow:
                 shadow_type: rw
@@ -2380,12 +2387,7 @@ hart0:
             pmp9cfg:
                 implemented: true
                 type:
-                    warl:
-                        dependency_fields: []
-                        legal:
-                          - pmp9cfg[7:0] in [0x00:0xFF]
-                        wr_illegal:
-                          - unchanged
+                    ro_constant: 0x0
                 description: pmp configuration bits
                 shadow:
                 shadow_type: rw
@@ -2394,12 +2396,7 @@ hart0:
             pmp10cfg:
                 implemented: true
                 type:
-                    warl:
-                        dependency_fields: []
-                        legal:
-                          - pmp10cfg[7:0] in [0x00:0xFF]
-                        wr_illegal:
-                          - unchanged
+                    ro_constant: 0x0
                 description: pmp configuration bits
                 shadow:
                 shadow_type: rw
@@ -2408,12 +2405,7 @@ hart0:
             pmp11cfg:
                 implemented: true
                 type:
-                    warl:
-                        dependency_fields: []
-                        legal:
-                          - pmp11cfg[7:0] in [0x00:0xFF]
-                        wr_illegal:
-                          - unchanged
+                    ro_constant: 0x0
                 description: pmp configuration bits
                 shadow:
                 shadow_type: rw
@@ -2436,12 +2428,7 @@ hart0:
             pmp12cfg:
                 implemented: true
                 type:
-                    warl:
-                        dependency_fields: []
-                        legal:
-                          - pmp12cfg[7:0] in [0x00:0xFF]
-                        wr_illegal:
-                          - unchanged
+                    ro_constant: 0x0
                 description: pmp configuration bits
                 shadow:
                 shadow_type: rw
@@ -2450,12 +2437,7 @@ hart0:
             pmp13cfg:
                 implemented: true
                 type:
-                    warl:
-                        dependency_fields: []
-                        legal:
-                          - pmp13cfg[7:0] in [0x00:0xFF]
-                        wr_illegal:
-                          - unchanged
+                    ro_constant: 0x0
                 description: pmp configuration bits
                 shadow:
                 shadow_type: rw
@@ -2464,12 +2446,7 @@ hart0:
             pmp14cfg:
                 implemented: true
                 type:
-                    warl:
-                        dependency_fields: []
-                        legal:
-                          - pmp14cfg[7:0] in [0x00:0xFF]
-                        wr_illegal:
-                          - unchanged
+                    ro_constant: 0x0
                 description: pmp configuration bits
                 shadow:
                 shadow_type: rw
@@ -2478,12 +2455,7 @@ hart0:
             pmp15cfg:
                 implemented: true
                 type:
-                    warl:
-                        dependency_fields: []
-                        legal:
-                          - pmp15cfg[7:0] in [0x00:0xFF]
-                        wr_illegal:
-                          - unchanged
+                    ro_constant: 0x0
                 description: pmp configuration bits
                 shadow:
                 shadow_type: rw
@@ -2502,7 +2474,48 @@ hart0:
         priv_mode: M
     pmpcfg4:
         rv32:
-            accessible: false
+            accessible: true
+            pmp16cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 7
+                lsb: 0
+            pmp17cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 15
+                lsb: 8
+            pmp18cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 23
+                lsb: 16
+            pmp19cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 31
+                lsb: 24
+            fields:
+              - pmp16cfg
+              - pmp17cfg
+              - pmp18cfg
+              - pmp19cfg
         rv64:
             accessible: false
         reset-val: 0
@@ -2511,7 +2524,48 @@ hart0:
         priv_mode: M
     pmpcfg5:
         rv32:
-            accessible: false
+            accessible: true
+            pmp20cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 7
+                lsb: 0
+            pmp21cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 15
+                lsb: 8
+            pmp22cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 23
+                lsb: 16
+            pmp23cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 31
+                lsb: 24
+            fields:
+              - pmp20cfg
+              - pmp21cfg
+              - pmp22cfg
+              - pmp23cfg
         rv64:
             accessible: false
         reset-val: 0
@@ -2520,7 +2574,48 @@ hart0:
         priv_mode: M
     pmpcfg6:
         rv32:
-            accessible: false
+            accessible: true
+            pmp24cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 7
+                lsb: 0
+            pmp25cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 15
+                lsb: 8
+            pmp26cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 23
+                lsb: 16
+            pmp27cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 31
+                lsb: 24
+            fields:
+              - pmp24cfg
+              - pmp25cfg
+              - pmp26cfg
+              - pmp27cfg
         rv64:
             accessible: false
         reset-val: 0
@@ -2529,7 +2624,48 @@ hart0:
         priv_mode: M
     pmpcfg7:
         rv32:
-            accessible: false
+            accessible: true
+            pmp28cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 7
+                lsb: 0
+            pmp29cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 15
+                lsb: 8
+            pmp30cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 23
+                lsb: 16
+            pmp31cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 31
+                lsb: 24
+            fields:
+              - pmp28cfg
+              - pmp29cfg
+              - pmp30cfg
+              - pmp31cfg
         rv64:
             accessible: false
         reset-val: 0
@@ -2538,7 +2674,48 @@ hart0:
         priv_mode: M
     pmpcfg8:
         rv32:
-            accessible: false
+            accessible: true
+            pmp32cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 7
+                lsb: 0
+            pmp33cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 15
+                lsb: 8
+            pmp34cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 23
+                lsb: 16
+            pmp35cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 31
+                lsb: 24
+            fields:
+              - pmp32cfg
+              - pmp33cfg
+              - pmp34cfg
+              - pmp35cfg
         rv64:
             accessible: false
         reset-val: 0
@@ -2547,7 +2724,48 @@ hart0:
         priv_mode: M
     pmpcfg9:
         rv32:
-            accessible: false
+            accessible: true
+            pmp36cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 7
+                lsb: 0
+            pmp37cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 15
+                lsb: 8
+            pmp38cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 23
+                lsb: 16
+            pmp39cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 31
+                lsb: 24
+            fields:
+              - pmp36cfg
+              - pmp37cfg
+              - pmp38cfg
+              - pmp39cfg
         rv64:
             accessible: false
         reset-val: 0
@@ -2556,7 +2774,48 @@ hart0:
         priv_mode: M
     pmpcfg10:
         rv32:
-            accessible: false
+            accessible: true
+            pmp40cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 7
+                lsb: 0
+            pmp41cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 15
+                lsb: 8
+            pmp42cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 23
+                lsb: 16
+            pmp43cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 31
+                lsb: 24
+            fields:
+              - pmp40cfg
+              - pmp41cfg
+              - pmp42cfg
+              - pmp43cfg
         rv64:
             accessible: false
         reset-val: 0
@@ -2565,7 +2824,48 @@ hart0:
         priv_mode: M
     pmpcfg11:
         rv32:
-            accessible: false
+            accessible: true
+            pmp44cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 7
+                lsb: 0
+            pmp45cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 15
+                lsb: 8
+            pmp46cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 23
+                lsb: 16
+            pmp47cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 31
+                lsb: 24
+            fields:
+              - pmp44cfg
+              - pmp45cfg
+              - pmp46cfg
+              - pmp47cfg
         rv64:
             accessible: false
         reset-val: 0
@@ -2574,7 +2874,48 @@ hart0:
         priv_mode: M
     pmpcfg12:
         rv32:
-            accessible: false
+            accessible: true
+            pmp48cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 7
+                lsb: 0
+            pmp49cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 15
+                lsb: 8
+            pmp50cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 23
+                lsb: 16
+            pmp51cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 31
+                lsb: 24
+            fields:
+              - pmp48cfg
+              - pmp49cfg
+              - pmp50cfg
+              - pmp51cfg
         rv64:
             accessible: false
         reset-val: 0
@@ -2583,7 +2924,48 @@ hart0:
         priv_mode: M
     pmpcfg13:
         rv32:
-            accessible: false
+            accessible: true
+            pmp52cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 7
+                lsb: 0
+            pmp53cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 15
+                lsb: 8
+            pmp54cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 23
+                lsb: 16
+            pmp55cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 31
+                lsb: 24
+            fields:
+              - pmp52cfg
+              - pmp53cfg
+              - pmp54cfg
+              - pmp55cfg
         rv64:
             accessible: false
         reset-val: 0
@@ -2592,7 +2974,48 @@ hart0:
         priv_mode: M
     pmpcfg14:
         rv32:
-            accessible: false
+            accessible: true
+            pmp56cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 7
+                lsb: 0
+            pmp57cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 15
+                lsb: 8
+            pmp58cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 23
+                lsb: 16
+            pmp59cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 31
+                lsb: 24
+            fields:
+              - pmp56cfg
+              - pmp57cfg
+              - pmp58cfg
+              - pmp59cfg
         rv64:
             accessible: false
         reset-val: 0
@@ -2601,7 +3024,48 @@ hart0:
         priv_mode: M
     pmpcfg15:
         rv32:
-            accessible: false
+            accessible: true
+            pmp60cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 7
+                lsb: 0
+            pmp61cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 15
+                lsb: 8
+            pmp62cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 23
+                lsb: 16
+            pmp63cfg:
+                implemented: true
+                type:
+                    ro_constant: 0x0
+                description: pmp configuration bits
+                shadow:
+                shadow_type: rw
+                msb: 31
+                lsb: 24
+            fields:
+              - pmp60cfg
+              - pmp61cfg
+              - pmp62cfg
+              - pmp63cfg
         rv64:
             accessible: false
         reset-val: 0
@@ -2992,7 +3456,14 @@ hart0:
         priv_mode: M
     pmpaddr16:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3001,7 +3472,14 @@ hart0:
         priv_mode: M
     pmpaddr17:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3010,7 +3488,14 @@ hart0:
         priv_mode: M
     pmpaddr18:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3019,7 +3504,14 @@ hart0:
         priv_mode: M
     pmpaddr19:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3028,7 +3520,14 @@ hart0:
         priv_mode: M
     pmpaddr20:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3037,7 +3536,14 @@ hart0:
         priv_mode: M
     pmpaddr21:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3046,7 +3552,14 @@ hart0:
         priv_mode: M
     pmpaddr22:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3055,7 +3568,14 @@ hart0:
         priv_mode: M
     pmpaddr23:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3064,7 +3584,14 @@ hart0:
         priv_mode: M
     pmpaddr24:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3073,7 +3600,14 @@ hart0:
         priv_mode: M
     pmpaddr25:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3082,7 +3616,14 @@ hart0:
         priv_mode: M
     pmpaddr26:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3091,7 +3632,14 @@ hart0:
         priv_mode: M
     pmpaddr27:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3100,7 +3648,14 @@ hart0:
         priv_mode: M
     pmpaddr28:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3109,7 +3664,14 @@ hart0:
         priv_mode: M
     pmpaddr29:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3118,7 +3680,14 @@ hart0:
         priv_mode: M
     pmpaddr30:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3127,7 +3696,14 @@ hart0:
         priv_mode: M
     pmpaddr31:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3136,7 +3712,14 @@ hart0:
         priv_mode: M
     pmpaddr32:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3145,7 +3728,14 @@ hart0:
         priv_mode: M
     pmpaddr33:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3154,7 +3744,14 @@ hart0:
         priv_mode: M
     pmpaddr34:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3163,7 +3760,14 @@ hart0:
         priv_mode: M
     pmpaddr35:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3172,7 +3776,14 @@ hart0:
         priv_mode: M
     pmpaddr36:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3181,7 +3792,14 @@ hart0:
         priv_mode: M
     pmpaddr37:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3190,7 +3808,14 @@ hart0:
         priv_mode: M
     pmpaddr38:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3199,7 +3824,14 @@ hart0:
         priv_mode: M
     pmpaddr39:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3208,7 +3840,14 @@ hart0:
         priv_mode: M
     pmpaddr40:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3217,7 +3856,14 @@ hart0:
         priv_mode: M
     pmpaddr41:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3226,7 +3872,14 @@ hart0:
         priv_mode: M
     pmpaddr42:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3235,7 +3888,14 @@ hart0:
         priv_mode: M
     pmpaddr43:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3244,7 +3904,14 @@ hart0:
         priv_mode: M
     pmpaddr44:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3253,7 +3920,14 @@ hart0:
         priv_mode: M
     pmpaddr45:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3262,7 +3936,14 @@ hart0:
         priv_mode: M
     pmpaddr46:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3271,7 +3952,14 @@ hart0:
         priv_mode: M
     pmpaddr47:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3280,7 +3968,14 @@ hart0:
         priv_mode: M
     pmpaddr48:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3289,7 +3984,14 @@ hart0:
         priv_mode: M
     pmpaddr49:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3298,7 +4000,14 @@ hart0:
         priv_mode: M
     pmpaddr50:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3307,7 +4016,14 @@ hart0:
         priv_mode: M
     pmpaddr51:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3316,7 +4032,14 @@ hart0:
         priv_mode: M
     pmpaddr52:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3325,7 +4048,14 @@ hart0:
         priv_mode: M
     pmpaddr53:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3334,7 +4064,14 @@ hart0:
         priv_mode: M
     pmpaddr54:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3343,7 +4080,14 @@ hart0:
         priv_mode: M
     pmpaddr55:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3352,7 +4096,14 @@ hart0:
         priv_mode: M
     pmpaddr56:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3361,7 +4112,14 @@ hart0:
         priv_mode: M
     pmpaddr57:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3370,7 +4128,14 @@ hart0:
         priv_mode: M
     pmpaddr58:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3379,7 +4144,14 @@ hart0:
         priv_mode: M
     pmpaddr59:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3388,7 +4160,14 @@ hart0:
         priv_mode: M
     pmpaddr60:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3397,7 +4176,14 @@ hart0:
         priv_mode: M
     pmpaddr61:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3406,7 +4192,14 @@ hart0:
         priv_mode: M
     pmpaddr62:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3415,7 +4208,14 @@ hart0:
         priv_mode: M
     pmpaddr63:
         rv32:
-            accessible: false
+            accessible: true
+            type:
+                ro_constant: 0x0
+            fields: []
+            shadow:
+            shadow_type: rw
+            msb: 31
+            lsb: 0
         rv64:
             accessible: false
         reset-val: 0
@@ -3515,7 +4315,7 @@ hart0:
             accessible: false
         description: The mstatush register keeps track of and controls the hart’s
             current operating state.
-        address: 768
+        address: 0x310
         priv_mode: M
         reset-val: 0
     mideleg:

@@ -14,28 +14,31 @@
 #
 # Original Author: Oukalrazqou Abdessamii
 
-""" Module is used to gather all utils and function to generate the csr and isa documents"""
+"""Module is used to gather all utils and function to generate the csr and isa documents"""
 
 import io
 import os
 import re
 import yaml
+from yaml import BaseLoader
 import rstcloth
+import json
+from mako.template import Template
 import libs.isa_updater
 import libs.csr_updater
+import libs.spike_updater
 import libs.csr_factorizer
 from rstcloth import RstCloth
 from mdutils.mdutils import MdUtils
 from libs.isa_updater import isa_filter
 from libs.csr_updater import csr_formatter
+from libs.spike_updater import spike_formatter
 from libs.csr_factorizer import factorizer
 
-pattern_warl = (
-    r"\b(?:warl|wlrl|ro_constant|ro_variable)\b"  # pattern to detect warl in field
-)
+pattern_warl = r"\b(?:warl|wlrl|ro_constant|ro_variable|rw|ro)\b"  # pattern to detect warl in field
 pattern_legal_dict = r"\[(0x[0-9A-Fa-f]+)(.*?(0x[0-9A-Fa-f]+))?\]"  # pattern to detect if warl field is dict
 pattern_legal_list = r"\[(0x[0-9A-Fa-f]+)(.*?(0x[0-9A-Fa-f]+))?\]"  # pattern to detect if warl field is a list
-Factorizer_pattern = r".*(\d).*"  # pattern to detect factorized fields
+Factorizer_pattern = r"\d+"  # pattern to detect factorized fields
 
 
 class DocumentClass:
@@ -127,6 +130,124 @@ class Field:
 
 
 # --------------------------------------------------------------#
+class Render:
+    """Collection of general rendering methods which can be overridden if needed
+    for a specific output format."""
+
+    @staticmethod
+    def is_decimal(value):
+        """return a bool checking if value is decimal"""
+        try:
+            int(
+                value
+            )  # Alternatively, use float(value) if you want to check for floating point numbers
+            return True
+        except ValueError:
+            return False
+
+    @staticmethod
+    def range(start, end):
+        """Return a string representing the range START..END, inclusive.
+        START and END are strings representing numerical values."""
+        if Render.is_decimal(start):
+            start = hex(int(start))
+        if Render.is_decimal(end):
+            end = hex(int(end))
+        return f"{start} - {end}"
+
+    @staticmethod
+    def value_set(values):
+        """Return a string representing the set of values in VALUES.
+        VALUES is a list of strings."""
+        # values = [hex(int(value, 16)) if '0x' in value and '-' not in value else value for value in values]
+        return ", ".join(values)
+
+    @staticmethod
+    def bitmask(andMask, orMask):
+        """Return a string representing the masking pattern defined by ANDMASK and ORMASK.
+        ANDMASK and ORMASK are strings representing AND and OR mask values, respectively.
+        """
+        return f"masked: & {andMask} | {orMask}"
+
+    @staticmethod
+    def fieldtype(typ):
+        """Return a string representing the printable type of a register field."""
+        upcased = typ.upper()
+        if upcased == "RO_CONSTANT":
+            return "ROCST"
+        elif upcased == "RO_VARIABLE":
+            return "ROVAR"
+        else:
+            return upcased
+
+
+class CoreConfig:
+    def __init__(
+        self,
+        isa,
+        marchid,
+        misa_we,
+        misa_we_enable,
+        misaligned,
+        mmu_mode,
+        mvendorid,
+        pmpaddr0,
+        pmpcfg0,
+        pmpregions,
+        priv,
+        status_fs_field_we,
+        status_fs_field_we_enable,
+        status_vs_field_we,
+        status_vs_field_we_enable,
+    ):
+        self.isa = isa
+        self.marchid = marchid
+        self.misa_we = misa_we
+        self.misa_we_enable = misa_we_enable
+        self.misaligned = misaligned
+        self.mmu_mode = mmu_mode
+        self.mvendorid = mvendorid
+        self.pmpaddr0 = pmpaddr0
+        self.pmpcfg0 = pmpcfg0
+        self.pmpregions = pmpregions
+        self.priv = priv
+        self.status_fs_field_we = status_fs_field_we
+        self.status_fs_field_we_enable = status_fs_field_we_enable
+        self.status_vs_field_we = status_vs_field_we
+        self.status_vs_field_we_enable = status_vs_field_we_enable
+
+
+class Spike:
+    def __init__(
+        self,
+        bootrom,
+        bootrom_base,
+        bootrom_size,
+        dram,
+        dram_base,
+        dram_size,
+        generic_core_config,
+        max_steps,
+        max_steps_enabled,
+        isa,
+        priv,
+        core_configs,
+    ):
+        self.bootrom = bootrom
+        self.bootrom_base = bootrom_base
+        self.bootrom_size = bootrom_size
+        self.dram = dram
+        self.dram_base = dram_base
+        self.dram_size = dram_size
+        self.generic_core_config = generic_core_config
+        self.max_steps = max_steps
+        self.max_steps_enabled = max_steps_enabled
+        self.isa = isa
+        self.priv = priv
+        self.core_configs = core_configs
+
+
+# --------------------------------------------------------------#
 class ISAdocumentClass:
     """ISA document class"""
 
@@ -139,7 +260,7 @@ class ISAdocumentClass:
 
 
 class InstructionMapClass:
-    """ISA instruction map class"""
+    """ISA instruction map c.2n lass"""
 
     def __init__(self, name):
         self.name = name
@@ -214,28 +335,22 @@ class RstAddressBlock(AddressBlockClass):
                 return int(start, 16), int(end, 16)
             return int(reg.address, 16), int(reg.address, 16)
 
-    def get_access(self, reg):
-        register_access = "RO"
-        for field in reg.field:
-            if field.fieldaccess == "WARL" or field.fieldaccess == "WLRL":
-                register_access = "RW"
-                break
-        return register_access
-
-    def change_access(self, field):
-        switcher = {
-            "RO_CONSTANT": "ROCST",
-            "RO_VARIABLE": "ROVAR",
-        }
-        return switcher.get(field.fieldaccess, field.fieldaccess)
+    def get_access_privilege(self, reg):
+        """Registers with address bits [11:10] == 2'b11 are Read-Only
+        as per privileged ISA spec."""
+        # Handle register address ranges separated by dashes.
+        if (int(reg.address.split("-")[0], 0) & 0xC00) == 0xC00:
+            return "RO"
+        else:
+            return "RW"
 
     def returnAsString(self):
         registerlist = sorted(self.registerList, key=lambda reg: reg.address)
         r = RstCloth(io.StringIO())  # with default parameter, sys.stdout is used
-        regNameList = [reg.name for reg in registerlist]
+        regNameList = [reg.name.upper() for reg in registerlist]
         regAddressList = [reg.address for reg in registerlist]
         regPrivModeList = [reg.access for reg in registerlist]
-        regAccessList = [self.get_access(reg) for reg in registerlist]
+        regPrivAccessList = [self.get_access_privilege(reg) for reg in registerlist]
         regDescrList = [reg.desc for reg in registerlist]
         regRV32List = [reg.RV32 for reg in registerlist]
         regRV64List = [reg.RV64 for reg in registerlist]
@@ -298,8 +413,11 @@ This allows to clearly represent read-write registers holding a single legal val
                 summary_table.append(
                     [
                         regAddressList[i],
-                        str(regNameList[i]).upper() + "_",
-                        regPrivModeList[i] + regAccessList[i],
+                        f"`{regNameList[i]} <#{regNameList[i]}>`_",
+                        # RW or RO privileges are set in the official RISC-V specification
+                        # and are encoded in bits [11:10] of the reg's address (2'b11 == "RO").
+                        # See Tables 4 through 8 in section 2.2 of the Priv spec v20240411.
+                        regPrivModeList[i] + regPrivAccessList[i],
                         str(regDescrList[i]),
                     ]
                 )
@@ -312,7 +430,9 @@ This allows to clearly represent read-write registers holding a single legal val
         for reg in registerlist:
             if reg.RV32 | reg.RV64:
                 reg_table = []
-                r.h2(reg.name.upper())
+                r.newline()
+                r.directive(".. _" + reg.name.upper() + ":")
+                r.h3(reg.name.upper())
                 r.newline()
                 r.field("Address", (reg.address))
                 if reg.resetValue:
@@ -321,9 +441,8 @@ This allows to clearly represent read-write registers holding a single legal val
                         "Reset Value",
                         "0x" + f"{reg.resetValue[2:].zfill(int(reg.size/4))}",
                     )
-                    # TODO FIXME: Add CSR privilege information to riscv-config schemas as implicit info.
-                    # TODO FIXME: Handle the RO privilege of the Zicntr/Zihpm registers.
-                    r.field("Privilege", reg.access + self.get_access(reg))
+                    # RO/RW privileges are encoded in register address.
+                    r.field("Privilege", reg.access + self.get_access_privilege(reg))
                     r.field("Description", reg.desc)
                 for field in reg.field:
                     if field.bitWidth == 1:  # only one bit -> no range needed
@@ -334,12 +453,8 @@ This allows to clearly represent read-write registers holding a single legal val
                         bits,
                         field.name.upper(),
                         field.fieldreset,
-                        self.change_access(field),
-                        (
-                            f"masked: & {field.andMask} | {field.orMask}"
-                            if field.andMask and field.orMask
-                            else field.bitlegal
-                        ),
+                        field.fieldaccess,
+                        field.bitlegal,
                     ]
                     _line.append(field.fieldDesc)
                     reg_table.append(_line)
@@ -420,9 +535,196 @@ class InstrstBlock(InstructionBlockClass):
                 r.table(header=_headers, data=reg_table)
         return r.data
 
+class AdocAddressBlock(AddressBlockClass):
+    """Generates an AsciiDoc file from a IP-XACT register description"""
+
+    def __init__(self, name):
+        super().__init__("csr")
+        self.name = name
+        self.registerList = []
+        self.suffix = ".adoc"
+
+    def get_access_privilege(self, reg):
+        """Registers with address bits [11:10] == 2'b11 are Read-Only
+        as per privileged ISA spec."""
+        # Handle register address ranges separated by dashes.
+        if (int(reg.address.split("-")[0], 0) & 0xC00) == 0xC00:
+            return "RO"
+        else:
+            return "RW"
+
+    def generate_label(self, name):
+        return "_" + name.replace('[','').replace(']','').upper()
+
+    def returnAsString(self):
+        registerlist = sorted(self.registerList, key=lambda reg: reg.address)
+        r = ""
+        regNameList = [reg.name.upper() for reg in registerlist]
+        regAddressList = [reg.address for reg in registerlist]
+        regPrivModeList = [reg.access for reg in registerlist]
+        regPrivAccessList = [self.get_access_privilege(reg) for reg in registerlist]
+        regDescrList = [reg.desc for reg in registerlist]
+        regRV32List = [reg.RV32 for reg in registerlist]
+        regRV64List = [reg.RV64 for reg in registerlist]
+
+        r += "////\n"
+        r += "  Copyright (c) 2024 OpenHW Group\n"
+        r += "  Copyright (c) 2024 Thales\n"
+        r += "  SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1\n"
+        r += "  Author: Abdessamii Oukalrazqou\n"
+        r += "////\n\n"
+
+        r += "=== %s\n\n"%self.name
+        r += "==== Conventions\n\n"
+
+        r += "In the subsequent sections, register fields are labeled with one of the following abbreviations:\n\n"
+
+        r += "* WPRI (Writes Preserve Values, Reads Ignore Values): read/write field reserved\n"
+        r += "for future use.  For forward compatibility, implementations that do not\n"
+        r += "furnish these fields must make them read-only zero.\n"
+
+        r += "* WLRL (Write/Read Only Legal Values): read/write CSR field that specifies\n"
+        r += "behavior for only a subset of possible bit encodings, with other bit encodings\n"
+        r += "reserved.\n"
+
+        r += "* WARL (Write Any Values, Reads Legal Values): read/write CSR fields which are\n"
+        r += "only defined for a subset of bit encodings, but allow any value to be written\n"
+        r += "while guaranteeing to return a legal value whenever read.\n"
+
+        r += "* ROCST (Read-Only Constant): A special case of WARL field which admits only one\n"
+        r += "legal value, and therefore, behaves as a constant field that silently ignores\n"
+        r += "writes.\n"
+
+        r += "* ROVAR (Read-Only Variable): A special case of WARL field which can take\n"
+        r += "multiple legal values but cannot be modified by software and depends only on\n"
+        r += "the architectural state of the hart.\n\n"
+
+        r += "In particular, a register that is not internally divided\n"
+        r += "into multiple fields can be considered as containing a single field of XLEN bits.\n"
+        r += "This allows to clearly represent read-write registers holding a single legal value\n"
+        r += "(typically zero).\n\n"
+
+        r += "==== Register Summary\n\n"
+
+        r += "|===\n"
+        r += "|Address | Register Name | Privilege | Description\n\n"
+        for i, _ in enumerate(regNameList):
+            if regRV32List[i] | regRV64List[i]:
+                r += "|" + regAddressList[i] + \
+                    f"| `<<{self.generate_label(regNameList[i])},{regNameList[i].upper()}>>`" + \
+                    "|" + regPrivModeList[i] + regPrivAccessList[i] + \
+                    "|" + str(regDescrList[i]) + "\n"
+        r += "|===\n\n"
+
+        r += "==== Register Description\n\n"
+        for reg in registerlist:
+            if reg.RV32 | reg.RV64:
+                r += "[[%s]]\n"%self.generate_label(reg.name)
+                r += "===== %s\n\n"%reg.name.upper()
+
+                r += "Address:: %s\n"%reg.address
+                if reg.resetValue:
+                    # display the resetvalue in hex notation in the full length of the register
+                    r += "Reset Value:: 0x%s\n"%f"{reg.resetValue[2:].zfill(int(reg.size/4))}"
+                    # RO/RW privileges are encoded in register address.
+                    r += "Privilege:: %s\n"%(reg.access + self.get_access_privilege(reg))
+                    r += "Description:: %s\n\n"%(reg.desc)
+
+                reg_table = []
+                for field in reg.field:
+                    if field.bitWidth == 1:  # only one bit -> no range needed
+                        bits = f"{field.bitlsb}"
+                    else:
+                        bits = f"[{field.bitmsb}:{field.bitlsb}]"
+                    _line = [
+                        bits,
+                        field.name.upper(),
+                        field.fieldreset,
+                        field.fieldaccess,
+                        (
+                            Render.bitmask(field.andMask, field.orMask)
+                            if field.andMask and field.orMask
+                            else field.bitlegal
+                        ),
+                    ]
+                    _line.append(field.fieldDesc)
+                    reg_table.append(_line)
+
+                reg_table = sorted(
+                    reg_table, key=lambda x: int(x[0].strip("[]").split(":")[0])
+                )
+                # table of the register
+                r += "|===\n"
+                r += "| Bits | Field Name | Reset Value | Type | Legal Values | Description\n\n"
+                for reg in reg_table:
+                    for col in reg:
+                        if col == 'Reserved':
+                            col = "_Reserved_"
+                        r +="| %s "%col.replace('\n','').replace('|', '\|')
+                    r += "\n"
+                r += "|===\n\n"
+
+        return r
+
+class InstadocBlock(InstructionBlockClass):
+    """Generates a ISA AsciiDoc file from RISC-V Config Yaml register description"""
+
+    def __init__(self, name):
+        super().__init__("isa")
+        self.name = name
+        self.Instructionlist = []
+        self.suffix = ".adoc"
+
+    def returnAsString(self):
+        r = ""
+        InstrNameList = [reg.key for reg in self.Instructionlist]
+        InstrDescrList = [reg.descr for reg in self.Instructionlist]
+        InstrExtList = [reg.Extension_Name for reg in self.Instructionlist]
+
+        r += "////\n"
+        r += "  Copyright (c) 2024 OpenHW Group\n"
+        r += "  Copyright (c) 2024 Thales\n"
+        r += "  SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1\n"
+        r += "  Author: Abdessamii Oukalrazqou\n"
+        r += "////\n\n"
+
+        r += "=== %s\n\n"%self.name
+        r += "==== Instructions\n\n"
+
+        r += "|===\n"
+        r += "|Subset Name | Name | Description\n\n"
+        for i, _ in enumerate(InstrNameList):
+            r += "|%s | %s | %s\n"%(str(InstrExtList[i]),
+                    str(InstrNameList[i]),
+                    str(InstrDescrList[i]).replace('\n',''))
+        r += "|===\n\n"
+
+        for reg in self.Instructionlist:
+            reg_table = []
+            if len(reg.Name) > 0:
+                r += "==== %s\n\n"%reg.key
+                r += "|===\n"
+                r += "| Name | Format | Pseudocode|Invalid_values | Exception_raised | Description| Op Name\n\n"
+
+                for fieldIndex in list(range(len(reg.Name))):
+                    _line = [
+                        reg.Name[fieldIndex],
+                        reg.Format[fieldIndex],
+                        reg.pseudocode[fieldIndex].replace('|','\|'),
+                        reg.invalid_values[fieldIndex],
+                        reg.exception_raised[fieldIndex],
+                        reg.Description[fieldIndex],
+                    ]
+                    _line.append(reg.OperationName[fieldIndex])
+
+                    for col in _line:
+                        r +="| %s "%col.replace('\n','')
+                    r += "\n"
+                r += "|===\n\n"
+        return r
 
 class InstmdBlock(InstructionBlockClass):
-    """Generates a  ISA Markdown file from a RISC Config Yaml register description"""
+    """Generates an ISA Markdown file from a RISC Config Yaml register description"""
 
     def __init__(self, name):
         super().__init__("isa")
@@ -486,7 +788,7 @@ class InstmdBlock(InstructionBlockClass):
                 for fieldIndex in list(range(len(reg.Name))):
                     reg_table.append(reg.Name[fieldIndex].ljust(15))
                     reg.Format[fieldIndex] = (
-                       reg.Format[fieldIndex]
+                        f"[{reg.Format[fieldIndex]}](#{reg.Format[fieldIndex]})"
                     )
                     reg_table.append(reg.Format[fieldIndex])
                     reg.pseudocode[fieldIndex] = str(
@@ -533,28 +835,15 @@ class MdAddressBlock(AddressBlockClass):
             msb = lsb = int(bits.strip("[]").split(":")[0])
         return msb, lsb
 
-    def get_access(self, reg):
-        register_access = "RO"
-        for field in reg.field:
-            if field.fieldaccess == "WARL":
-                register_access = "RW"
-                break
-        return register_access
-
-    def change_access(self, field):
-        switcher = {
-            "RO_CONSTANT": "ROCST",
-            "RO_VARIABLE": "ROVAR",
-        }
-        return switcher.get(field.fieldaccess, field.fieldaccess)
-
     def returnAsString(self):
         registerlist = sorted(self.registerList, key=lambda reg: reg.address)
         regNameList = [reg.name for reg in registerlist if reg.RV32 | reg.RV64]
         regAddressList = [reg.address for reg in registerlist if reg.RV32 | reg.RV64]
         regDescrList = [reg.desc for reg in registerlist if reg.RV32 | reg.RV64]
         regAccessList = [
-            self.get_access(reg) for reg in registerlist if reg.RV32 | reg.RV64
+            self.get_access_privilege(reg)
+            for reg in registerlist
+            if reg.RV32 | reg.RV64
         ]
         regPrivModeList = [reg.access for reg in registerlist if reg.RV32 | reg.RV64]
         licence = [
@@ -600,7 +889,7 @@ class MdAddressBlock(AddressBlockClass):
                     reg.address,
                     reg.resetValue,
                     reg.desc,
-                    reg.access + self.get_access(reg),
+                    reg.access + self.get_access_privilege(reg),
                 )
                 reg_table = []
                 _line = []
@@ -614,7 +903,7 @@ class MdAddressBlock(AddressBlockClass):
                             bits,
                             field.name.upper(),
                             field.fieldreset,
-                            self.change_access(field),
+                            field.fieldaccess,
                             field.bitlegal,
                             field.fieldDesc,
                         ]
@@ -643,7 +932,7 @@ class MdAddressBlock(AddressBlockClass):
         if resetValue:
             # display the resetvalue in hex notation in the full length of the register
             self.mdFile.new_line("**Reset Value** " + resetValue)
-        self.mdFile.new_line("**Privilege ** " + access)
+        self.mdFile.new_line("**Privilege** " + access)
         self.mdFile.new_line("**Description** " + desc)
 
 
@@ -651,8 +940,10 @@ class MdAddressBlock(AddressBlockClass):
 class CsrParser:
     """parse CSR RISC-V config yaml file"""
 
-    def __init__(self, srcFile, target, modiFile=None):
+    def __init__(self, srcFile, customFile, debugfile, target, modiFile=None):
         self.srcFile = srcFile
+        self.customFile = customFile
+        self.debugfile = debugfile
         self.modiFile = modiFile
         self.target = target
 
@@ -691,15 +982,20 @@ class CsrParser:
                     )
                     fieldaccess = ""
                     legal = registerElem.get("rv32", "")[item].get("type", None)
-                    print(legal)
+                    implemented = registerElem.get("rv32", "")[item].get(
+                        "implemented", None
+                    )
                     if legal is None:
-                        bitlegal = ""
+                        if not implemented:
+                            bitlegal = "0x0"
+                        else:
+                            bitlegal = ""
                         fieldaccess = "ROCST"
                         fieldDesc = fieldDesc
                     else:
                         warl = re.findall(pattern_warl, str(legal.keys()))
                         if warl:
-                            fieldaccess = warl[0].upper()
+                            fieldaccess = Render.fieldtype(warl[0])
                             legal_2 = (
                                 registerElem.get("rv32", "")[item]
                                 .get("type", None)
@@ -709,25 +1005,68 @@ class CsrParser:
                                 bitlegal = "No Legal values"
                             else:
                                 if isinstance(legal_2, dict):
+                                    # TODO: Need a pattern that supports arbitrary lists of values in matches(3).
                                     pattern = r"([\w\[\]:]+)\s*(\w+)\s*(\[\s*((?:0x)?[0-9A-Fa-f]+)\s*\D+\s*(?:((?:0x)?[0-9A-Fa-f]+))?\s*])"
                                     matches = re.search(
                                         pattern, str(legal_2["legal"][0])
                                     )
                                     if matches:
                                         expr_type = str(matches.group(2))
-                                        legal_value = matches.group(3)
-                                        bitlegal = legal_value
                                         if expr_type == "bitmask":
                                             andMask = str(matches.group(4))
                                             orMask = str(matches.group(5))
+                                            legal_value = Render.bitmask(
+                                                andMask, orMask
+                                            )
+                                        elif expr_type == "in":
+                                            if matches.group(3).find(",") >= 0:
+                                                # list ==> set of values
+                                                legal_value = Render.value_set(
+                                                    matches.group(3)
+                                                    .strip("[]")
+                                                    .split(",")
+                                                )
+                                            elif matches.group(3).find(":") >= 0:
+                                                # Range
+                                                (start, end) = (
+                                                    matches.group(3)
+                                                    .strip("[]")
+                                                    .split(":")
+                                                )
+                                                legal_value = Render.range(start, end)
+                                            else:
+                                                # Singleton
+                                                legal_value = matches.group(3).strip(
+                                                    "[]"
+                                                )
+                                        else:
+                                            legal_value = matches.group(3)
+                                        bitlegal = legal_value
                                 elif isinstance(legal_2, list):
-                                    pattern = r"\s*((?:0x)?[0-9A-Fa-f]+)\s*(.)\s*((?:0x)?[0-9A-Fa-f]+)\s*"
-                                    matches = re.search(pattern, legal_2[0])
-                                    if matches:
-                                        legal_value = (
-                                            f"[{matches.group(1)} , {matches.group(3)}]"
-                                        )
-
+                                    pattern = r"\s*((?:0x)?[0-9A-Fa-f]+)\s*(:|,?)\s*((?:0x)?[0-9A-Fa-f]+)?"
+                                    for value in legal_2:
+                                        value_list = value.split(",")
+                                        processed_values = []
+                                        for val in value_list:
+                                            matches = re.search(pattern, val)
+                                            if matches:
+                                                first_value = matches.group(1)
+                                                separator = matches.group(2)
+                                                second_value = (
+                                                    matches.group(3)
+                                                    if matches.group(3)
+                                                    else first_value
+                                                )
+                                                if separator == ":":
+                                                    processed_value = Render.range(
+                                                        first_value, second_value
+                                                    )
+                                                else:
+                                                    processed_value = hex(
+                                                        int(first_value)
+                                                    )
+                                                processed_values.append(processed_value)
+                                        legal_value = Render.value_set(processed_values)
                                         bitlegal = legal_value
                                 else:
                                     legal_value = hex(legal_2)
@@ -737,9 +1076,13 @@ class CsrParser:
                     if match:
                         match_field = re.search(Factorizer_pattern, str(item))
                         if match_field:
+                            if match_field.group(0) not in {"0", "1", "2", "3"}:
+                                field_number = int(match_field.group(0)) - 8
+                            else:
+                                field_number = match_field.group(0)
                             fieldName = re.sub(
-                                match_field.group(1),
-                                f"[i*4 + {match_field.group(1)}]",
+                                Factorizer_pattern,
+                                f"[i*4 +{field_number}]",
                                 item,
                             )
                     else:
@@ -814,7 +1157,7 @@ class CsrParser:
             else:
                 warl = re.findall(pattern_warl, str(legal.keys()))
                 if warl:
-                    fieldaccess = warl[0].upper()
+                    fieldaccess = Render.fieldtype(warl[0])
                     legal_2 = (
                         registerElem.get("rv32", "")
                         .get("type", None)
@@ -823,35 +1166,65 @@ class CsrParser:
                     if legal_2 is None:
                         bitlegal = "No Legal values"
                     else:
-                        print(legal_2)
                         if isinstance(legal_2, dict):
                             pattern = r"([\w\[\]:]+\s*(\w+)\s*)(\[\s*((?:0x)?[0-9A-Fa-f]+)\s*\D+\s*(?:((?:0x)?[0-9A-Fa-f]+))?\s*])"
                             matches = re.search(pattern, str(legal_2["legal"][0]))
                             if matches:
-                                legal_value = (
-                                    f"[{matches.group(4)} , {matches.group(5)}]"
+                                legal_value = Render.range(
+                                    matches.group(4), matches.group(5)
                                 )
-                                expr_type = str(matches.group(3))
+                                expr_type = str(matches.group(2))
                                 mask = matches.group(5)
                                 bitmask = mask
                                 bitlegal = legal_value
                                 if expr_type == "bitmask":
                                     andMask = str(matches.group(4))
                                     orMask = str(matches.group(5))
+                                elif expr_type == "in":
+                                    if matches.group(3).find(",") >= 0:
+                                        # list ==> set of values
+                                        legal_value = Render.value_set(
+                                            matches.group(3).strip("[]").split(",")
+                                        )
+                                    elif matches.group(3).find(":") >= 0:
+                                        # Range
+                                        (start, end) = (
+                                            matches.group(3).strip("[]").split(":")
+                                        )
+                                        legal_value = Render.range(start, end)
+                                    else:
+                                        # Singleton
+                                        legal_value = matches.group(3).strip("[]")
+                                else:
+                                    legal_value = matches.group(3)
+                                bitlegal = legal_value
                         elif isinstance(legal_2, list):
-                            pattern = r"([0-9A-Fa-f]+).*([0-9A-Fa-f]+)"
-                            
-                            matches = re.search(pattern, legal_2[0])
-                            if matches:
-                                legal_value = (
-                                    f"[{matches.group(1)} , {matches.group(2)}]"
-                                )
-                                mask = matches.group(2)
-                                bitmask = mask
+                            pattern = r"\s*((?:0x)?[0-9A-Fa-f]+)\s*(:|,?)\s*((?:0x)?[0-9A-Fa-f]+)?"
+                            for value in legal_2:
+                                value_list = value.split(",")
+                                processed_values = []
+                                for val in value_list:
+                                    matches = re.search(pattern, val)
+                                    if matches:
+                                        first_value = matches.group(1)
+                                        separator = matches.group(2)
+                                        second_value = (
+                                            matches.group(3)
+                                            if matches.group(3)
+                                            else first_value
+                                        )
+                                        if separator == ":":
+                                            processed_value = Render.range(
+                                                first_value, second_value
+                                            )
+                                        else:
+                                            processed_value = hex(int(first_value))
+                                        processed_values.append(processed_value)
+                                legal_value = Render.value_set(processed_values)
                                 bitlegal = legal_value
                         else:
-                            bitmask = 0
-                            bitlegal = "0x" + hex(legal_2)[2:].zfill(int(size / 4))
+                            legal_value = hex(legal_2)
+                            bitlegal = legal_value
             fieldDesc = regDesc
             fieldreset = "0x" + hex(int(resetValue, 16))[2:].zfill(int(size / 4))
             if bitlsb is None:
@@ -880,9 +1253,14 @@ class CsrParser:
     def returnDocument(self):
         with open(self.srcFile, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
-        data = csr_formatter(self.srcFile, self.modiFile)
-        Registers = factorizer(data)
         docName = data["hart0"]
+        size = int(
+            data["hart0"].get("supported_xlen", "")[0]
+        )  # depends on architecture
+        data = csr_formatter(
+            self.srcFile, self.customFile, self.debugfile, self.modiFile
+        )
+        Registers = factorizer(data)
         d = DocumentClass(docName)
         m = MemoryMapClass(docName)
         a = AddressBlockClass("csr")
@@ -896,7 +1274,7 @@ class CsrParser:
                     else hex(RegElement.get("address", None))
                 )
                 reset = hex(RegElement.get("reset-val", ""))
-                size = int(data["hart0"].get("supported_xlen", "")[0])
+
                 access = RegElement.get("priv_mode", "")
                 if Registers.get(register, {}).get("description", "") is not None:
                     desc = Registers.get(register, {}).get("description", "")
@@ -1012,6 +1390,96 @@ class IsaParser:
         return Inst
 
 
+class SpikeParser:
+    """A class to parse data related to Spike."""
+
+    def __init__(self, srcFile, target):
+        self.srcFile = srcFile
+        self.target = target
+
+    def returnDocument(self):
+        with open(self.srcFile, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+        core_configs = []
+        pattern = r"pmpaddr(\d+)"
+        index = 0
+        bitWidth = 32
+        isa = ""
+        for entry in data["hart_ids"]:
+            M = (
+                "M"
+                if data[f"hart{entry}"]
+                .get("mstatus", {})
+                .get("rv32", "")
+                .get("accessible", [])
+                else ""
+            )
+            S = (
+                "S"
+                if data[f"hart{entry}"]
+                .get("sstatus", {})
+                .get("rv32", "")
+                .get("accessible", [])
+                else ""
+            )
+            U = (
+                "U"
+                if data[f"hart{entry}"]
+                .get("ustatus", {})
+                .get("rv32", "")
+                .get("accessible", [])
+                else ""
+            )
+            for k in data[f"hart{entry}"].keys():
+                match = re.search(pattern, str(k))
+                if match:
+                    index += int(match.group(1))
+            isa = data[f"hart{entry}"]["ISA"].lower()
+            core_config = CoreConfig(
+                isa=data[f"hart{entry}"]["ISA"].lower(),
+                marchid=data[f"hart{entry}"].get("marchid", {}).get("reset-val", ""),
+                misa_we=False,
+                misa_we_enable=True,
+                misaligned=data[f"hart{entry}"].get("hw_data_misaligned_support", ""),
+                mmu_mode=(
+                    "bare"
+                    if not (
+                        (int(data[f"hart{entry}"].get("satp", {}).get("reset-val", "")))
+                        >> 31
+                    )
+                    else "sv32"
+                ),
+                mvendorid=data[f"hart{entry}"]
+                .get("mvendorid", {})
+                .get("reset-val", ""),
+                pmpaddr0=data[f"hart{entry}"].get("pmpaddr0", {}).get("reset-val", ""),
+                pmpcfg0=data[f"hart{entry}"].get("pmpcfg0", {}).get("reset-val", ""),
+                pmpregions=index,
+                priv=f"{M}{S}{U}".format(M, S, U),
+                status_fs_field_we=False,
+                status_fs_field_we_enable=False,
+                status_vs_field_we=False,
+                status_vs_field_we_enable=False,
+            )
+            core_configs.append(core_config)
+        S = Spike(
+            bootrom=True,
+            bootrom_base=0x10000,
+            bootrom_size=0x1000,
+            dram=True,
+            dram_base=0x80000000,
+            dram_size=0x40000000,
+            generic_core_config=False,
+            max_steps=200000,
+            max_steps_enabled=False,
+            isa=isa,
+            priv=f"{M}{S}{U}".format(M, S, U),
+            core_configs=core_configs,
+        )
+
+        return S
+
+
 class IsaGenerator:
     """generate isa folder with isa docs"""
 
@@ -1051,7 +1519,6 @@ class CsrGenerator:
 
     def write(self, file_name, string):
         path = f"./{self.target}/csr/"
-        print(path)
         if not os.path.exists(path):
             os.makedirs(path)
         _dest = os.path.join(path, file_name)
@@ -1071,3 +1538,28 @@ class CsrGenerator:
                 s = block.returnAsString()
                 file_name = blockName + block.suffix
                 self.write(file_name, s)
+
+
+class SpikeGenerator:
+    """Generate spike folder with spike docs"""
+
+    def __init__(self, target, temp, modiFile=None):
+        self.target = target
+        self.temp = temp
+        self.modiFile = modiFile
+
+    def write(self, file_name, string):
+        path = f"./{self.target}/spike/"
+        if not os.path.exists(path):
+            os.makedirs(path)
+        _dest = os.path.join(path, file_name)
+        print("writing file " + _dest)
+        with open(_dest, "w", encoding="utf-8") as f:
+            yaml.dump(string, f, default_flow_style=False, sort_keys=False)
+
+    def generateSpike(self, document):
+        template = Template(filename=self.temp)
+        s = template.render(spike=document)
+        data = spike_formatter(yaml.load(s, Loader=BaseLoader), self.modiFile)
+        file_name = "spike.yaml"
+        self.write(file_name, data)

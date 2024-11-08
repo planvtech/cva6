@@ -14,7 +14,7 @@ module cva6_hpdcache_if_adapter
 //  {{{
 #(
     parameter config_pkg::cva6_cfg_t CVA6Cfg = config_pkg::cva6_cfg_empty,
-    parameter hpdcache_pkg::hpdcache_cfg_t hpdcacheCfg = '0,
+    parameter hpdcache_pkg::hpdcache_cfg_t HPDcacheCfg = '0,
     parameter type hpdcache_tag_t = logic,
     parameter type hpdcache_req_offset_t = logic,
     parameter type hpdcache_req_sid_t = logic,
@@ -78,29 +78,32 @@ module cva6_hpdcache_if_adapter
       );
 
       //    Request forwarding
-      assign hpdcache_req_valid_o = cva6_req_i.data_req,
-          hpdcache_req_o.addr_offset = cva6_req_i.address_index,
-          hpdcache_req_o.wdata = '0,
-          hpdcache_req_o.op = hpdcache_pkg::HPDCACHE_REQ_LOAD,
-          hpdcache_req_o.be = cva6_req_i.data_be,
-          hpdcache_req_o.size = cva6_req_i.data_size,
-          hpdcache_req_o.sid = hpdcache_req_sid_i,
-          hpdcache_req_o.tid = cva6_req_i.data_id,
-          hpdcache_req_o.need_rsp = 1'b1,
-          hpdcache_req_o.phys_indexed = 1'b0,
-          hpdcache_req_o.addr_tag = '0,  // unused on virtually indexed request
-          hpdcache_req_o.pma = '0;  // unused on virtually indexed request
+      assign hpdcache_req_valid_o = cva6_req_i.data_req;
+      assign hpdcache_req_o.addr_offset = cva6_req_i.address_index;
+      assign hpdcache_req_o.wdata = '0;
+      assign hpdcache_req_o.op = hpdcache_pkg::HPDCACHE_REQ_LOAD;
+      assign hpdcache_req_o.be = cva6_req_i.data_be;
+      assign hpdcache_req_o.size = cva6_req_i.data_size;
+      assign hpdcache_req_o.sid = hpdcache_req_sid_i;
+      assign hpdcache_req_o.tid = cva6_req_i.data_id;
+      assign hpdcache_req_o.need_rsp = 1'b1;
+      assign hpdcache_req_o.phys_indexed = 1'b0;
+      assign hpdcache_req_o.addr_tag = '0;  // unused on virtually indexed request
+      assign hpdcache_req_o.pma.uncacheable = 1'b0;
+      assign hpdcache_req_o.pma.io = 1'b0;
+      assign hpdcache_req_o.pma.wr_policy_hint = hpdcache_pkg::HPDCACHE_WR_POLICY_AUTO;
 
-      assign hpdcache_req_abort_o = cva6_req_i.kill_req,
-          hpdcache_req_tag_o = cva6_req_i.address_tag,
-          hpdcache_req_pma_o.uncacheable = hpdcache_req_is_uncacheable,
-          hpdcache_req_pma_o.io = 1'b0;
+      assign hpdcache_req_abort_o = cva6_req_i.kill_req;
+      assign hpdcache_req_tag_o = cva6_req_i.address_tag;
+      assign hpdcache_req_pma_o.uncacheable = hpdcache_req_is_uncacheable;
+      assign hpdcache_req_pma_o.io = 1'b0;
+      assign hpdcache_req_pma_o.wr_policy_hint = hpdcache_pkg::HPDCACHE_WR_POLICY_AUTO;
 
       //    Response forwarding
-      assign cva6_req_o.data_rvalid = hpdcache_rsp_valid_i,
-          cva6_req_o.data_rdata = hpdcache_rsp_i.rdata,
-          cva6_req_o.data_rid = hpdcache_rsp_i.tid,
-          cva6_req_o.data_gnt = hpdcache_req_ready_i;
+      assign cva6_req_o.data_rvalid = hpdcache_rsp_valid_i;
+      assign cva6_req_o.data_rdata = hpdcache_rsp_i.rdata;
+      assign cva6_req_o.data_rid = hpdcache_rsp_i.tid;
+      assign cva6_req_o.data_gnt = hpdcache_req_ready_i;
     end  //  }}}
 
          //  {{{
@@ -120,8 +123,8 @@ module cva6_hpdcache_if_adapter
       //  {{{
       always_comb begin : amo_op_comb
         amo_addr = cva6_amo_req_i.operand_a;
-        amo_addr_offset = amo_addr[0+:hpdcacheCfg.reqOffsetWidth];
-        amo_tag = amo_addr[hpdcacheCfg.reqOffsetWidth+:hpdcacheCfg.tagWidth];
+        amo_addr_offset = amo_addr[0+:HPDcacheCfg.reqOffsetWidth];
+        amo_tag = amo_addr[HPDcacheCfg.reqOffsetWidth+:HPDcacheCfg.tagWidth];
         unique case (cva6_amo_req_i.amo_op)
           ariane_pkg::AMO_LR:   amo_op = hpdcache_pkg::HPDCACHE_REQ_AMO_LR;
           ariane_pkg::AMO_SC:   amo_op = hpdcache_pkg::HPDCACHE_REQ_AMO_SC;
@@ -176,9 +179,12 @@ module cva6_hpdcache_if_adapter
       assign hpdcache_req_o.addr_tag = forward_amo ? amo_tag : cva6_req_i.address_tag;
       assign hpdcache_req_o.pma.uncacheable = hpdcache_req_is_uncacheable;
       assign hpdcache_req_o.pma.io = 1'b0;
+      assign hpdcache_req_o.pma.wr_policy_hint = hpdcache_pkg::HPDCACHE_WR_POLICY_AUTO;
       assign hpdcache_req_abort_o = 1'b0;  // unused on physically indexed requests
       assign hpdcache_req_tag_o = '0;  // unused on physically indexed requests
-      assign hpdcache_req_pma_o = '0;  // unused on physically indexed requests
+      assign hpdcache_req_pma_o.uncacheable = 1'b0;
+      assign hpdcache_req_pma_o.io = 1'b0;
+      assign hpdcache_req_pma_o.wr_policy_hint = hpdcache_pkg::HPDCACHE_WR_POLICY_AUTO;
       //  }}}
 
       //  Response forwarding
