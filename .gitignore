@@ -50,38 +50,6 @@ Bender.lock
 # Both following lines are needed to list contents of ISA manual build dir.
 !/vendor/riscv/riscv-isa-manual/build/
 !/vendor/riscv/riscv-isa-manual/build/*
-corev_apu/intel/dni*
-corev_apu/intel/output_files*
-corev_apu/intel/qdb*
-corev_apu/intel/tmp*
-corev_apu/intel/*.hex
-corev_apu/intel/*.qpf
-corev_apu/intel/*.qsf
-corev_apu/intel/*.summary
-corev_apu/intel/*.chg
-corev_apu/intel/*.txt
-corev_apu/intel/*.backup
-corev_apu/intel/*.rpt
-corev_apu/intel/*.qws
-corev_apu/altera/dni*
-corev_apu/altera/output_files*
-corev_apu/altera/qdb*
-corev_apu/altera/tmp*
-corev_apu/altera/*.hex
-corev_apu/altera/*.qpf
-corev_apu/altera/*.qsf
-corev_apu/altera/*.summary
-corev_apu/altera/*.chg
-corev_apu/altera/*.txt
-corev_apu/altera/*.backup
-corev_apu/altera/*.rpt
-corev_apu/altera/*.qws
-corev_apu/riscv-dbg/src/dmi_vjtag_tap.sv
-corev_apu/riscv-dbg/src/dmi_vjtag.sv
-corev_apu/altera/ip/io_pll_test/*
-corev_apu/altera/ip/io_pll_test*
-corev_apu/altera/ip/.qsys_edit/io_pll_test*
-corev_apu/altera/ip/.qsys_edit/preferences.xml
 
 
 
