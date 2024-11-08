@@ -12,7 +12,7 @@ namespace eval io_pll_test {
   
   proc get_design_files {QSYS_SIMDIR} {
     set design_files [dict create]
-    dict set design_files "io_pll_test_altera_iopll_1931_zsdxr3a.vo" "$QSYS_SIMDIR/../altera_iopll_1931/sim/io_pll_test_altera_iopll_1931_zsdxr3a.vo"
+    dict set design_files "io_pll_test_altera_iopll_1931_arbpfza.vo" "$QSYS_SIMDIR/../altera_iopll_1931/sim/io_pll_test_altera_iopll_1931_arbpfza.vo"
     dict set design_files "io_pll_test.v"                            "$QSYS_SIMDIR/io_pll_test.v"                                                    
     return $design_files
   }

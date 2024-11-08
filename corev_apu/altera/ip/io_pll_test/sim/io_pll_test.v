@@ -14,7 +14,7 @@ module io_pll_test (
 		output wire  outclk_4  // outclk4.clk
 	);
 
-	io_pll_test_altera_iopll_1931_zsdxr3a iopll_0 (
+	io_pll_test_altera_iopll_1931_arbpfza iopll_0 (
 		.refclk   (refclk),   //   input,  width = 1,  refclk.clk
 		.locked   (locked),   //  output,  width = 1,  locked.export
 		.rst      (rst),      //   input,  width = 1,   reset.reset

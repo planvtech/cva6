@@ -12,7 +12,7 @@
 # or its authorized distributors. Please refer to the applicable 
 # agreement for further details.
 
-# ACDS 24.1 115 linux 2024.10.04.12:49:05
+# ACDS 24.1 115 linux 2024.11.05.12:07:37
 
 # ----------------------------------------
 # vcsmx - auto-generated simulation script
@@ -107,7 +107,7 @@
 # within the Quartus project, and generate a unified
 # script which supports all the Intel IP within the design.
 # ----------------------------------------
-# ACDS 24.1 115 linux 2024.10.04.12:49:05
+# ACDS 24.1 115 linux 2024.11.05.12:07:37
 # ----------------------------------------
 # initialize variables
 TOP_LEVEL_NAME="io_pll_test.io_pll_test"

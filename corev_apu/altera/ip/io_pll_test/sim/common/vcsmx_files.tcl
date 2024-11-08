@@ -19,7 +19,7 @@ namespace eval io_pll_test {
   
   proc get_design_files {USER_DEFINED_COMPILE_OPTIONS USER_DEFINED_VERILOG_COMPILE_OPTIONS USER_DEFINED_VHDL_COMPILE_OPTIONS QSYS_SIMDIR} {
     set design_files [list]
-    lappend design_files "vlogan +v2k $USER_DEFINED_VERILOG_COMPILE_OPTIONS $USER_DEFINED_COMPILE_OPTIONS  \"$QSYS_SIMDIR/../altera_iopll_1931/sim/io_pll_test_altera_iopll_1931_zsdxr3a.vo\"  -work altera_iopll_1931"
+    lappend design_files "vlogan +v2k $USER_DEFINED_VERILOG_COMPILE_OPTIONS $USER_DEFINED_COMPILE_OPTIONS  \"$QSYS_SIMDIR/../altera_iopll_1931/sim/io_pll_test_altera_iopll_1931_arbpfza.vo\"  -work altera_iopll_1931"
     lappend design_files "vlogan +v2k $USER_DEFINED_VERILOG_COMPILE_OPTIONS $USER_DEFINED_COMPILE_OPTIONS  \"$QSYS_SIMDIR/io_pll_test.v\"  -work io_pll_test"                                                          
     return $design_files
   }
