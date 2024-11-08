@@ -78,4 +78,10 @@ corev_apu/altera/*.rpt
 corev_apu/altera/*.qws
 corev_apu/riscv-dbg/src/dmi_vjtag_tap.sv
 corev_apu/riscv-dbg/src/dmi_vjtag.sv
+corev_apu/altera/ip/io_pll_test/*
+corev_apu/altera/ip/io_pll_test*
+corev_apu/altera/ip/.qsys_edit/io_pll_test*
+corev_apu/altera/ip/.qsys_edit/preferences.xml
+
+
 
