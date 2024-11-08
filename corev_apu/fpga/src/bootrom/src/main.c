@@ -43,7 +43,7 @@ int update(uint8_t *dest)
 }
 
 int main()
-{  
+{
     int i, ret = 0;
     uint8_t uart_res = 0;
     uintptr_t start;

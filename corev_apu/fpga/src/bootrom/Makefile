@@ -17,7 +17,7 @@ DRAM_SIZE_32 ?= 0x08000000 #128MB
 CLOCK_FREQUENCY ?= 50000000 #50MHz
 HALF_CLOCK_FREQUENCY ?= 25000000 #25MHz
 UART_BITRATE ?= 115200
-HAS_ETHERNET ?= 0
+HAS_ETHERNET ?= 1
 endif
 
 CC = $(RISCV)/bin/${CROSSCOMPILE}gcc
@@ -27,7 +27,7 @@ SED = sed
 PLATFORM_DEFINES = -DCLOCK_FREQUENCY=$(CLOCK_FREQUENCY) -DUART_BITRATE=$(UART_BITRATE) -D$(PLATFORM)
 
 ifeq ($(XLEN), 64)
-CFLAGS = $(PLATFORM_DEFINES) -O3 -ggdb -march=rv64im_zicsr -mabi=lp64 -Wall -mcmodel=medany -mexplicit-relocs -ffreestanding -DNOPRINT
+CFLAGS = $(PLATFORM_DEFINES) -Os -ggdb -march=rv64im_zicsr -mabi=lp64 -Wall -mcmodel=medany -mexplicit-relocs -ffreestanding
 else
 CFLAGS = $(PLATFORM_DEFINES) -O2 -ggdb  -march=rv32im_zicsr -mabi=ilp32 -W -Wall -mcmodel=medany -mexplicit-relocs -fno-builtin -ffreestanding
 endif
@@ -39,8 +39,6 @@ INCLUDES = -I./ -I./src
 
 SRCS_C = src/main.c src/uart.c src/spi.c src/sd.c src/gpt.c
 SRCS_ASM = startup.S
-
-
 OBJS_C = $(SRCS_C:.c=.o)
 OBJS_S = $(SRCS_ASM:.S=.o)
 
@@ -60,8 +58,8 @@ endif
 #.PHONY: clean
 
 $(MAIN): $(DTB) $(OBJS_C) $(OBJS_S) linker.lds
-	# $(CC) $(CFLAGS) $(LDFLAGS) $(INCLUDES) -Tlinker.lds $(OBJS_S) $(OBJS_C) -o $(MAIN)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(INCLUDES) -Tlinker.lds $(OBJS_S) $(OBJS_C) -o $(MAIN) -lgcc
+	$(CC) $(CFLAGS) $(LDFLAGS) $(INCLUDES) -Tlinker.lds $(OBJS_S) $(OBJS_C) -o $(MAIN)
+
 	@echo "LD    >= $(MAIN)"
 	@echo "BOOTROM PLATFORM IS : $(PLATFORM)"
 
