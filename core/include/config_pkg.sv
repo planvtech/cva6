@@ -168,10 +168,10 @@ package config_pkg;
     int unsigned                 FetchUserEn;
     // Width of fetch user field
     int unsigned                 FetchUserWidth;
-    // Is FPGA optimization of CV32A6
+    // Is FPGA optimization of CV32A6 for Xilinx and Altera
     bit                          FpgaEn;
     // Is FPGA optimization for Altera FPGA
-    bit                          FpgaAltera;
+    bit                          FpgaAlteraEn;
     // Is Techno Cut instanciated
     bit                          TechnoCut;
     // Enable superscalar* with 2 issue ports and 2 commit ports.
@@ -215,13 +215,9 @@ package config_pkg;
     int unsigned ASID_WIDTH;
     int unsigned VMID_WIDTH;
 
-    bit          FpgaEn;
-    bit          FpgaAltera;
-    bit          TechnoCut;
-    /// Number of commit ports, i.e., maximum number of instructions that the
-    /// core can retire per cycle. It can be beneficial to have more commit
-    /// ports than issue ports, for the scoreboard to empty out in case one
-    /// instruction stalls a little longer.
+    bit FpgaEn;
+    bit FpgaAlteraEn;
+    bit TechnoCut;
 
     bit          SuperscalarEn;
     int unsigned NrCommitPorts;

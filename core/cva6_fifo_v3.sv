@@ -15,7 +15,7 @@
 
 module cva6_fifo_v3 #(
     parameter bit FALL_THROUGH = 1'b0,  // fifo is in fall-through mode
-    parameter bit FPGA_ALTERA = 1'b0,  // fifo is in fall-through mode
+    parameter bit FPGA_ALTERA = 1'b0,  // FPGA Altera optimizations enabled
     parameter int unsigned DATA_WIDTH = 32,  // default data width if the fifo is of type logic
     parameter int unsigned DEPTH = 8,  // depth can be arbitrary from 0 to 2**32
     parameter type dtype = logic [DATA_WIDTH-1:0],
@@ -141,6 +141,7 @@ module cva6_fifo_v3 #(
     end
 
     if (FPGA_EN) fifo_ram_read_address = (FPGA_ALTERA == 1) ? read_pointer_n : read_pointer_q;
+    else fifo_ram_read_address = '0;
 
   end
 
@@ -157,14 +158,14 @@ module cva6_fifo_v3 #(
         read_pointer_q  <= '0;
         write_pointer_q <= '0;
         status_cnt_q    <= '0;
-        first_word_q <= '0;
-        data_ft_q <= '0;
+        if (FPGA_ALTERA) first_word_q <= '0;
+        if (FPGA_ALTERA) data_ft_q <= '0;
       end else begin
         read_pointer_q  <= read_pointer_n;
         write_pointer_q <= write_pointer_n;
         status_cnt_q    <= status_cnt_n;
-        data_ft_q <= data_ft_n;
-        first_word_q <=first_word_n;
+        if (FPGA_ALTERA) data_ft_q <= data_ft_n;
+        if (FPGA_ALTERA) first_word_q <= first_word_n;
       end
     end
   end

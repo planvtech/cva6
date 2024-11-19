@@ -42,7 +42,7 @@ package build_config_pkg;
     cfg.VMID_WIDTH = (CVA6Cfg.XLEN == 64) ? 14 : 1;
 
     cfg.FpgaEn = CVA6Cfg.FpgaEn;
-    cfg.FpgaAltera = CVA6Cfg.FpgaAltera;
+    cfg.FpgaAlteraEn = CVA6Cfg.FpgaAlteraEn;
     cfg.TechnoCut = CVA6Cfg.TechnoCut;
 
     cfg.SuperscalarEn = CVA6Cfg.SuperscalarEn;
