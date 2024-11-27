@@ -152,42 +152,6 @@ module bht #(
       assign row_index = '0;
     end
 
-    // Extra buffering signals needed when synchronous RAM is used
-
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-      if (!rst_ni) begin
-        bht_updated_valid <= '0;
-        bht_update_taken <= '0;
-        bht_ram_wdata_b <= '0;
-        row_index_q <= '0;
-        bht_ram_we_q <= '0;
-        bht_ram_write_address_q <= '0;
-        update_row_index_q <= '0;
-      end else begin
-        if (CVA6Cfg.FpgaAltera) begin
-          for (int i = 0; i < CVA6Cfg.INSTR_PER_FETCH; i++) begin
-            bht_updated_valid[i][1] <= bht_updated_valid[i][0];
-            bht_updated_valid[i][0] <= bht_updated[i].valid;
-            bht_updated_pc[i][1] <= bht_updated_pc[i][0];
-            bht_updated_pc[i][0] <= bht_update_i.pc;
-
-          end
-          vpc_q <= vpc_i;
-          bht_update_taken <= bht_update_i.taken;
-          bht_ram_wdata_b <= bht_ram_wdata;
-          bht_ram_we_q <= bht_ram_we;
-          bht_ram_write_address_q <= bht_ram_write_address;
-          update_row_index_q <= update_row_index;
-
-          row_index_q <= row_index;
-        end
-      end
-    end
-
-    // Assignment of indexes checked to generate data written in the RAM. When synchronous RAM is used these signals need to be delayed
-    assign check_update_row_index = CVA6Cfg.FpgaAltera ? update_row_index_q : update_row_index;
-    assign check_bht_update_taken = CVA6Cfg.FpgaAltera ? bht_update_taken : bht_update_i.taken;
-    assign check_row_index        = CVA6Cfg.FpgaAltera ? row_index_q : row_index;
     // -------------------------
     // prediction assignment & update Branch History Table
     // -------------------------
@@ -244,7 +208,7 @@ module bht #(
 
           //The data written in the RAM will have the valid bit from current input (async RAM) or the one from one clock cycle before (sync RAM)
           bht_ram_wdata[i*BRAM_WORD_BITS+:BRAM_WORD_BITS] = CVA6Cfg.FpgaAlteraEn ? {bht_updated_valid[i][0], bht_updated[i].saturation_counter} :
-                                                                           {bht_updated[i].valid, bht_updated[i].saturation_counter};
+                                                                         {bht_updated[i].valid, bht_updated[i].saturation_counter};
         end
 
 
