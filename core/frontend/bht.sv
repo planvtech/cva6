@@ -50,8 +50,6 @@ module bht #(
   localparam ROW_INDEX_BITS = CVA6Cfg.RVC == 1'b1 ? $clog2(CVA6Cfg.INSTR_PER_FETCH) : 1;
   // number of bits we should use for prediction
   localparam PREDICTION_BITS = $clog2(NR_ROWS) + OFFSET + ROW_ADDR_BITS;
-  // we are not interested in all bits of the address
-  // unread i_unread (.d_i(|vpc_i));
 
   struct packed {
     logic       valid;
@@ -130,26 +128,23 @@ module bht #(
 
     // number of bits par word in the bram
     localparam BRAM_WORD_BITS = $bits(ariane_pkg::bht_t);
-    logic [ROW_INDEX_BITS-1:0] row_index;
-    logic [ROW_INDEX_BITS-1:0] row_index_q;
-    logic [ROW_INDEX_BITS-1:0] check_row_index;
-    logic [CVA6Cfg.INSTR_PER_FETCH-1:0] bht_ram_we;
-    logic [CVA6Cfg.INSTR_PER_FETCH-1:0] bht_ram_we_q;
+    logic [ROW_INDEX_BITS-1:0] row_index, row_index_q, check_row_index;
+    logic [CVA6Cfg.INSTR_PER_FETCH-1:0] bht_ram_we, bht_ram_we_q;
     logic [CVA6Cfg.INSTR_PER_FETCH*$clog2(NR_ROWS)-1:0] bht_ram_read_address_0;
     logic [CVA6Cfg.INSTR_PER_FETCH*$clog2(NR_ROWS)-1:0] bht_ram_read_address_1;
-    logic [CVA6Cfg.INSTR_PER_FETCH*$clog2(NR_ROWS)-1:0] bht_ram_write_address;
-    logic [CVA6Cfg.INSTR_PER_FETCH*$clog2(NR_ROWS)-1:0] bht_ram_write_address_q;
-    logic [CVA6Cfg.INSTR_PER_FETCH*BRAM_WORD_BITS-1:0] bht_ram_wdata;
-    logic [CVA6Cfg.INSTR_PER_FETCH*BRAM_WORD_BITS-1:0] bht_ram_wdata_b;
+    logic [CVA6Cfg.INSTR_PER_FETCH*$clog2(NR_ROWS)-1:0]
+        bht_ram_write_address, bht_ram_write_address_q;
+    logic [CVA6Cfg.INSTR_PER_FETCH*BRAM_WORD_BITS-1:0] bht_ram_wdata, bht_ram_wdata_q;
     logic [CVA6Cfg.INSTR_PER_FETCH*BRAM_WORD_BITS-1:0] bht_ram_rdata_0;
     logic [CVA6Cfg.INSTR_PER_FETCH*BRAM_WORD_BITS-1:0] bht_ram_rdata_1;
-    logic [CVA6Cfg.INSTR_PER_FETCH-1:0][1:0] bht_updated_valid;
-    logic [CVA6Cfg.INSTR_PER_FETCH-1:0][1:0][CVA6Cfg.VLEN-1:0] bht_updated_pc;
-    logic bht_update_taken, check_bht_update_taken;
-    logic             [           CVA6Cfg.VLEN-1:0] vpc_q;
 
     ariane_pkg::bht_t [CVA6Cfg.INSTR_PER_FETCH-1:0] bht;
     ariane_pkg::bht_t [CVA6Cfg.INSTR_PER_FETCH-1:0] bht_updated;
+
+    logic [CVA6Cfg.INSTR_PER_FETCH-1:0][1:0] bht_updated_valid;
+    logic [CVA6Cfg.INSTR_PER_FETCH-1:0][1:0][CVA6Cfg.VLEN-1:0] bht_updated_pc;
+    logic bht_update_taken, check_bht_update_taken;
+    logic [CVA6Cfg.VLEN-1:0] vpc_q;
 
     if (CVA6Cfg.RVC) begin : gen_row_index
       assign row_index = vpc_i[ROW_ADDR_BITS+OFFSET-1:OFFSET];
@@ -219,12 +214,15 @@ module bht #(
       for (int i = 0; i < CVA6Cfg.INSTR_PER_FETCH; i++) begin
 
         //When synchronous RAM is used, addresses are needed as soon as available
-        if (CVA6Cfg.FpgaAltera) bht_ram_read_address_0[i*$clog2(NR_ROWS)+:$clog2(NR_ROWS)] = index;
-        if (CVA6Cfg.FpgaAltera) bht_ram_read_address_1[i*$clog2(NR_ROWS)+:$clog2(NR_ROWS)] = update_pc;
+        if (CVA6Cfg.FpgaAlteraEn)
+          bht_ram_read_address_0[i*$clog2(NR_ROWS)+:$clog2(NR_ROWS)] = index;
+        if (CVA6Cfg.FpgaAlteraEn)
+          bht_ram_read_address_1[i*$clog2(NR_ROWS)+:$clog2(NR_ROWS)] = update_pc;
 
         if (check_update_row_index == i) begin
           //When asynchronous RAM is used, the address can be updated on the cycle when data is read
-          if (!CVA6Cfg.FpgaAltera) bht_ram_read_address_1[i*$clog2(NR_ROWS)+:$clog2(NR_ROWS)] = update_pc;
+          if (!CVA6Cfg.FpgaAlteraEn)
+            bht_ram_read_address_1[i*$clog2(NR_ROWS)+:$clog2(NR_ROWS)] = update_pc;
           bht[i].saturation_counter = bht_ram_rdata_1[i*BRAM_WORD_BITS+:2];
 
           if (bht[i].saturation_counter == 2'b11) begin
@@ -245,7 +243,7 @@ module bht #(
           end
 
           //The data written in the RAM will have the valid bit from current input (async RAM) or the one from one clock cycle before (sync RAM)
-          bht_ram_wdata[i*BRAM_WORD_BITS+:BRAM_WORD_BITS] = CVA6Cfg.FpgaAltera ? {bht_updated_valid[i][0], bht_updated[i].saturation_counter} :
+          bht_ram_wdata[i*BRAM_WORD_BITS+:BRAM_WORD_BITS] = CVA6Cfg.FpgaAlteraEn ? {bht_updated_valid[i][0], bht_updated[i].saturation_counter} :
                                                                            {bht_updated[i].valid, bht_updated[i].saturation_counter};
         end
 
@@ -254,18 +252,18 @@ module bht #(
           //initialize output
           bht_prediction_o[i] = '0;
         end else begin
-          // end else if (check_row_index == i) begin
           //When asynchronous RAM is used, addresses can be calculated on the same cycle as data is read
-          if (!CVA6Cfg.FpgaAltera) bht_ram_read_address_0[i*$clog2(NR_ROWS)+:$clog2(NR_ROWS)] = index;
+          if (!CVA6Cfg.FpgaAlteraEn)
+            bht_ram_read_address_0[i*$clog2(NR_ROWS)+:$clog2(NR_ROWS)] = index;
           //When synchronous RAM is used and data is read right after writing, we need some buffering
           // This is one cycle of buffering
-          if (CVA6Cfg.FpgaAltera && bht_updated_valid[i][0] && vpc_q == bht_updated_pc[i][0]) begin
+          if (CVA6Cfg.FpgaAlteraEn && bht_updated_valid[i][0] && vpc_q == bht_updated_pc[i][0]) begin
             bht_prediction_o[i].valid = bht_ram_wdata[i*BRAM_WORD_BITS+2];
             bht_prediction_o[i].taken = bht_ram_wdata[i*BRAM_WORD_BITS+1];
             //This is two cycles of buffering
-          end else if (CVA6Cfg.FpgaAltera && bht_updated_valid[i][1] && vpc_q == bht_updated_pc[i][1]) begin
-            bht_prediction_o[i].valid = bht_ram_wdata_b[i*BRAM_WORD_BITS+2];
-            bht_prediction_o[i].taken = bht_ram_wdata_b[i*BRAM_WORD_BITS+1];
+          end else if (CVA6Cfg.FpgaAlteraEn && bht_updated_valid[i][1] && vpc_q == bht_updated_pc[i][1]) begin
+            bht_prediction_o[i].valid = bht_ram_wdata_q[i*BRAM_WORD_BITS+2];
+            bht_prediction_o[i].taken = bht_ram_wdata_q[i*BRAM_WORD_BITS+1];
             //In any other case we can safely read from the RAM as data is available
           end else begin
             bht_prediction_o[i].valid = bht_ram_rdata_0[i*BRAM_WORD_BITS+2];
@@ -276,7 +274,7 @@ module bht #(
     end
 
     for (genvar i = 0; i < CVA6Cfg.INSTR_PER_FETCH; i++) begin : gen_bht_ram
-      if (CVA6Cfg.FpgaAltera) begin
+      if (CVA6Cfg.FpgaAlteraEn) begin
         SyncThreePortRam #(
             .ADDR_WIDTH($clog2(NR_ROWS)),
             .DATA_DEPTH(NR_ROWS),
@@ -309,6 +307,43 @@ module bht #(
         );
       end
     end
+
+    // Extra buffering signals needed when synchronous RAM is used
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (CVA6Cfg.FpgaAlteraEn) begin
+        if (!rst_ni) begin
+          bht_updated_valid <= '0;
+          bht_update_taken <= '0;
+          bht_ram_wdata_q <= '0;
+          row_index_q <= '0;
+          bht_ram_we_q <= '0;
+          bht_ram_write_address_q <= '0;
+          update_row_index_q <= '0;
+        end else begin
+          for (int i = 0; i < CVA6Cfg.INSTR_PER_FETCH; i++) begin
+            bht_updated_valid[i][1] <= bht_updated_valid[i][0];
+            bht_updated_valid[i][0] <= bht_updated[i].valid;
+            bht_updated_pc[i][1] <= bht_updated_pc[i][0];
+            bht_updated_pc[i][0] <= bht_update_i.pc;
+
+          end
+          vpc_q <= vpc_i;
+          bht_update_taken <= bht_update_i.taken;
+          bht_ram_wdata_q <= bht_ram_wdata;
+          bht_ram_we_q <= bht_ram_we;
+          bht_ram_write_address_q <= bht_ram_write_address;
+          update_row_index_q <= update_row_index;
+
+          row_index_q <= row_index;
+        end
+      end
+    end
+
+    // Assignment of indexes checked to generate data written in the RAM. When synchronous RAM is used these signals need to be delayed
+    assign check_update_row_index = CVA6Cfg.FpgaAlteraEn ? update_row_index_q : update_row_index;
+    assign check_bht_update_taken = CVA6Cfg.FpgaAlteraEn ? bht_update_taken : bht_update_i.taken;
+    assign check_row_index        = CVA6Cfg.FpgaAlteraEn ? row_index_q : row_index;
 
   end
 endmodule
