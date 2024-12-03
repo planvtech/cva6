@@ -113,6 +113,7 @@ module cva6_fifo_v3 #(
 
     if (pop_i && ~empty_o) begin
       data_ft_n = data_i;
+      // first_word_n = FPGA_EN && FPGA_ALTERA && (status_cnt_q == 1) && push_i;
       first_word_n = FPGA_EN && FPGA_ALTERA && first_word_q && push_i;
       // read from the queue is a default assignment
       // but increment the read pointer...
@@ -140,6 +141,14 @@ module cva6_fifo_v3 #(
       end
     end
 
+    if (FPGA_ALTERA && flush_i) begin
+      if(push_i && write_pointer_q==0) first_word_n <= '1;
+      else first_word_n <= '0;
+      data_ft_n = data_i;
+      read_pointer_n = '0;
+      write_pointer_n = '0;
+      status_cnt_n    = '0;
+    end
     if (FPGA_EN) fifo_ram_read_address = (FPGA_ALTERA == 1) ? read_pointer_n : read_pointer_q;
     else fifo_ram_read_address = '0;
 
@@ -158,15 +167,13 @@ module cva6_fifo_v3 #(
         read_pointer_q  <= '0;
         write_pointer_q <= '0;
         status_cnt_q    <= '0;
-        if (FPGA_ALTERA) first_word_q <= '0;
-        if (FPGA_ALTERA) data_ft_q <= '0;
       end else begin
         read_pointer_q  <= read_pointer_n;
         write_pointer_q <= write_pointer_n;
         status_cnt_q    <= status_cnt_n;
-        if (FPGA_ALTERA) data_ft_q <= data_ft_n;
-        if (FPGA_ALTERA) first_word_q <= first_word_n;
       end
+      if (FPGA_ALTERA) data_ft_q <= data_ft_n;
+      if (FPGA_ALTERA) first_word_q <= first_word_n;
     end
   end
 
