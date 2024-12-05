@@ -57,7 +57,7 @@ module ariane_regfile_fpga #(
   logic [NUM_WORDS-1:0][LOG_NR_WRITE_PORTS-1:0] mem_block_sel;
   logic [NUM_WORDS-1:0][LOG_NR_WRITE_PORTS-1:0] mem_block_sel_q;
   logic [CVA6Cfg.NrCommitPorts-1:0][DATA_WIDTH-1:0] wdata_reg;
-  logic [NR_READ_PORTS-1:0] read_after_write;
+  logic [NR_READ_PORTS-1:0] read_after_write[CVA6Cfg.NrCommitPorts];
 
   logic [NR_READ_PORTS-1:0][4:0] raddr_q;
   logic [NR_READ_PORTS-1:0][4:0] raddr;
@@ -116,14 +116,14 @@ module ariane_regfile_fpga #(
       if (CVA6Cfg.FpgaAlteraEn) begin
         for (int k = 0; k < NR_READ_PORTS; k++) begin : block_read
           mem_read_sync[j][k] = mem[j][raddr_i[k]];  // synchronous RAM
-          read_after_write[k] <= '0;
+          read_after_write[j][k] <= '0;
           if (waddr_i[j] == raddr_i[k])
-            read_after_write[k] <= we_i[j] && ~waddr_i[j] != 0; // Identify if we need to read the content that was written
+            read_after_write[j][k] <= we_i[j] && ~waddr_i[j] != 0; // Identify if we need to read the content that was written
         end
       end
     end
     for (genvar k = 0; k < NR_READ_PORTS; k++) begin : block_read
-      assign mem_read[j][k] = CVA6Cfg.FpgaAlteraEn ? ( read_after_write[k] ? wdata_reg[j]: mem_read_sync[j][k]) : mem[j][raddr_i[k]];
+      assign mem_read[j][k] = CVA6Cfg.FpgaAlteraEn ? ( read_after_write[j][k] ? wdata_reg[j]: mem_read_sync[j][k]) : mem[j][raddr_i[k]];
     end
   end
   //with synchronous ram there is the need to adjust which address is used at the output MUX
