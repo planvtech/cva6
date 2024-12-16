@@ -142,8 +142,8 @@ module cva6_fifo_v3 #(
     end
 
     if (FPGA_ALTERA && flush_i) begin
-      if(push_i && write_pointer_q==0) first_word_n <= '1;
-      else first_word_n <= '0;
+      if(push_i && write_pointer_q==0) first_word_n = '1;
+      else first_word_n = '0;
       data_ft_n = data_i;
       read_pointer_n = '0;
       write_pointer_n = '0;
