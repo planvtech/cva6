@@ -134,7 +134,7 @@ module cva6_fifo_v3 #(
         first_word_n = '1;
       end
       if (pop_i) begin
-        first_word_n = '0;
+        if (FPGA_ALTERA && !FALL_THROUGH) first_word_n = '0;
         status_cnt_n = status_cnt_q;
         read_pointer_n = read_pointer_q;
         write_pointer_n = write_pointer_q;
