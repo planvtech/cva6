@@ -133,7 +133,7 @@ module cva6_fifo_v3 #(
         data_ft_n = data_i;
         first_word_n = '1;
       end
-      if (pop_i && ~empty_o) begin
+      if (pop_i) begin
         first_word_n = '0;
         status_cnt_n = status_cnt_q;
         read_pointer_n = read_pointer_q;
