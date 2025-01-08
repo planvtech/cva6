@@ -5,3 +5,9 @@ IO_STANDARD "1.2 V" -to led[3] -entity cva6_altera
 IO_STANDARD "1.2 V" -to led[2] -entity cva6_altera
 IO_STANDARD "1.2 V" -to led[1] -entity cva6_altera
 IO_STANDARD "1.2 V" -to led[0] -entity cva6_altera
+IO_STANDARD "1.8 V" -to hps_sdmmc_CMD
+IO_STANDARD "1.8 V" -to hps_sdmmc_CCLK
+IO_STANDARD "1.8 V" -to hps_sdmmc_D0
+IO_STANDARD "1.8 V" -to hps_sdmmc_D1
+IO_STANDARD "1.8 V" -to hps_sdmmc_D2
+IO_STANDARD "1.8 V" -to hps_sdmmc_D3

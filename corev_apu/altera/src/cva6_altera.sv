@@ -44,7 +44,15 @@ module cva6_altera (
  input  logic [ 0:0]  ddr4_alert_n,
  input  logic         oct_rzqin   ,
  
- output logic [ 3:0]  led         
+ output logic [ 3:0]  led,
+ 
+ //SD card pins
+ output   wire        hps_sdmmc_CCLK, 
+ inout    wire        hps_sdmmc_CMD,          
+ inout    wire        hps_sdmmc_D0,          
+ inout    wire        hps_sdmmc_D1,          
+ inout    wire        hps_sdmmc_D2,        
+ inout    wire        hps_sdmmc_D3  
 );
 
 // CVA6 Intel configuration
@@ -69,7 +77,7 @@ localparam type rvfi_probes_t = struct packed {
   
 // WARNING: If NBSlave is modified, Xilinx's IPs under fpga/xilinx need to be updated with the new AXI id width and regenerated.
 // Otherwise reads and writes to DRAM may be returned to the wrong master and the crossbar will freeze. See issue #568.
-localparam NBSlave = 2; // debug, ariane
+localparam NBSlave = 3; // hps(2), debug(1), ariane(0)
 localparam AxiAddrWidth = 64;
 localparam AxiDataWidth = 64;
 localparam AxiIdWidthMaster = 4;
@@ -1142,5 +1150,56 @@ io_pll clocks (
     );
 
 assign sd_clk_sys = clk;     //  50 MHz
+
+
+//HPS -- used to access SD card
+hps hps_i (
+    .intel_agilex_hps_0_hps_io_SDMMC_CMD       (hps_sdmmc_CMD),       //   inout,   width = 1,         intel_agilex_hps_0_hps_io.SDMMC_CMD
+    .intel_agilex_hps_0_hps_io_SDMMC_D0        (hps_sdmmc_D0),        //   inout,   width = 1,                                  .SDMMC_D0
+    .intel_agilex_hps_0_hps_io_SDMMC_D1        (hps_sdmmc_D1),        //   inout,   width = 1,                                  .SDMMC_D1
+    .intel_agilex_hps_0_hps_io_SDMMC_D2        (hps_sdmmc_D2),        //   inout,   width = 1,                                  .SDMMC_D2
+    .intel_agilex_hps_0_hps_io_SDMMC_D3        (hps_sdmmc_D3),        //   inout,   width = 1,                                  .SDMMC_D3
+    .intel_agilex_hps_0_hps_io_SDMMC_CCLK      (hps_sdmmc_CCLK),      //  output,   width = 1,                                  .SDMMC_CCLK
+    // .intel_agilex_hps_0_h2f_reset_reset        (rst),        //  output,   width = 1,      intel_agilex_hps_0_h2f_reset.reset
+    .intel_agilex_hps_0_h2f_axi_clock_clk      (clk),      //   input,   width = 1,  intel_agilex_hps_0_h2f_axi_clock.clk
+    .intel_agilex_hps_0_h2f_axi_reset_reset_n  (ndmreset_n),  //   input,   width = 1,  intel_agilex_hps_0_h2f_axi_reset.reset_n
+    .intel_agilex_hps_0_h2f_axi_master_awid    (slave[2].aw_id),    //  output,   width = 4, intel_agilex_hps_0_h2f_axi_master.awid
+    .intel_agilex_hps_0_h2f_axi_master_awaddr  (slave[2].aw_addr),  //  output,  width = 32,                                  .awaddr
+    .intel_agilex_hps_0_h2f_axi_master_awlen   (slave[2].aw_len),   //  output,   width = 8,                                  .awlen
+    .intel_agilex_hps_0_h2f_axi_master_awsize  (slave[2].aw_size),  //  output,   width = 3,                                  .awsize
+    .intel_agilex_hps_0_h2f_axi_master_awburst (slave[2].aw_burst), //  output,   width = 2,                                  .awburst
+    .intel_agilex_hps_0_h2f_axi_master_awlock  (slave[2].aw_lock),  //  output,   width = 1,                                  .awlock
+    .intel_agilex_hps_0_h2f_axi_master_awcache (slave[2].aw_cache), //  output,   width = 4,                                  .awcache
+    .intel_agilex_hps_0_h2f_axi_master_awprot  (slave[2].aw_prot),  //  output,   width = 3,                                  .awprot
+    .intel_agilex_hps_0_h2f_axi_master_awvalid (slave[2].aw_valid), //  output,   width = 1,                                  .awvalid
+    .intel_agilex_hps_0_h2f_axi_master_awready (slave[2].aw_ready), //   input,   width = 1,                                  .awready
+    .intel_agilex_hps_0_h2f_axi_master_wdata   (slave[2].w_data),   //  output,  width = 64,                                  .wdata
+    .intel_agilex_hps_0_h2f_axi_master_wstrb   (slave[2].w_strb),   //  output,   width = 8,                                  .wstrb
+    .intel_agilex_hps_0_h2f_axi_master_wlast   (slave[2].w_last),   //  output,   width = 1,                                  .wlast
+    .intel_agilex_hps_0_h2f_axi_master_wvalid  (slave[2].w_valid),  //  output,   width = 1,                                  .wvalid
+    .intel_agilex_hps_0_h2f_axi_master_wready  (slave[2].w_ready),  //   input,   width = 1,                                  .wready
+    .intel_agilex_hps_0_h2f_axi_master_bid     (slave[2].b_id),     //   input,   width = 4,                                  .bid
+    .intel_agilex_hps_0_h2f_axi_master_bresp   (slave[2].b_resp),   //   input,   width = 2,                                  .bresp
+    .intel_agilex_hps_0_h2f_axi_master_bvalid  (slave[2].b_valid),  //   input,   width = 1,                                  .bvalid
+    .intel_agilex_hps_0_h2f_axi_master_bready  (slave[2].b_ready),  //  output,   width = 1,                                  .bready
+    .intel_agilex_hps_0_h2f_axi_master_arid    (slave[2].ar_id),    //  output,   width = 4,                                  .arid
+    .intel_agilex_hps_0_h2f_axi_master_araddr  (slave[2].ar_addr),  //  output,  width = 32,                                  .araddr
+    .intel_agilex_hps_0_h2f_axi_master_arlen   (slave[2].ar_len),   //  output,   width = 8,                                  .arlen
+    .intel_agilex_hps_0_h2f_axi_master_arsize  (slave[2].ar_size),  //  output,   width = 3,                                  .arsize
+    .intel_agilex_hps_0_h2f_axi_master_arburst (slave[2].ar_burst), //  output,   width = 2,                                  .arburst
+    .intel_agilex_hps_0_h2f_axi_master_arlock  (slave[2].ar_lock),  //  output,   width = 1,                                  .arlock
+    .intel_agilex_hps_0_h2f_axi_master_arcache (slave[2].ar_cache), //  output,   width = 4,                                  .arcache
+    .intel_agilex_hps_0_h2f_axi_master_arprot  (slave[2].ar_prot),  //  output,   width = 3,                                  .arprot
+    .intel_agilex_hps_0_h2f_axi_master_arvalid (slave[2].ar_valid), //  output,   width = 1,                                  .arvalid
+    .intel_agilex_hps_0_h2f_axi_master_arready (slave[2].ar_ready), //   input,   width = 1,                                  .arready
+    .intel_agilex_hps_0_h2f_axi_master_rid     (slave[2].r_id),     //   input,   width = 4,                                  .rid
+    .intel_agilex_hps_0_h2f_axi_master_rdata   (slave[2].r_data),   //   input,  width = 64,                                  .rdata
+    .intel_agilex_hps_0_h2f_axi_master_rresp   (slave[2].r_resp),   //   input,   width = 2,                                  .rresp
+    .intel_agilex_hps_0_h2f_axi_master_rlast   (slave[2].r_last),   //   input,   width = 1,                                  .rlast
+    .intel_agilex_hps_0_h2f_axi_master_rvalid  (slave[2].r_valid),  //   input,   width = 1,                                  .rvalid
+    .intel_agilex_hps_0_h2f_axi_master_rready  (slave[2].r_ready)   //  output,   width = 1,                                  .rready
+);
+
+
 
 endmodule

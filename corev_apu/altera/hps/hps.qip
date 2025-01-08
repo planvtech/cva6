@@ -1,0 +1,29 @@
+set_global_assignment -entity "hps" -library "hps" -name IP_TOOL_NAME "QsysPrimePro"
+set_global_assignment -entity "hps" -library "hps" -name IP_TOOL_VERSION "24.1"
+set_global_assignment -entity "hps" -library "hps" -name IP_TOOL_ENV "QsysPrimePro"
+set_global_assignment -library "hps" -name SOPCINFO_FILE [file join $::quartus(qip_path) "hps.sopcinfo"]
+set_global_assignment -entity "hps" -library "hps" -name SLD_INFO "QSYS_NAME hps HAS_SOPCINFO 1 GENERATION_ID 0"
+set_global_assignment -library "hps" -name MISC_FILE [file join $::quartus(qip_path) "hps.cmp"]
+set_global_assignment -entity "hps" -library "hps" -name IP_TARGETED_DEVICE_FAMILY "Agilex 7"
+set_global_assignment -entity "hps" -library "hps" -name IP_GENERATED_DEVICE_FAMILY "{Agilex 7}"
+set_global_assignment -entity "hps" -library "hps" -name IP_QSYS_MODE "SYSTEM"
+set_global_assignment -name SYNTHESIS_ONLY_QIP ON
+set_global_assignment -library "hps" -name MISC_FILE [file join $::quartus(qip_path) "../hps.qsys"]
+
+set_global_assignment -entity "hps_intel_agilex_hps_0" -library "hps_intel_agilex_hps_0" -name IP_COMPONENT_NAME "aHBzX2ludGVsX2FnaWxleF9ocHNfMA=="
+set_global_assignment -entity "hps_intel_agilex_hps_0" -library "hps_intel_agilex_hps_0" -name IP_COMPONENT_DISPLAY_NAME "R2VuZXJpYyBDb21wb25lbnQ="
+set_global_assignment -entity "hps_intel_agilex_hps_0" -library "hps_intel_agilex_hps_0" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
+set_global_assignment -entity "hps_intel_agilex_hps_0" -library "hps_intel_agilex_hps_0" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "hps_intel_agilex_hps_0" -library "hps_intel_agilex_hps_0" -name IP_COMPONENT_AUTHOR "QWx0ZXJhIENvcnBvcmF0aW9u"
+set_global_assignment -entity "hps_intel_agilex_hps_0" -library "hps_intel_agilex_hps_0" -name IP_COMPONENT_VERSION "MS4w"
+set_global_assignment -entity "hps_intel_agilex_hps_0" -library "hps_intel_agilex_hps_0" -name IP_COMPONENT_DESCRIPTION "QSBkeW5hbWljIGNvbXBvbmVudCB3aGVyZSB5b3UgY2FuIGFkZCwgbW9kaWZ5IG9yIHJlbW92ZSBpbnRlcmZhY2VzIGFuZCBwb3J0cyBvbiB0aGUgZmx5"
+set_global_assignment -entity "hps_intel_agilex_hps_0" -library "hps_intel_agilex_hps_0" -name IP_COMPONENT_GROUP "R2VuZXJpYyBDb21wb25lbnQ="
+set_global_assignment -entity "hps" -library "hps" -name IP_COMPONENT_NAME "aHBz"
+set_global_assignment -entity "hps" -library "hps" -name IP_COMPONENT_DISPLAY_NAME "aHBz"
+set_global_assignment -entity "hps" -library "hps" -name IP_COMPONENT_REPORT_HIERARCHY "On"
+set_global_assignment -entity "hps" -library "hps" -name IP_COMPONENT_INTERNAL "Off"
+set_global_assignment -entity "hps" -library "hps" -name IP_COMPONENT_VERSION "MS4w"
+
+
+set_global_assignment -library "hps" -name VERILOG_FILE [file join $::quartus(qip_path) "synth/hps.v"]
+

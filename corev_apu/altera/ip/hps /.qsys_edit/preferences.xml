@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<preferences>
+ <debug showDebugMenu="0" />
+ <window width="3440" height="1345" x="0" y="33" />
+ <systemtable filter="All Interfaces" />
+ <library
+   expandedCategories="Library,Library/Basic Functions,Project,Library/Basic Functions/Simulation; Debug and Verification/Simulation,Library/Processors and Peripherals/Hard Processor Components,Library/Processors and Peripherals,Library/Basic Functions/Simulation; Debug and Verification,Library/Processors and Peripherals/Hard Processor Systems" />
+ <generation path="" />
+</preferences>

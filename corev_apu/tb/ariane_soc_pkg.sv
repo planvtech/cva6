@@ -17,7 +17,7 @@ package ariane_soc;
   localparam int unsigned NumSources = 30;
   localparam int unsigned MaxPriority = 7;
 
-  localparam NrSlaves = 2; // actually masters, but slaves on the crossbar
+  localparam NrSlaves = 3; // actually masters, but slaves on the crossbar
 
   typedef enum int unsigned {
     DRAM     = 0,

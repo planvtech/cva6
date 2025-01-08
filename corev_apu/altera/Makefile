@@ -108,6 +108,8 @@ write_search_paths:
 
 write_source_files:
 	@find ./interconnect -type f -name "*.v" -o -name "*.sv" -o -name "*.svh" >> $(SOURCES_FILE)
+	@find ./hps -type f -name "*.v" -o -name "*.sv" -o -name "*.svh" >> $(SOURCES_FILE)
+	# @find ./ip/hps/hps_intel_agilex_hps_0 -type f -name "*.v" -o -name "*.sv" -o -name "*.svh" >> $(SOURCES_FILE)
 	@echo $(var)
 	@echo >> $(SOURCES_FILE)
 	@echo "Reading from $(SOURCES_FILE) and writing to $(PROJECT).qsf with modifications"
