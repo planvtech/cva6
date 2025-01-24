@@ -77,13 +77,18 @@ module cva6_fifo_v3 #(
     read_pointer_n  = read_pointer_q;
     write_pointer_n = write_pointer_q;
     status_cnt_n    = status_cnt_q;
-    data_ft_n = data_ft_q;
-    first_word_n = first_word_q;
+    if (FPGA_EN && FPGA_ALTERA) data_ft_n = data_ft_q;
+    if (FPGA_EN && FPGA_ALTERA) first_word_n = first_word_q;
     if (FPGA_EN) begin
       fifo_ram_we            = '0;
       fifo_ram_write_address = '0;
       fifo_ram_wdata         = '0;
-      data_o                 = (DEPTH == 0) ? data_i : (first_word_q ? data_ft_q : fifo_ram_rdata);
+      if (DEPTH == 0) begin
+        data_o = data_i;
+      end else begin
+        if (FPGA_ALTERA) data_o = first_word_q ? data_ft_q : fifo_ram_rdata;
+        else data_o = fifo_ram_rdata;
+      end
     end else begin
       data_o     = (DEPTH == 0) ? data_i : mem_q[read_pointer_q];
       mem_n      = mem_q;
@@ -96,7 +101,7 @@ module cva6_fifo_v3 #(
         fifo_ram_we = 1'b1;
         fifo_ram_write_address = write_pointer_q;
         fifo_ram_wdata = data_i;
-        first_word_n = FPGA_ALTERA && first_word_q && pop_i;
+        if (FPGA_ALTERA) first_word_n = first_word_q && pop_i;
       end else begin
         // push the data onto the queue
         mem_n[write_pointer_q] = data_i;
@@ -160,8 +165,8 @@ module cva6_fifo_v3 #(
       read_pointer_q  <= '0;
       write_pointer_q <= '0;
       status_cnt_q    <= '0;
-      first_word_q <= '0;
-      data_ft_q <= '0;
+      if (FPGA_ALTERA) first_word_q <= '0;
+      if (FPGA_ALTERA) data_ft_q <= '0;
     end else begin
       if (flush_i) begin
         read_pointer_q  <= '0;
@@ -216,7 +221,6 @@ module cva6_fifo_v3 #(
   end
 
   // pragma translate_off
-`ifndef VERILATOR
   initial begin
     assert (DEPTH > 0)
     else $error("DEPTH must be greater than 0.");
@@ -229,7 +233,6 @@ module cva6_fifo_v3 #(
   empty_read :
   assert property (@(posedge clk_i) disable iff (~rst_ni) (empty_o |-> ~pop_i))
   else $fatal(1, "Trying to pop data although the FIFO is empty.");
-`endif
   // pragma translate_on
 
 endmodule  // fifo_v3

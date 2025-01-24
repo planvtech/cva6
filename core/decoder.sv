@@ -776,12 +776,19 @@ module decoder
                 // Bitwise Shifting
                 {7'b011_0000, 3'b001} : instruction_o.op = ariane_pkg::ROL;  // rol
                 {7'b011_0000, 3'b101} : instruction_o.op = ariane_pkg::ROR;  // ror
+                {
+                  7'b000_0100, 3'b111
+                } : begin
+                  if (CVA6Cfg.ZKN) instruction_o.op = ariane_pkg::PACK_H;  //packh
+                  else illegal_instr_bm = 1'b1;
+                end
                 // Zero Extend Op RV32 encoding
                 {
                   7'b000_0100, 3'b100
                 } : begin
                   if (!CVA6Cfg.IS_XLEN64 && instr.instr[24:20] == 5'b00000)
-                    instruction_o.op = ariane_pkg::ZEXTH;
+                    instruction_o.op = ariane_pkg::ZEXTH;  // Zero Extend Op RV32 encoding
+                  else if (CVA6Cfg.ZKN) instruction_o.op = ariane_pkg::PACK;  // pack
                   else illegal_instr_bm = 1'b1;
                 end
                 default: begin
@@ -805,10 +812,11 @@ module decoder
             unique case ({
               CVA6Cfg.RVB, CVA6Cfg.RVZiCond
             })
-              2'b00: illegal_instr = illegal_instr_non_bm;
-              2'b01: illegal_instr = illegal_instr_non_bm & illegal_instr_zic;
-              2'b10: illegal_instr = illegal_instr_non_bm & illegal_instr_bm;
-              2'b11: illegal_instr = illegal_instr_non_bm & illegal_instr_bm & illegal_instr_zic;
+              2'b00:   illegal_instr = illegal_instr_non_bm;
+              2'b01:   illegal_instr = illegal_instr_non_bm & illegal_instr_zic;
+              2'b10:   illegal_instr = illegal_instr_non_bm & illegal_instr_bm;
+              2'b11:   illegal_instr = illegal_instr_non_bm & illegal_instr_bm & illegal_instr_zic;
+              default: ;  // TODO: Check that default case is not synthesized.
             endcase
           end
         end
@@ -843,21 +851,21 @@ module decoder
                 instr.rtype.funct7, instr.rtype.funct3
               })
                 // Shift with Add (Unsigned Word)
-                {7'b001_0000, 3'b010}: instruction_o.op = ariane_pkg::SH1ADDUW; // sh1add.uw
-                {7'b001_0000, 3'b100}: instruction_o.op = ariane_pkg::SH2ADDUW; // sh2add.uw
-                {7'b001_0000, 3'b110}: instruction_o.op = ariane_pkg::SH3ADDUW; // sh3add.uw
+                {7'b001_0000, 3'b010} : instruction_o.op = ariane_pkg::SH1ADDUW;  // sh1add.uw
+                {7'b001_0000, 3'b100} : instruction_o.op = ariane_pkg::SH2ADDUW;  // sh2add.uw
+                {7'b001_0000, 3'b110} : instruction_o.op = ariane_pkg::SH3ADDUW;  // sh3add.uw
                 // Unsigned word Op's
-                {7'b000_0100, 3'b000}: instruction_o.op = ariane_pkg::ADDUW;    // add.uw
+                {7'b000_0100, 3'b000} : instruction_o.op = ariane_pkg::ADDUW;  // add.uw
                 // Bitwise Shifting
-                {7'b011_0000, 3'b001}: instruction_o.op = ariane_pkg::ROLW;     // rolw
-                {7'b011_0000, 3'b101}: instruction_o.op = ariane_pkg::RORW;     // rorw
-                // Zero Extend Op RV64 encoding
-                {7'b000_0100, 3'b100}:
-                begin
+                {7'b011_0000, 3'b001} : instruction_o.op = ariane_pkg::ROLW;  // rolw
+                {7'b011_0000, 3'b101} : instruction_o.op = ariane_pkg::RORW;  // rorw
+                {
+                  7'b000_0100, 3'b100
+                } : begin
                   if (instr.instr[24:20] == 5'b00000)
-                    instruction_o.op = ariane_pkg::ZEXTH;
-                  else
-                    illegal_instr_bm = 1'b1;
+                    instruction_o.op = ariane_pkg::ZEXTH;  // Zero Extend Op RV64 encoding
+                  else if (CVA6Cfg.ZKN) instruction_o.op = ariane_pkg::PACK_W;  // packw
+                  else illegal_instr_bm = 1'b1;
                 end
                 default: illegal_instr_bm = 1'b1;
               endcase
@@ -909,9 +917,20 @@ module decoder
                   else if (instr.instr[24:20] == 5'b00000) instruction_o.op = ariane_pkg::CLZ;
                   else if (instr.instr[24:20] == 5'b00001) instruction_o.op = ariane_pkg::CTZ;
                   else illegal_instr_bm = 1'b1;
-                end else if (instr.instr[31:26] == 6'b010010) instruction_o.op = ariane_pkg::BCLRI;
-                else if (instr.instr[31:26] == 6'b011010) instruction_o.op = ariane_pkg::BINVI;
-                else if (instr.instr[31:26] == 6'b001010) instruction_o.op = ariane_pkg::BSETI;
+                end else if (CVA6Cfg.IS_XLEN64 && instr.instr[31:26] == 6'b010010)
+                  instruction_o.op = ariane_pkg::BCLRI;
+                else if (CVA6Cfg.IS_XLEN32 && instr.instr[31:25] == 7'b0100100)
+                  instruction_o.op = ariane_pkg::BCLRI;
+                else if (CVA6Cfg.IS_XLEN64 && instr.instr[31:26] == 6'b011010)
+                  instruction_o.op = ariane_pkg::BINVI;
+                else if (CVA6Cfg.IS_XLEN32 && instr.instr[31:25] == 7'b0110100)
+                  instruction_o.op = ariane_pkg::BINVI;
+                else if (CVA6Cfg.IS_XLEN64 && instr.instr[31:26] == 6'b001010)
+                  instruction_o.op = ariane_pkg::BSETI;
+                else if (CVA6Cfg.IS_XLEN32 && instr.instr[31:25] == 7'b0010100)
+                  instruction_o.op = ariane_pkg::BSETI;
+                else if (CVA6Cfg.ZKN && instr.instr[31:20] == 12'b000010001111)
+                  instruction_o.op = ariane_pkg::ZIP;
                 else illegal_instr_bm = 1'b1;
               end
               3'b101: begin
@@ -920,8 +939,18 @@ module decoder
                   instruction_o.op = ariane_pkg::REV8;
                 else if (instr.instr[31:20] == 12'b011010011000)
                   instruction_o.op = ariane_pkg::REV8;
-                else if (instr.instr[31:26] == 6'b010_010) instruction_o.op = ariane_pkg::BEXTI;
-                else if (instr.instr[31:26] == 6'b011_000) instruction_o.op = ariane_pkg::RORI;
+                else if (CVA6Cfg.IS_XLEN64 && instr.instr[31:26] == 6'b010_010)
+                  instruction_o.op = ariane_pkg::BEXTI;
+                else if (CVA6Cfg.IS_XLEN32 && instr.instr[31:25] == 7'b010_0100)
+                  instruction_o.op = ariane_pkg::BEXTI;
+                else if (CVA6Cfg.IS_XLEN64 && instr.instr[31:26] == 6'b011_000)
+                  instruction_o.op = ariane_pkg::RORI;
+                else if (CVA6Cfg.IS_XLEN32 && instr.instr[31:25] == 7'b011_0000)
+                  instruction_o.op = ariane_pkg::RORI;
+                else if (CVA6Cfg.ZKN && instr.instr[31:20] == 12'b011010000111)
+                  instruction_o.op = ariane_pkg::BREV8;
+                else if (CVA6Cfg.ZKN && instr.instr[31:20] == 12'b000010001111)
+                  instruction_o.op = ariane_pkg::UNZIP;
                 else illegal_instr_bm = 1'b1;
               end
               default: illegal_instr_bm = 1'b1;

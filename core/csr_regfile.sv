@@ -35,7 +35,7 @@ module csr_regfile
     // halt requested - CONTROLLER
     output logic halt_csr_o,
     // Instruction to be committed - ID_STAGE
-    input scoreboard_entry_t [CVA6Cfg.NrCommitPorts-1:0] commit_instr_i,
+    input scoreboard_entry_t commit_instr_i,
     // Commit acknowledged a instruction -> increase instret CSR - COMMIT_STAGE
     input logic [CVA6Cfg.NrCommitPorts-1:0] commit_ack_i,
     // Address from which to start booting, mtvec is set to the same address - SUBSYSTEM
@@ -886,7 +886,7 @@ module csr_regfile
     // --------------------
     cycle_d         = cycle_q;
     instret_d       = instret_q;
-    if (!debug_mode_q) begin
+    if (!(CVA6Cfg.DebugEn && debug_mode_q)) begin
       // increase instruction retired counter
       for (int i = 0; i < CVA6Cfg.NrCommitPorts; i++) begin
         if (commit_ack_i[i] && !ex_i.valid && (!CVA6Cfg.PerfCounterEn || (CVA6Cfg.PerfCounterEn && !mcountinhibit_q[2])))
@@ -949,7 +949,7 @@ module csr_regfile
     mcause_d     = mcause_q;
     mcounteren_d = mcounteren_q;
     mscratch_d   = mscratch_q;
-    mtval_d      = mtval_q;
+    if (CVA6Cfg.TvalEn) mtval_d = mtval_q;
     if (CVA6Cfg.RVH) begin
       mtinst_d = mtinst_q;
       mtval2_d = mtval2_q;
@@ -1435,9 +1435,14 @@ module csr_regfile
                       | CVA6Cfg.XLEN'(riscv::MIP_MTIP)
                       | CVA6Cfg.XLEN'(riscv::MIP_MEIP);
             end else begin
-              mask = CVA6Cfg.XLEN'(riscv::MIP_MSIP)
-                      | CVA6Cfg.XLEN'(riscv::MIP_MTIP)
-                      | CVA6Cfg.XLEN'(riscv::MIP_MEIP);
+              if (CVA6Cfg.SoftwareInterruptEn) begin
+                mask = CVA6Cfg.XLEN'(riscv::MIP_MSIP)  // same shift as MSIE
+                | CVA6Cfg.XLEN'(riscv::MIP_MTIP)  // same shift as MTIE
+                | CVA6Cfg.XLEN'(riscv::MIP_MEIP);  // same shift as MEIE
+              end else begin
+                mask = CVA6Cfg.XLEN'(riscv::MIP_MTIP)  // same shift as MTIE
+                | CVA6Cfg.XLEN'(riscv::MIP_MEIP);  // same shift as MEIE
+              end
             end
           end
           mie_d = (mie_q & ~mask) | (csr_wdata & mask); // we only support supervisor and M-mode interrupts
@@ -1715,9 +1720,10 @@ module csr_regfile
         default: update_access_exception = 1'b1;
       endcase
     end
-
-    mstatus_d.sxl = riscv::XLEN_64;
-    mstatus_d.uxl = riscv::XLEN_64;
+    if (CVA6Cfg.IS_XLEN64) begin
+      mstatus_d.sxl = riscv::XLEN_64;
+      mstatus_d.uxl = riscv::XLEN_64;
+    end
     if (!CVA6Cfg.RVU) begin
       mstatus_d.mpp = riscv::PRIV_LVL_M;
     end
@@ -1771,7 +1777,7 @@ module csr_regfile
     // Machine Mode External Interrupt Pending
     mip_d[riscv::IRQ_M_EXT] = irq_i[0];
     // Machine software interrupt
-    mip_d[riscv::IRQ_M_SOFT] = ipi_i;
+    mip_d[riscv::IRQ_M_SOFT] = CVA6Cfg.SoftwareInterruptEn && ipi_i;
     // Timer interrupt pending, coming from platform timer
     mip_d[riscv::IRQ_M_TIMER] = time_irq_i;
 
@@ -1791,38 +1797,24 @@ module csr_regfile
       // a m-mode trap might be delegated if we are taking it in S mode
       // first figure out if this was an exception or an interrupt e.g.: look at bit (XLEN-1)
       // the cause register can only be $clog2(CVA6Cfg.XLEN) bits long (as we only support XLEN exceptions)
-      if (CVA6Cfg.RVH) begin
+      if (CVA6Cfg.RVS) begin
         if ((ex_i.cause[CVA6Cfg.XLEN-1] && mideleg_q[ex_i.cause[$clog2(
                 CVA6Cfg.XLEN
-            )-1:0]] && ~hideleg_q[ex_i.cause[$clog2(
-                CVA6Cfg.XLEN
             )-1:0]]) || (~ex_i.cause[CVA6Cfg.XLEN-1] && medeleg_q[ex_i.cause[$clog2(
-                CVA6Cfg.XLEN
-            )-1:0]] && ~hedeleg_q[ex_i.cause[$clog2(
                 CVA6Cfg.XLEN
             )-1:0]])) begin
           // traps never transition from a more-privileged mode to a less privileged mode
           // so if we are already in M mode, stay there
           trap_to_priv_lvl = (priv_lvl_o == riscv::PRIV_LVL_M) ? riscv::PRIV_LVL_M : riscv::PRIV_LVL_S;
-        end else if ((ex_i.cause[CVA6Cfg.XLEN-1] && hideleg_q[ex_i.cause[$clog2(
-                CVA6Cfg.XLEN
-            )-1:0]]) || (~ex_i.cause[CVA6Cfg.XLEN-1] && hedeleg_q[ex_i.cause[$clog2(
-                CVA6Cfg.XLEN
-            )-1:0]])) begin
-          trap_to_priv_lvl = (priv_lvl_o == riscv::PRIV_LVL_M) ? riscv::PRIV_LVL_M : riscv::PRIV_LVL_S;
-          // trap to VS only if it is  the currently active mode
-          trap_to_v = v_q;
-        end
-      end else begin
-        if (CVA6Cfg.RVS) begin
-          if ((ex_i.cause[CVA6Cfg.XLEN-1] && mideleg_q[ex_i.cause[$clog2(
-                  CVA6Cfg.XLEN
-              )-1:0]]) || (~ex_i.cause[CVA6Cfg.XLEN-1] && medeleg_q[ex_i.cause[$clog2(
-                  CVA6Cfg.XLEN
-              )-1:0]])) begin
-            // traps never transition from a more-privileged mode to a less privileged mode
-            // so if we are already in M mode, stay there
-            trap_to_priv_lvl = (priv_lvl_o == riscv::PRIV_LVL_M) ? riscv::PRIV_LVL_M : riscv::PRIV_LVL_S;
+          if (CVA6Cfg.RVH) begin
+            if ((ex_i.cause[CVA6Cfg.XLEN-1] && hideleg_q[ex_i.cause[$clog2(
+                    CVA6Cfg.XLEN
+                )-1:0]]) || (~ex_i.cause[CVA6Cfg.XLEN-1] && hedeleg_q[ex_i.cause[$clog2(
+                    CVA6Cfg.XLEN
+                )-1:0]])) begin
+              // trap to VS only if it is  the currently active mode
+              trap_to_v = v_q;
+            end
           end
         end
       end
@@ -2000,11 +1992,11 @@ module csr_regfile
         dcsr_d.prv = priv_lvl_o;
         dcsr_d.v   = (!CVA6Cfg.RVH) ? 1'b0 : v_q;
         // valid CTRL flow change
-        if (commit_instr_i[0].fu == CTRL_FLOW) begin
+        if (commit_instr_i.fu == CTRL_FLOW) begin
           // we saved the correct target address during execute
           dpc_d = {
-            {CVA6Cfg.XLEN - CVA6Cfg.VLEN{commit_instr_i[0].bp.predict_address[CVA6Cfg.VLEN-1]}},
-            commit_instr_i[0].bp.predict_address
+            {CVA6Cfg.XLEN - CVA6Cfg.VLEN{commit_instr_i.bp.predict_address[CVA6Cfg.VLEN-1]}},
+            commit_instr_i.bp.predict_address
           };
           // exception valid
         end else if (ex_i.valid) begin
@@ -2015,8 +2007,8 @@ module csr_regfile
           // consecutive PC
         end else begin
           dpc_d = {
-            {CVA6Cfg.XLEN - CVA6Cfg.VLEN{commit_instr_i[0].pc[CVA6Cfg.VLEN-1]}},
-            commit_instr_i[0].pc + (commit_instr_i[0].is_compressed ? 'h2 : 'h4)
+            {CVA6Cfg.XLEN - CVA6Cfg.VLEN{commit_instr_i.pc[CVA6Cfg.VLEN-1]}},
+            commit_instr_i.pc + (commit_instr_i.is_compressed ? 'h2 : 'h4)
           };
         end
         debug_mode_d   = 1'b1;
@@ -2433,7 +2425,7 @@ module csr_regfile
 
     unique case (conv_csr_addr.address)
       riscv::CSR_MIP:
-      csr_rdata_o = csr_rdata | ({{CVA6Cfg.XLEN - 1{1'b0}}, irq_i[1]} << riscv::IRQ_S_EXT);
+      csr_rdata_o = csr_rdata | ({{CVA6Cfg.XLEN - 1{1'b0}}, CVA6Cfg.RVS && irq_i[1]} << riscv::IRQ_S_EXT);
       // in supervisor mode we also need to check whether we delegated this bit
       riscv::CSR_SIP: begin
         if (CVA6Cfg.RVS) begin
@@ -2515,18 +2507,16 @@ module csr_regfile
   // sequential process
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (~rst_ni) begin
-      priv_lvl_q   <= riscv::PRIV_LVL_M;
+      priv_lvl_q <= riscv::PRIV_LVL_M;
       // floating-point registers
-      fcsr_q       <= '0;
+      fcsr_q     <= '0;
       // debug signals
-      debug_mode_q <= 1'b0;
       if (CVA6Cfg.DebugEn) begin
-        dcsr_q           <= '0;
-        dcsr_q.prv       <= riscv::PRIV_LVL_M;
-        dcsr_q.xdebugver <= 4'h4;
-        dpc_q            <= '0;
-        dscratch0_q      <= {CVA6Cfg.XLEN{1'b0}};
-        dscratch1_q      <= {CVA6Cfg.XLEN{1'b0}};
+        debug_mode_q <= 1'b0;
+        dcsr_q       <= '{xdebugver: 4'h4, prv: riscv::PRIV_LVL_M, default: '0};
+        dpc_q        <= '0;
+        dscratch0_q  <= {CVA6Cfg.XLEN{1'b0}};
+        dscratch1_q  <= {CVA6Cfg.XLEN{1'b0}};
       end
       // machine mode registers
       mstatus_q        <= 64'b0;
@@ -2539,12 +2529,12 @@ module csr_regfile
       mcause_q         <= {CVA6Cfg.XLEN{1'b0}};
       mcounteren_q     <= {CVA6Cfg.XLEN{1'b0}};
       mscratch_q       <= {CVA6Cfg.XLEN{1'b0}};
-      mtval_q          <= {CVA6Cfg.XLEN{1'b0}};
-      fiom_q           <= '0;
-      dcache_q         <= {{CVA6Cfg.XLEN - 1{1'b0}}, 1'b1};
-      icache_q         <= {{CVA6Cfg.XLEN - 1{1'b0}}, 1'b1};
-      mcountinhibit_q  <= '0;
-      acc_cons_q       <= {{CVA6Cfg.XLEN - 1{1'b0}}, CVA6Cfg.EnableAccelerator};
+      if (CVA6Cfg.TvalEn) mtval_q <= {CVA6Cfg.XLEN{1'b0}};
+      fiom_q          <= '0;
+      dcache_q        <= {{CVA6Cfg.XLEN - 1{1'b0}}, 1'b1};
+      icache_q        <= {{CVA6Cfg.XLEN - 1{1'b0}}, 1'b1};
+      mcountinhibit_q <= '0;
+      acc_cons_q      <= {{CVA6Cfg.XLEN - 1{1'b0}}, CVA6Cfg.EnableAccelerator};
       // supervisor mode registers
       if (CVA6Cfg.RVS) begin
         medeleg_q    <= {CVA6Cfg.XLEN{1'b0}};
@@ -2680,8 +2670,8 @@ module csr_regfile
         if (!CVA6Cfg.PMPEntryReadOnly[i]) begin
           // PMP locked logic is handled in the CSR write process above
           pmpcfg_next[i] = pmpcfg_d[i];
-          // We only support >=8-byte granularity, NA4 is disabled
-          if (pmpcfg_d[i].addr_mode == riscv::NA4) begin
+          // We only support >=8-byte granularity, NA4 is not supported
+          if ((!CVA6Cfg.PMPNapotEn && pmpcfg_d[i].addr_mode == riscv::NAPOT) ||pmpcfg_d[i].addr_mode == riscv::NA4) begin
             pmpcfg_next[i].addr_mode = pmpcfg_q[i].addr_mode;
           end
           // Follow collective WARL spec for RWX fields
@@ -2743,7 +2733,7 @@ module csr_regfile
   assign rvfi_csr_o.mscratch_q = mscratch_q;
   assign rvfi_csr_o.mepc_q = mepc_q;
   assign rvfi_csr_o.mcause_q = mcause_q;
-  assign rvfi_csr_o.mtval_q = mtval_q;
+  assign rvfi_csr_o.mtval_q = CVA6Cfg.TvalEn ? mtval_q : '0;
   assign rvfi_csr_o.fiom_q = fiom_q;
   assign rvfi_csr_o.mcountinhibit_q = mcountinhibit_q;
   assign rvfi_csr_o.cycle_q = cycle_q;

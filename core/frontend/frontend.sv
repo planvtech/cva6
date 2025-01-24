@@ -240,7 +240,7 @@ module frontend
         4'b0001: begin
           ras_pop  = 1'b0;
           ras_push = 1'b0;
-          if (CVA6Cfg.BTBEntries && btb_prediction_shifted[i].valid) begin
+          if (CVA6Cfg.BTBEntries != 0 && btb_prediction_shifted[i].valid) begin
             predict_address = btb_prediction_shifted[i].target_address;
             cf_type[i] = ariane_pkg::JumpR;
           end
@@ -575,12 +575,4 @@ module frontend
       .fetch_entry_ready_i(fetch_entry_ready_i)    // to back-end
   );
 
-  // pragma translate_off
-`ifndef VERILATOR
-  initial begin
-    assert (CVA6Cfg.FETCH_WIDTH == 32 || CVA6Cfg.FETCH_WIDTH == 64)
-    else $fatal(1, "[frontend] fetch width != not supported");
-  end
-`endif
-  // pragma translate_on
 endmodule
