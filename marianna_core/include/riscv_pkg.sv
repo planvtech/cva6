@@ -25,7 +25,8 @@ package riscv;
   localparam XLEN = cva6_config_pkg::CVA6ConfigXlen;
   localparam VLEN = (XLEN == 32) ? 32 : 64;
   localparam PLEN = (XLEN == 32) ? 34 : 56;
-  
+  typedef logic [XLEN-1:0] xlen_t;
+
   // --------------------
   // Privilege Spec
   // --------------------
@@ -513,20 +514,20 @@ package riscv;
     CSR_MINSTRET         = 12'hB02,
     CSR_MINSTRETH        = 12'hB82,
     //Performance Counters
-    CSR_MHPM_COUNTER_3   = 12'hB03,
-    CSR_MHPM_COUNTER_4   = 12'hB04,
-    CSR_MHPM_COUNTER_5   = 12'hB05,
-    CSR_MHPM_COUNTER_6   = 12'hB06,
-    CSR_MHPM_COUNTER_7   = 12'hB07,
-    CSR_MHPM_COUNTER_8   = 12'hB08,
-    CSR_MHPM_COUNTER_9   = 12'hB09,  // reserved
-    CSR_MHPM_COUNTER_10  = 12'hB0A,  // reserved
-    CSR_MHPM_COUNTER_11  = 12'hB0B,  // reserved
-    CSR_MHPM_COUNTER_12  = 12'hB0C,  // reserved
-    CSR_MHPM_COUNTER_13  = 12'hB0D,  // reserved
-    CSR_MHPM_COUNTER_14  = 12'hB0E,  // reserved
-    CSR_MHPM_COUNTER_15  = 12'hB0F,  // reserved
-    CSR_MHPM_COUNTER_16  = 12'hB10,  // reserved
+    CSR_ML1_ICACHE_MISS = 12'hB03,  // L1 Instr Cache Miss
+    CSR_ML1_DCACHE_MISS = 12'hB04,  // L1 Data Cache Miss
+    CSR_MITLB_MISS      = 12'hB05,  // ITLB Miss
+    CSR_MDTLB_MISS      = 12'hB06,  // DTLB Miss
+    CSR_MLOAD           = 12'hB07,  // Loads
+    CSR_MSTORE          = 12'hB08,  // Stores
+    CSR_MEXCEPTION      = 12'hB09,  // Taken exceptions
+    CSR_MEXCEPTION_RET  = 12'hB0A,  // Exception return
+    CSR_MBRANCH_JUMP    = 12'hB0B,  // Software change of PC
+    CSR_MCALL           = 12'hB0C,  // Procedure call
+    CSR_MRET            = 12'hB0D,  // Procedure Return
+    CSR_MMIS_PREDICT    = 12'hB0E,  // Branch mis-predicted
+    CSR_MSB_FULL        = 12'hB0F,  // Scoreboard full
+    CSR_MIF_EMPTY       = 12'hB10,  // instruction fetch queue empty
     CSR_MHPM_COUNTER_17  = 12'hB11,  // reserved
     CSR_MHPM_COUNTER_18  = 12'hB12,  // reserved
     CSR_MHPM_COUNTER_19  = 12'hB13,  // reserved
@@ -941,5 +942,154 @@ package riscv;
     byte was_exception;
   } commit_log_t;
   // pragma translate_on
+
+  // branchpredict scoreboard entry
+    // this is the struct which we will inject into the pipeline to guide the various
+    // units towards the correct branch decision and resolve
+  typedef struct packed {
+    cf_t                     cf;               // type of control flow prediction
+    logic [VLEN-1:0] predict_address;  // target address at which to jump, or not
+  }branchpredict_sbe_t;
+
+  typedef struct packed {
+    logic [XLEN-1:0] cause;  // cause of exception
+    logic [XLEN-1:0] tval;  // additional information of causing exception (e.g.: instruction causing it),
+    // address of LD/ST fault
+    logic [CVA6Cfg.GPLEN-1:0] tval2;  // additional information when the causing exception in a guest exception
+    logic [31:0] tinst;  // transformed instruction information
+    logic gva;  // signals when a guest virtual address is written to tval
+    logic valid;
+  }exception_t;
+
+  // cache request ports
+  // I$ address translation requests
+  typedef struct packed {
+    logic                    fetch_valid;      // address translation valid
+    logic [CVA6Cfg.PLEN-1:0] fetch_paddr;      // physical address in
+    exception_t              fetch_exception;  // exception occurred during fetch
+  }icache_areq_t;
+
+  typedef struct packed {
+    logic                    fetch_req;    // address translation request
+    logic [CVA6Cfg.VLEN-1:0] fetch_vaddr;  // virtual address out
+  }icache_arsp_t;
+
+  // I$ data requests
+  typedef struct packed {
+    logic                    req;      // we request a new word
+    logic                    kill_s1;  // kill the current request
+    logic                    kill_s2;  // kill the last request
+    logic                    spec;     // request is speculative
+    logic [CVA6Cfg.VLEN-1:0] vaddr;    // 1st cycle: 12 bit index is taken for lookup
+  }icache_dreq_t;
+
+  typedef struct packed {
+    logic                                ready;  // icache is ready
+    logic                                valid;  // signals a valid read
+    logic [CVA6Cfg.FETCH_WIDTH-1:0]      data;   // 2+ cycle out: tag
+    logic [CVA6Cfg.FETCH_USER_WIDTH-1:0] user;   // User bits
+    logic [CVA6Cfg.VLEN-1:0]             vaddr;  // virtual address out
+    exception_t                          ex;     // we've encountered an exception
+  }icache_drsp_t;
+
+  // IF/ID Stage
+  // store the decompressed instruction
+  typedef struct packed {
+    logic [CVA6Cfg.VLEN-1:0] address;  // the address of the instructions from below
+    logic [31:0] instruction;  // instruction word
+    branchpredict_sbe_t     branch_predict; // this field contains branch prediction information regarding the forward branch path
+    exception_t             ex;             // this field contains exceptions which might have happened earlier, e.g.: fetch exceptions
+  }fetch_entry_t;
+
+  // branch-predict
+  // this is the struct we get back from ex stage and we will use it to update
+  // all the necessary data structures
+  // bp_resolve_t
+  typedef struct packed {
+    logic                    valid;           // prediction with all its values is valid
+    logic [CVA6Cfg.VLEN-1:0] pc;              // PC of predict or mis-predict
+    logic [CVA6Cfg.VLEN-1:0] target_address;  // target address at which to jump, or not
+    logic                    is_mispredict;   // set if this was a mis-predict
+    logic                    is_taken;        // branch is taken
+    cf_t                     cf_type;         // Type of control flow change
+  }bp_resolve_t;
+
+  // All information needed to determine whether we need to associate an interrupt
+  // with the corresponding instruction or not.
+  typedef struct packed {
+    logic [CVA6Cfg.XLEN-1:0] mie;
+    logic [CVA6Cfg.XLEN-1:0] mip;
+    logic [CVA6Cfg.XLEN-1:0] mideleg;
+    logic [CVA6Cfg.XLEN-1:0] hideleg;
+    logic                    sie;
+    logic                    global_enable;
+  }irq_ctrl_t;
+
+  typedef struct packed {
+    logic                             valid;
+    logic [CVA6Cfg.VLEN-1:0]          vaddr;
+    logic [31:0]                      tinst;
+    logic                             hs_ld_st_inst;
+    logic                             hlvx_inst;
+    logic                             overflow;
+    logic                             g_overflow;
+    logic [CVA6Cfg.XLEN-1:0]          data;
+    logic [(CVA6Cfg.XLEN/8)-1:0]      be;
+    fu_t                              fu;
+    fu_op                             operation;
+    logic [CVA6Cfg.TRANS_ID_BITS-1:0] trans_id;
+  }lsu_ctrl_t;
+
+  typedef struct packed {
+    fu_t                              fu;
+    fu_op                             operation;
+    logic [CVA6Cfg.XLEN-1:0]          operand_a;
+    logic [CVA6Cfg.XLEN-1:0]          operand_b;
+    logic [CVA6Cfg.XLEN-1:0]          imm;
+    logic [CVA6Cfg.TRANS_ID_BITS-1:0] trans_id;
+  }fu_data_t;
+
+  typedef struct packed {
+    logic [CVA6Cfg.ICACHE_SET_ASSOC_WIDTH-1:0] way;  // way to replace
+    logic [CVA6Cfg.PLEN-1:0] paddr;  // physical address
+    logic nc;  // noncacheable
+    logic [CVA6Cfg.MEM_TID_WIDTH-1:0] tid;  // threadi id (used as transaction id in Ariane)
+  }icache_req_t;
+
+  typedef struct packed {
+    wt_cache_pkg::icache_in_t rtype;  // see definitions above
+    logic [CVA6Cfg.ICACHE_LINE_WIDTH-1:0] data;  // full cache line width
+    logic [CVA6Cfg.ICACHE_USER_LINE_WIDTH-1:0] user;  // user bits
+    struct packed {
+      logic                                      vld;  // invalidate only affected way
+      logic                                      all;  // invalidate all ways
+      logic [CVA6Cfg.ICACHE_INDEX_WIDTH-1:0]     idx;  // physical address to invalidate
+      logic [CVA6Cfg.ICACHE_SET_ASSOC_WIDTH-1:0] way;  // way to invalidate
+    } inv;  // invalidation vector
+    logic [CVA6Cfg.MEM_TID_WIDTH-1:0] tid;  // threadi id (used as transaction id in Ariane)
+  }icache_rtrn_t;
+
+  // D$ data requests
+  typedef struct packed {
+    logic [CVA6Cfg.DCACHE_INDEX_WIDTH-1:0] address_index;
+    logic [CVA6Cfg.DCACHE_TAG_WIDTH-1:0]   address_tag;
+    logic [CVA6Cfg.XLEN-1:0]               data_wdata;
+    logic [CVA6Cfg.DCACHE_USER_WIDTH-1:0]  data_wuser;
+    logic                                  data_req;
+    logic                                  data_we;
+    logic [(CVA6Cfg.XLEN/8)-1:0]           data_be;
+    logic [1:0]                            data_size;
+    logic [CVA6Cfg.DcacheIdWidth-1:0]      data_id;
+    logic                                  kill_req;
+    logic                                  tag_valid;
+  }dcache_req_i_t;
+
+  typedef struct packed {
+    logic                                 data_gnt;
+    logic                                 data_rvalid;
+    logic [CVA6Cfg.DcacheIdWidth-1:0]     data_rid;
+    logic [CVA6Cfg.XLEN-1:0]              data_rdata;
+    logic [CVA6Cfg.DCACHE_USER_WIDTH-1:0] data_ruser;
+  }dcache_req_o_t;
 
 endpackage

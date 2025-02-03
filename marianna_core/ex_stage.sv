@@ -1,0 +1,405 @@
+
+// Copyright 2018 ETH Zurich and University of Bologna.
+// Copyright and related rights are licensed under the Solderpad Hardware
+// License, Version 0.51 (the "License"); you may not use this file except in
+// compliance with the License.  You may obtain a copy of the License at
+// http://solderpad.org/licenses/SHL-0.51. Unless required by applicable law
+// or agreed to in writing, software, hardware and materials distributed under
+// this License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+// CONDITIONS OF ANY KIND, either express or implied. See the License for the
+// specific language governing permissions and limitations under the License.
+//
+// Author: Florian Zaruba, ETH Zurich
+// Date: 19.04.2017
+// Description: Instantiation of all functional units residing in the execute stage
+
+
+module ex_stage import ariane_pkg::*; #(
+    parameter int unsigned ASID_WIDTH = 1,
+    parameter config_pkg::cva6_cfg_t CVA6Cfg = config_pkg::cva6_cfg_empty
+) (
+    input  logic                                   clk_i,    // Clock
+    input  logic                                   rst_ni,   // Asynchronous reset active low
+    input  logic                                   flush_i,
+    input  logic                                   flush_misbranch_instr_i, 
+    input  logic                                   debug_mode_i,
+    
+
+    input  riscv::fu_data_t                        fu_data_i,
+    input  logic [riscv::VLEN-1:0]                 pc_i,                  // PC of current instruction
+    input  logic                                   is_compressed_instr_i, // we need to know if this was a compressed instruction
+                                                                          // in order to calculate the next PC on a mis-predict
+    // Fixed latency unit(s)
+    output riscv::xlen_t                           flu_result_o,
+    output logic [CVA6Cfg.TRANS_ID_BITS-1:0]       flu_trans_id_o,        // ID of ROB entry at which to write back
+    output riscv::exception_t                             flu_exception_o,
+    output logic                                   flu_ready_o,           // FLU is ready
+    output logic                                   flu_valid_o,           // FLU result is valid
+    
+    
+    // Multiplier output 
+    output logic [63:0]                            mult_result_o,
+    output logic [CVA6Cfg.TRANS_ID_BITS-1:0]       mult_trans_id_o,        // ID of ROB entry at which to write back
+    output riscv::exception_t                             mult_exception_o,
+    output logic                                   mult_ready_o,           // FLU is ready
+    output logic                                   mult_valid_o,           // FLU result is valid
+
+
+    // ALU 1
+    input  logic                                   alu_valid_i,           // Output is valid
+    // Branch Unit
+    input  logic                                   branch_valid_i,        // we are using the branch unit
+    input  riscv::branchpredict_sbe_t              branch_predict_i,
+    output riscv::bp_resolve_t                     resolved_branch_o,     // the branch engine uses the write back from the ALU
+    // CSR
+    input  logic                                   csr_valid_i,
+    output logic [11:0]                            csr_addr_o,
+    input  logic                                   csr_commit_i,
+    // MULT
+    input  logic                                   mult_valid_i,      // Output is valid
+    // LSU
+    output logic                                   lsu_ready_o,        // FU is ready
+    input  logic                                   lsu_valid_i,        // Input is valid
+
+    output logic                                   load_valid_o,
+    output riscv::xlen_t                           load_result_o,
+    output logic [CVA6Cfg.TRANS_ID_BITS-1:0]       load_trans_id_o,
+    output riscv::exception_t                             load_exception_o,
+    output logic                                   store_valid_o,
+    output riscv::xlen_t                           store_result_o,
+    output logic [CVA6Cfg.TRANS_ID_BITS-1:0]       store_trans_id_o,
+    output riscv::exception_t                             store_exception_o,
+
+    input  logic                                   lsu_commit_i,
+    output logic                                   lsu_commit_ready_o, // commit queue is ready to accept another commit request
+    input  logic [CVA6Cfg.TRANS_ID_BITS-1:0]       commit_tran_id_i,
+    output logic                                   no_st_pending_o,
+    input  logic                                   amo_valid_commit_i,
+    // FPU
+    output logic                                   fpu_ready_o,      // FU is ready
+    input  logic                                   fpu_valid_i,      // Output is valid
+    input  logic [1:0]                             fpu_fmt_i,        // FP format
+    input  logic [2:0]                             fpu_rm_i,         // FP rm
+    input  logic [2:0]                             fpu_frm_i,        // FP frm csr
+    input  logic [6:0]                             fpu_prec_i,       // FP precision control
+    output logic [CVA6Cfg.TRANS_ID_BITS-1:0]       fpu_trans_id_o,
+    output riscv::xlen_t                           fpu_result_o,
+    output logic                                   fpu_valid_o,
+    output riscv::exception_t                      fpu_exception_o,
+    // Memory Management
+    input  logic                                   enable_translation_i,
+    input  logic                                   en_ld_st_translation_i,
+    input  logic                                   flush_tlb_i,
+	input  logic 								   flush_tlb_all_i,
+    input  riscv::priv_lvl_t                       priv_lvl_i,
+    input  riscv::priv_lvl_t                       ld_st_priv_lvl_i,
+    input  logic                                   sum_i,
+    input  logic                                   mxr_i,
+    input  logic [CVA6Cfg.PPNW-1:0]                satp_ppn_i,
+    input  logic [CVA6Cfg.ASID_WIDTH-1:0]          asid_i,
+    // icache translation requests
+    input  riscv::icache_arsp_t                    icache_areq_i,
+    output riscv::icache_areq_t                    icache_areq_o,
+
+    // interface to dcache
+    input  riscv::dcache_req_o_t [2:0]             dcache_req_ports_i,
+    output riscv::dcache_req_i_t [2:0]             dcache_req_ports_o,
+    input  logic                                   dcache_wbuffer_empty_i,
+    input  logic                                   dcache_wbuffer_not_ni_i,
+    output amo_req_t                               amo_req_o,          // request to cache subsytem
+    input  amo_resp_t                              amo_resp_i,         // response from cache subsystem
+    // Performance counters
+    output logic                                   itlb_miss_o,
+    output logic                                   dtlb_miss_o,
+    // PMPs
+    input  riscv::pmpcfg_t [15:0]                  pmpcfg_i,
+    input  logic[15:0][CVA6Cfg.PLEN-3:0]            pmpaddr_i
+);
+
+    // Fixed Latency Units:
+    //
+    // all fixed latency units share a single issue port and a sing write
+    // port into the ROB. At the moment those are:
+    // 1. ALU - all operations are single cycle
+    // 2. Branch unit: operation is single cycle, the ALU is needed
+    //    for comparison
+    // 3. CSR: This is a small buffer which saves the address of the CSR.
+    //    The value is then re-fetched once the instruction retires. The buffer
+    //    is only a single entry deep, hence this operation will block all
+    //    other operations once this buffer is full. This should not be a major
+    //    concern though as CSRs are infrequent.
+    // 
+    // Multiplier/Divider: The multiplier has a fixed latency of 1 cycle.
+    //                        Divisions are arbitrary in length
+    //                        they will simply block the issue of all other
+    //                        instructions.
+	
+	
+	//These two register store the rs1 and rs2 parameters in case of SFENCE_VMA instruction to be used for TLB flush in the next clock cycle
+	
+    logic sfence_gating_q,sfence_gating_n; 
+    logic [ASID_WIDTH-1:0] asid_to_be_flushed_q,asid_to_be_flushed_n;
+	logic [riscv::VLEN-1:0] vaddr_to_be_flushed_q,vaddr_to_be_flushed_n; 
+    logic misbranch_detected_q , misbranch_detected_n;
+    fu_data_t lsu_data;
+    // from ALU to branch unit
+    logic alu_branch_res; // branch comparison result
+    riscv::xlen_t alu_result, csr_result;
+    logic [riscv::VLEN-1:0] branch_result;
+    logic csr_ready;
+    
+    logic mult_valid;
+   
+
+
+
+    // 1. ALU (combinatorial)
+    // data silence operation
+    fu_data_t alu_data;
+    assign alu_data = ((alu_valid_i | branch_valid_i) & ~misbranch_detected_q) ? fu_data_i  : '0;
+
+    alu alu_i (
+        .clk_i,
+        .rst_ni,
+        .fu_data_i        ( alu_data       ),
+        .result_o         ( alu_result     ),
+        .alu_branch_res_o ( alu_branch_res )
+    );
+
+    // 2. Branch Unit (combinatorial)
+    // we don't silence the branch unit as this is already critical and we do
+    // not want to add another layer of logic
+    branch_unit branch_unit_i (
+        .clk_i,
+        .rst_ni,
+        .fu_data_i,
+        .pc_i,
+        .is_compressed_instr_i,
+        .branch_valid_i ( branch_valid_i & ~misbranch_detected_q), 
+        .branch_comp_res_i ( alu_branch_res ),
+        .branch_result_o   ( branch_result ),
+        .branch_predict_i,
+        .resolved_branch_o,
+        .branch_exception_o ( flu_exception_o )
+    );
+
+    // 3. CSR (sequential)
+    csr_buffer csr_buffer_i (
+        .clk_i,
+        .rst_ni,
+        .flush_i,
+        .fu_data_i,
+        .csr_valid_i (csr_valid_i & ~misbranch_detected_q),
+        .csr_ready_o    ( csr_ready    ),
+        .csr_result_o   ( csr_result   ),
+        .csr_commit_i,
+        .csr_addr_o
+    );
+
+    
+
+    assign flu_valid_o = (alu_valid_i | branch_valid_i | csr_valid_i ) & ~misbranch_detected_q; 
+
+
+    // result MUX
+    always_comb begin
+        // Branch result as default case
+        flu_result_o = {{riscv::XLEN-riscv::VLEN{1'b0}}, branch_result};
+        flu_trans_id_o = fu_data_i.trans_id;
+        // ALU result
+        if (alu_valid_i & ~misbranch_detected_q) begin
+            flu_result_o = alu_result;
+        // CSR result
+        end else if (csr_valid_i & ~misbranch_detected_q ) begin
+            flu_result_o = csr_result;  
+        
+        end
+    end
+
+    
+    
+   
+
+    // ready flags for FLU
+    always_comb begin
+        flu_ready_o = csr_ready;
+    end
+
+    assign mult_valid_o = mult_valid; 
+    assign mult_exception_o = '0;//flu_exception_o; 
+    
+    // 4. Multiplication (Sequential)
+    fu_data_t mult_data;
+    // input silencing of multiplier
+    assign mult_data  = (mult_valid_i & ~misbranch_detected_q)? fu_data_i  : '0;
+
+    mult i_mult (
+        .clk_i,
+        .rst_ni,
+        .flush_i,
+        .mult_valid_i (mult_valid_i & ~misbranch_detected_q),
+        .fu_data_i       ( mult_data     ),
+        .result_o        ( mult_result_o   ),
+        .mult_valid_o    ( mult_valid    ),
+        .mult_ready_o    ( mult_ready_o  ),
+        .mult_trans_id_o ( mult_trans_id_o ) 
+    );
+
+    // ----------------
+    // FPU
+    // ----------------
+    generate
+        if (CVA6Cfg.FpPresent) begin : fpu_gen
+            fu_data_t fpu_data;
+            assign fpu_data  = fpu_valid_i ? fu_data_i  : '0;
+
+            fpu_wrap fpu_i (
+                .clk_i,
+                .rst_ni,
+                .flush_i,
+                .fpu_valid_i,
+                .fpu_ready_o,
+                .fu_data_i ( fpu_data ),
+                .fpu_fmt_i,
+                .fpu_rm_i,
+                .fpu_frm_i,
+                .fpu_prec_i,
+                .fpu_trans_id_o,
+                .result_o ( fpu_result_o ),
+                .fpu_valid_o,
+                .fpu_exception_o
+            );
+        end else begin : no_fpu_gen
+            assign fpu_ready_o     = '0;
+            assign fpu_trans_id_o  = '0;
+            assign fpu_result_o    = '0;
+            assign fpu_valid_o     = '0;
+            assign fpu_exception_o = '0;
+        end
+    endgenerate
+
+    
+    // This process monitors the resolved_branch_o.is_mispredict signal to discover if some 
+    // Branch was mispredicted, in that case it blocks the issue of the next instructions. 
+    // The controller will anyway flush all speculative instructions before to continue
+    always_comb 
+    begin 
+        
+        misbranch_detected_n = misbranch_detected_q; 
+
+        if (resolved_branch_o.is_mispredict)
+            misbranch_detected_n=1'b1; 
+        
+        if (flush_misbranch_instr_i|flush_i)
+            misbranch_detected_n=1'b0; 
+
+    end 
+
+    always @ ( posedge clk_i or negedge rst_ni ) 
+    begin 
+        if (~rst_ni)
+            misbranch_detected_q <= 1'b0; 
+        else 
+            misbranch_detected_q <= misbranch_detected_n; 
+    end  
+    //
+
+    //Local storing for SFENCE_VMA parameters, waiting for the instruction to commit. 
+    //this includes the "gating" functionality in case two SFENCE comes Back to back. 
+
+    always_ff @ (posedge clk_i or negedge rst_ni)
+    begin 
+        if (~rst_ni)
+        begin
+            sfence_gating_q <= 1'b0; 
+            asid_to_be_flushed_q <= '0; 
+            vaddr_to_be_flushed_q <= '0; 
+        end
+        else if (flush_i)
+        begin
+            sfence_gating_q <= 1'b0; 
+            asid_to_be_flushed_q <= '0; 
+            vaddr_to_be_flushed_q <= '0; 
+        end
+        else
+        begin
+            sfence_gating_q <= sfence_gating_n;
+            asid_to_be_flushed_q <= asid_to_be_flushed_n; 
+            vaddr_to_be_flushed_q <= vaddr_to_be_flushed_n; 
+        end 
+    end
+
+    always_comb 
+    begin
+        sfence_gating_n = sfence_gating_q; 
+        asid_to_be_flushed_n = asid_to_be_flushed_q; 
+        vaddr_to_be_flushed_n = vaddr_to_be_flushed_q; 
+        if (~sfence_gating_q & (fu_data_i.operator == SFENCE_VMA) & csr_valid_i & ~flush_i & ~misbranch_detected_q)
+        begin
+            asid_to_be_flushed_n = fu_data_i.operand_b; 
+            vaddr_to_be_flushed_n = fu_data_i.operand_a; 
+            sfence_gating_n = 1'b1; 
+        end 
+        
+    end
+
+    
+    // ----------------
+    // Load-Store Unit
+    // ----------------
+
+    assign lsu_data  = (lsu_valid_i & ~misbranch_detected_q) ? fu_data_i  : '0;
+
+    load_store_unit #(
+        .ASID_WIDTH ( FpPresent.ASID_WIDTH ),
+        .ArianeCfg ( ArianeCfg )
+    ) lsu_i (
+        .clk_i,
+        .rst_ni,
+        .flush_i,
+		.flush_tlb_all_i (flush_tlb_all_i), 
+        .no_st_pending_o,
+        .fu_data_i             ( lsu_data ),
+        .lsu_ready_o,
+        .lsu_valid_i(lsu_valid_i & ~misbranch_detected_q),
+        .load_trans_id_o,
+        .load_result_o,
+        .load_valid_o,
+        .load_exception_o,
+        .store_trans_id_o,
+        .store_result_o,
+        .store_valid_o,
+        .store_exception_o,
+        .commit_i              ( lsu_commit_i       ),
+        .commit_ready_o        ( lsu_commit_ready_o ),
+        .commit_tran_id_i,
+        .enable_translation_i,
+        .en_ld_st_translation_i,
+        .icache_areq_i,
+        .icache_areq_o,
+        .priv_lvl_i,
+        .ld_st_priv_lvl_i,
+        .sum_i,
+        .mxr_i,
+        .satp_ppn_i,
+        .asid_i,
+		.asid_to_be_flushed_i(asid_to_be_flushed_q),
+		.vaddr_to_be_flushed_i(vaddr_to_be_flushed_q),
+        .flush_tlb_i,
+        .itlb_miss_o,
+        .dtlb_miss_o,
+        .dcache_req_ports_i,
+        .dcache_req_ports_o,
+        .dcache_wbuffer_empty_i,
+        .dcache_wbuffer_not_ni_i,
+        .amo_valid_commit_i,
+        .amo_req_o,
+        .amo_resp_i,
+        .pmpcfg_i,
+        .pmpaddr_i
+    );
+
+
+	 
+
+endmodule

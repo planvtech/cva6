@@ -1,0 +1,43 @@
+rw-rw-r--. 1 mustafa  6834 Nov 10 21:39 alu.sv
+-rw-rw-r--. 1 mustafa  3623 Nov 10 21:39 amo_buffer.sv
+-rw-rw-r--. 1 mustafa  3142 Nov 10 21:39 ariane_regfile_ff.sv
+-rw-rw-r--. 1 mustafa  4690 Nov 10 21:39 ariane_regfile.sv
+-rw-rw-r--. 1 mustafa 47408 Nov 10 21:39 ariane.sv
+-rw-rw-r--. 1 mustafa 12197 Nov 10 21:39 axi_adapter.sv
+-rw-rw-r--. 1 mustafa 10527 Nov 10 21:39 axi_shim.sv
+-rw-rw-r--. 1 mustafa  5430 Nov 10 21:39 branch_unit.sv
+-rw-rw-r--. 1 mustafa 15198 Nov 10 21:39 commit_stage.sv
+-rw-rw-r--. 1 mustafa 13959 Nov 10 21:39 compressed_decoder.sv
+-rw-rw-r--. 1 mustafa 15081 Nov 10 21:39 controller.sv
+-rw-rw-r--. 1 mustafa  2965 Nov 10 21:39 csr_buffer.sv
+-rw-rw-r--. 1 mustafa 60000 Nov 10 21:39 csr_regfile.sv
+-rw-rw-r--. 1 mustafa 72029 Nov 10 21:39 decoder.sv
+-rw-rw-r--. 1 mustafa  4049 Nov 10 21:39 dromajo_ram.sv --
+-rw-rw-r--. 1 mustafa 15663 Nov 10 21:39 ex_stage.sv
+-rw-rw-r--. 1 mustafa  9814 Nov 10 23:25 Flist.cva6
+-rw-rw-r--. 1 mustafa  3420 Nov 10 23:26 Flist.cva6_gate
+-rw-rw-r--. 1 mustafa 22127 Nov 10 21:39 fpu_wrap.sv
+-rw-rw-r--. 1 mustafa 22709 Nov 10 21:39 ics.sv --
+-rw-rw-r--. 1 mustafa 10408 Nov 10 21:39 id_stage.sv
+-rw-rw-r--. 1 mustafa 16574 Nov 10 21:39 instr_realign.sv
+-rw-rw-r--. 1 mustafa 19363 Nov 10 21:39 load_store_unit.sv
+-rw-rw-r--. 1 mustafa 19576 Nov 10 21:39 load_unit.sv
+-rw-rw-r--. 1 mustafa 21086 Nov 10 21:39 mmu.sv
+-rw-rw-r--. 1 mustafa  4058 Nov 10 21:39 multiplier.sv
+-rw-rw-r--. 1 mustafa  5944 Nov 10 21:39 mult.sv
+-rw-rw-r--. 1 mustafa  5552 Nov 10 21:39 perf_counters.sv
+-rw-rw-r--. 1 mustafa 18109 Nov 10 21:39 ptw.sv
+-rw-rw-r--. 1 mustafa  8620 Nov 10 21:39 re_order_buffer.sv --
+-rw-rw-r--. 1 mustafa  8316 Nov 10 21:39 serdiv.sv
+-rw-rw-r--. 1 mustafa 14305 Nov 10 21:39 store_buffer.sv
+-rw-rw-r--. 1 mustafa 10770 Nov 10 21:39 store_unit.sv
+-rw-rw-r--. 1 mustafa 12762 Nov 10 21:39 tlb.sv
+
+we need riscv_pkg.sv that is used
+we need ariane_pkg.sv that is used
+FENCE_T ?
+There are no supervisor interrupts
+id_entry_t ?
+mikrolab : updated the python script for coverage and path corrections
+
+//`include "hw_version.sv"
