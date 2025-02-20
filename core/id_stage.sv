@@ -343,11 +343,15 @@ module id_stage #(
   // -------------------------
   // Registers (ID <-> Issue)
   // -------------------------
+  issue_struct_t [CVA6Cfg.NrIssuePorts-1:0] issue_n_reg;
+  always_ff @(negedge clk_i) begin
+      issue_n_reg <= issue_n;
+  end
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (~rst_ni) begin
       issue_q <= '0;
     end else begin
-      issue_q <= issue_n;
+      issue_q <= issue_n_reg;
     end
   end
 endmodule

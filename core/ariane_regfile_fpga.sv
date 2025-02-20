@@ -89,7 +89,10 @@ module ariane_regfile_fpga #(
       end
     end
   end
-
+  logic [NR_READ_PORTS-1:0][4:0] raddr_reg;
+  always_ff @(negedge clk_i) begin
+    raddr_reg <= raddr_i;
+  end
   // block selector flops
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
@@ -97,7 +100,7 @@ module ariane_regfile_fpga #(
       raddr_q <= '0;
     end else begin
       mem_block_sel_q <= mem_block_sel;
-      if (CVA6Cfg.FpgaAlteraEn) raddr_q <= raddr_i;
+      if (CVA6Cfg.FpgaAlteraEn) raddr_q <= raddr_reg;
       else raddr_q <= '0;
     end
   end
@@ -115,7 +118,7 @@ module ariane_regfile_fpga #(
       end
       if (CVA6Cfg.FpgaAlteraEn) begin
         for (int k = 0; k < NR_READ_PORTS; k++) begin : block_read
-          mem_read_sync[j][k] = mem[j][raddr_i[k]];  // synchronous RAM
+          mem_read_sync[j][k] <= mem[j][raddr_i[k]];  // synchronous RAM
           read_after_write[j][k] <= '0;
           if (waddr_i[j] == raddr_i[k])
             read_after_write[j][k] <= we_i[j] && ~waddr_i[j] != 0; // Identify if we need to read the content that was written
@@ -137,6 +140,7 @@ module ariane_regfile_fpga #(
   end
 
   // random initialization of the memory to suppress assert warnings on Questa.
+  /*
   initial begin
     for (int i = 0; i < CVA6Cfg.NrCommitPorts; i++) begin
       for (int j = 0; j < NUM_WORDS; j++) begin
@@ -146,5 +150,5 @@ module ariane_regfile_fpga #(
       end
     end
   end
-
+  */
 endmodule

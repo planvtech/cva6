@@ -72,8 +72,8 @@ package cva6_config_pkg;
   localparam config_pkg::cva6_user_cfg_t cva6_cfg = '{
       XLEN: unsigned'(CVA6ConfigXlen),
       VLEN: unsigned'(32),
-      FpgaEn: bit'(0),  // for Xilinx and Altera
-      FpgaAlteraEn: bit'(0),  // for Altera (only)
+      FpgaEn: bit'(1),  // for Xilinx and Altera
+      FpgaAlteraEn: bit'(1),  // for Altera (only)
       TechnoCut: bit'(0),
       SuperscalarEn: bit'(0),
       NrCommitPorts: unsigned'(2),

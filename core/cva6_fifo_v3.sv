@@ -160,6 +160,13 @@ module cva6_fifo_v3 #(
   end
 
   // sequential process
+  dtype data_ft_n_reg;
+  logic first_word_n_reg;
+  always_ff @(negedge clk_i) begin
+      data_ft_n_reg <= data_ft_n;
+      first_word_n_reg <= first_word_n;
+  end
+
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (~rst_ni) begin
       read_pointer_q  <= '0;
@@ -177,8 +184,8 @@ module cva6_fifo_v3 #(
         write_pointer_q <= write_pointer_n;
         status_cnt_q    <= status_cnt_n;
       end
-      if (FPGA_ALTERA) data_ft_q <= data_ft_n;
-      if (FPGA_ALTERA) first_word_q <= first_word_n;
+      if (FPGA_ALTERA) data_ft_q <= data_ft_n_reg;
+      if (FPGA_ALTERA) first_word_q <= first_word_n_reg;
     end
   end
 
