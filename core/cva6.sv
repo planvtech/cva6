@@ -44,21 +44,21 @@ module cva6
     localparam type cvxif_req_t =
     `CVXIF_REQ_T(CVA6Cfg, x_compressed_req_t, x_issue_req_t, x_register_req_t, x_commit_t),
     localparam type cvxif_resp_t =
-    `CVXIF_RESP_T(CVA6Cfg, x_compressed_resp_t, x_issue_resp_t, x_result_t)
+    `CVXIF_RESP_T(CVA6Cfg, x_compressed_resp_t, x_issue_resp_t, x_result_t),
 
     //mkdigitals added for debug
-    // parameter type ypb_fetch_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.FETCH_WIDTH),
-    // parameter type ypb_fetch_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.FETCH_WIDTH),
-    // parameter type ypb_store_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN),
-    // parameter type ypb_store_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN),
-    // parameter type ypb_amo_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN),
-    // parameter type ypb_amo_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN),
-    // parameter type ypb_load_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN),
-    // parameter type ypb_load_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN),
-    // parameter type ypb_mmu_ptw_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN),
-    // parameter type ypb_mmu_ptw_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN),
-    // parameter type ypb_zcmt_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN),
-    // parameter type ypb_zcmt_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN)
+    parameter type ypb_fetch_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.FETCH_WIDTH),
+    parameter type ypb_fetch_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.FETCH_WIDTH),
+    parameter type ypb_store_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN),
+    parameter type ypb_store_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN),
+    parameter type ypb_amo_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN),
+    parameter type ypb_amo_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN),
+    parameter type ypb_load_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN),
+    parameter type ypb_load_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN),
+    parameter type ypb_mmu_ptw_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN),
+    parameter type ypb_mmu_ptw_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN),
+    parameter type ypb_zcmt_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN),
+    parameter type ypb_zcmt_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN)
     
 ) (
     // Subsystem Clock - SUBSYSTEM
@@ -86,43 +86,43 @@ module cva6
     // noc request, can be AXI or OpenPiton - SUBSYSTEM
     output noc_req_t noc_req_o,
     // noc response, can be AXI or OpenPiton - SUBSYSTEM
-    input noc_resp_t noc_resp_i
+    input noc_resp_t noc_resp_i,
 
     //mkdigitals debugging signals
-    // output logic obi_cache_status_o,
+    output logic obi_cache_status_o,
 
-    // output ypb_fetch_req_t ypb_fetch_req_o,
-    // output ypb_fetch_rsp_t ypb_fetch_rsp_o,
+    output ypb_fetch_req_t ypb_fetch_req_o,
+    output ypb_fetch_rsp_t ypb_fetch_rsp_o,
 
-    // output ypb_store_req_t ypb_store_req_o,
-    // output ypb_store_rsp_t ypb_store_rsp_o,
+    output ypb_store_req_t ypb_store_req_o,
+    output ypb_store_rsp_t ypb_store_rsp_o,
 
-    // output ypb_amo_req_t ypb_amo_req_o,
-    // output ypb_amo_rsp_t ypb_amo_rsp_o,
+    output ypb_amo_req_t ypb_amo_req_o,
+    output ypb_amo_rsp_t ypb_amo_rsp_o,
 
-    // output ypb_load_req_t ypb_load_req_o,
-    // output ypb_load_rsp_t ypb_load_rsp_o,
+    output ypb_load_req_t ypb_load_req_o,
+    output ypb_load_rsp_t ypb_load_rsp_o,
 
-    // output ypb_mmu_ptw_req_t ypb_mmu_ptw_req_o,
-    // output ypb_mmu_ptw_rsp_t ypb_mmu_ptw_rsp_o,
+    output ypb_mmu_ptw_req_t ypb_mmu_ptw_req_o,
+    output ypb_mmu_ptw_rsp_t ypb_mmu_ptw_rsp_o,
 
-    // output ypb_zcmt_req_t ypb_zcmt_req_o,
-    // output ypb_zcmt_rsp_t ypb_zcmt_rsp_o
+    output ypb_zcmt_req_t ypb_zcmt_req_o,
+    output ypb_zcmt_rsp_t ypb_zcmt_rsp_o
 );
 
   //mkdigitals commented out
-  localparam type ypb_fetch_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.FETCH_WIDTH);
-  localparam type ypb_fetch_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.FETCH_WIDTH);
-  localparam type ypb_store_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN);
-  localparam type ypb_store_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN);
-  localparam type ypb_amo_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN);
-  localparam type ypb_amo_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN);
-  localparam type ypb_load_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN);
-  localparam type ypb_load_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN);
-  localparam type ypb_mmu_ptw_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN);
-  localparam type ypb_mmu_ptw_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN);
-  localparam type ypb_zcmt_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN);
-  localparam type ypb_zcmt_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN);
+  // localparam type ypb_fetch_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.FETCH_WIDTH);
+  // localparam type ypb_fetch_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.FETCH_WIDTH);
+  // localparam type ypb_store_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN);
+  // localparam type ypb_store_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN);
+  // localparam type ypb_amo_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN);
+  // localparam type ypb_amo_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN);
+  // localparam type ypb_load_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN);
+  // localparam type ypb_load_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN);
+  // localparam type ypb_mmu_ptw_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN);
+  // localparam type ypb_mmu_ptw_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN);
+  // localparam type ypb_zcmt_req_t = `YPB_REQ_T(CVA6Cfg, CVA6Cfg.XLEN);
+  // localparam type ypb_zcmt_rsp_t = `YPB_RSP_T(CVA6Cfg, CVA6Cfg.XLEN);
 
 
   logic icache_enable;
@@ -343,7 +343,7 @@ module cva6
 
         // FETCH FROM/TO PIPELINE (YPB)
 
-        .ypb_fetch_req_i(ypb_fetch_req),  //mkdigitals changed : org : .ypb_fetch_req_i(ypb_fetch_req),
+        .ypb_fetch_req_i(ypb_fetch_req),
         .ypb_fetch_rsp_o(ypb_fetch_rsp),
 
         // FROM/TO LSU
@@ -355,15 +355,15 @@ module cva6
 
         // DATA FROM/TO PIPELINE (YPB)
 
-        .ypb_store_req_i  (ypb_store_req),  //mkdigitals changed : org : .ypb_store_req_i(ypb_store_req),
+        .ypb_store_req_i  (ypb_store_req),
         .ypb_store_rsp_o  (ypb_store_rsp),
-        .ypb_amo_req_i    (ypb_amo_req),  //mkdigitals changed : org : .ypb_amo_req_i(ypb_amo_req),
+        .ypb_amo_req_i    (ypb_amo_req),
         .ypb_amo_rsp_o    (ypb_amo_rsp),
-        .ypb_load_req_i   (ypb_load_req), //mkdigitals changed : org : .ypb_load_req_i(ypb_load_req),
+        .ypb_load_req_i   (ypb_load_req),
         .ypb_load_rsp_o   (ypb_load_rsp),
-        .ypb_mmu_ptw_req_i(ypb_mmu_ptw_req),  //mkdigitals changed : org : .ypb_mmu_ptw_req_i(ypb_mmu_ptw_req),
+        .ypb_mmu_ptw_req_i(ypb_mmu_ptw_req),
         .ypb_mmu_ptw_rsp_o(ypb_mmu_ptw_rsp),
-        .ypb_zcmt_req_i   (ypb_zcmt_req), //mkdigitals changed : org : .ypb_zcmt_req_i(ypb_zcmt_req),
+        .ypb_zcmt_req_i   (ypb_zcmt_req),
         .ypb_zcmt_rsp_o   (ypb_zcmt_rsp),
 
         .wbuffer_empty_o (wbuffer_empty),
@@ -396,18 +396,18 @@ module cva6
   end
 
   // //mkdigidtals_debugging signals
-  // assign ypb_fetch_req_o   = ypb_fetch_req;
-  // assign ypb_fetch_rsp_o   = ypb_fetch_rsp;
-  // assign ypb_store_req_o   = ypb_store_req;
-  // assign ypb_store_rsp_o   = ypb_store_rsp;
-  // assign ypb_amo_req_o     = ypb_amo_req;
-  // assign ypb_amo_rsp_o     = ypb_amo_rsp;
-  // assign ypb_load_req_o    = ypb_load_req;
-  // assign ypb_load_rsp_o    = ypb_load_rsp;
-  // assign ypb_mmu_ptw_req_o = ypb_mmu_ptw_req;
-  // assign ypb_mmu_ptw_rsp_o = ypb_mmu_ptw_rsp;
-  // assign ypb_zcmt_req_o    = ypb_zcmt_req;
-  // assign ypb_zcmt_rsp_o    = ypb_zcmt_rsp;
+  assign ypb_fetch_req_o   = ypb_fetch_req;
+  assign ypb_fetch_rsp_o   = ypb_fetch_rsp;
+  assign ypb_store_req_o   = ypb_store_req;
+  assign ypb_store_rsp_o   = ypb_store_rsp;
+  assign ypb_amo_req_o     = ypb_amo_req;
+  assign ypb_amo_rsp_o     = ypb_amo_rsp;
+  assign ypb_load_req_o    = ypb_load_req;
+  assign ypb_load_rsp_o    = ypb_load_rsp;
+  assign ypb_mmu_ptw_req_o = ypb_mmu_ptw_req;
+  assign ypb_mmu_ptw_rsp_o = ypb_mmu_ptw_rsp;
+  assign ypb_zcmt_req_o    = ypb_zcmt_req;
+  assign ypb_zcmt_rsp_o    = ypb_zcmt_rsp;
   
 
 endmodule  // ariane

@@ -21,3 +21,10 @@ OBI_COMMITS :
   notes to angela : 
     id_type in cva6.sv : 35?
     Probably there is something wrong with ID's.
+
+
+  advises from max:
+   track the pc, see the store is valid or not when commit
+
+  1 - Try the obi version and monitor the requests
+  2 - Trace and compare the responses in the obi case

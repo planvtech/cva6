@@ -406,7 +406,7 @@ else if (IsZcmtPort == 1'b1) begin : zcmt_port_gen
               size: ypb_store_req_i.size,
               sid: hpdcache_req_sid_i,
               tid: '0,
-              need_rsp: 1'b0,
+              need_rsp: 1'b1,
               phys_indexed: 1'b1,
               addr_tag: get_paddr_tag(ypb_store_req_i.paddr),
               pma: '{

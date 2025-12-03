@@ -211,19 +211,19 @@ module cva6_tb_wrapper
         .CVA6Cfg      (CVA6Cfg),
         .rvfi_probes_t(rvfi_probes_t),
         .noc_req_t    (noc_axi_req_t),
-        .noc_resp_t   (noc_axi_resp_t)
-        // .ypb_fetch_req_t(ypb_fetch_req_t),
-        // .ypb_fetch_rsp_t(ypb_fetch_rsp_t),
-        // .ypb_store_req_t(ypb_store_req_t),
-        // .ypb_store_rsp_t(ypb_store_rsp_t),
-        // .ypb_amo_req_t(ypb_amo_req_t),
-        // .ypb_amo_rsp_t(ypb_amo_rsp_t),
-        // .ypb_load_req_t(ypb_load_req_t),
-        // .ypb_load_rsp_t(ypb_load_rsp_t),
-        // .ypb_mmu_ptw_req_t(ypb_mmu_ptw_req_t),
-        // .ypb_mmu_ptw_rsp_t(ypb_mmu_ptw_rsp_t),
-        // .ypb_zcmt_req_t(ypb_zcmt_req_t),
-        // .ypb_zcmt_rsp_t(ypb_zcmt_rsp_t)
+        .noc_resp_t   (noc_axi_resp_t),
+        .ypb_fetch_req_t(ypb_fetch_req_t),
+        .ypb_fetch_rsp_t(ypb_fetch_rsp_t),
+        .ypb_store_req_t(ypb_store_req_t),
+        .ypb_store_rsp_t(ypb_store_rsp_t),
+        .ypb_amo_req_t(ypb_amo_req_t),
+        .ypb_amo_rsp_t(ypb_amo_rsp_t),
+        .ypb_load_req_t(ypb_load_req_t),
+        .ypb_load_rsp_t(ypb_load_rsp_t),
+        .ypb_mmu_ptw_req_t(ypb_mmu_ptw_req_t),
+        .ypb_mmu_ptw_rsp_t(ypb_mmu_ptw_rsp_t),
+        .ypb_zcmt_req_t(ypb_zcmt_req_t),
+        .ypb_zcmt_rsp_t(ypb_zcmt_rsp_t)
     ) i_cva6 (
         .clk_i(clk_i),
         .rst_ni(rst_ni),
@@ -237,22 +237,22 @@ module cva6_tb_wrapper
         .cvxif_req_o(cvxif_req),
         .cvxif_resp_i(cvxif_resp),
         .noc_req_o(noc_axi_req),
-        .noc_resp_i(noc_axi_resp)
+        .noc_resp_i(noc_axi_resp),
 
         // //mkdigitals debugging signals
-        // .obi_cache_status_o(s_obi_cache_status),
-        // .ypb_fetch_req_o(ypb_fetch_req),
-        // .ypb_fetch_rsp_o(ypb_fetch_rsp),
-        // .ypb_store_req_o(ypb_store_req),
-        // .ypb_store_rsp_o(ypb_store_rsp),
-        // .ypb_amo_req_o(ypb_amo_req),
-        // .ypb_amo_rsp_o(ypb_amo_rsp),
-        // .ypb_load_req_o(ypb_load_req),
-        // .ypb_load_rsp_o(ypb_load_rsp),
-        // .ypb_mmu_ptw_req_o(ypb_mmu_ptw_req),
-        // .ypb_mmu_ptw_rsp_o(ypb_mmu_ptw_rsp),
-        // .ypb_zcmt_req_o(ypb_zcmt_req),
-        // .ypb_zcmt_rsp_o(ypb_zcmt_rsp)
+        .obi_cache_status_o(s_obi_cache_status),
+        .ypb_fetch_req_o(ypb_fetch_req),
+        .ypb_fetch_rsp_o(ypb_fetch_rsp),
+        .ypb_store_req_o(ypb_store_req),
+        .ypb_store_rsp_o(ypb_store_rsp),
+        .ypb_amo_req_o(ypb_amo_req),
+        .ypb_amo_rsp_o(ypb_amo_rsp),
+        .ypb_load_req_o(ypb_load_req),
+        .ypb_load_rsp_o(ypb_load_rsp),
+        .ypb_mmu_ptw_req_o(ypb_mmu_ptw_req),
+        .ypb_mmu_ptw_rsp_o(ypb_mmu_ptw_rsp),
+        .ypb_zcmt_req_o(ypb_zcmt_req),
+        .ypb_zcmt_rsp_o(ypb_zcmt_rsp)
     );
     assign assignments_valid = 1'b1; //mkdigitals added
 
@@ -382,8 +382,22 @@ module cva6_tb_wrapper
         .cvxif_req_o(cvxif_req),
         .cvxif_resp_i(cvxif_resp),
         .noc_req_o(noc_obi_req),
-        .noc_resp_i(noc_obi_resp)
+        .noc_resp_i(noc_obi_resp),
         // .obi_cache_status_o(s_obi_cache_status)
+        // //mkdigitals debugging signals
+        .obi_cache_status_o(s_obi_cache_status),
+        .ypb_fetch_req_o(ypb_fetch_req),
+        .ypb_fetch_rsp_o(ypb_fetch_rsp),
+        .ypb_store_req_o(ypb_store_req),
+        .ypb_store_rsp_o(ypb_store_rsp),
+        .ypb_amo_req_o(ypb_amo_req),
+        .ypb_amo_rsp_o(ypb_amo_rsp),
+        .ypb_load_req_o(ypb_load_req),
+        .ypb_load_rsp_o(ypb_load_rsp),
+        .ypb_mmu_ptw_req_o(ypb_mmu_ptw_req),
+        .ypb_mmu_ptw_rsp_o(ypb_mmu_ptw_rsp),
+        .ypb_zcmt_req_o(ypb_zcmt_req),
+        .ypb_zcmt_rsp_o(ypb_zcmt_rsp)
     );
 
     assign obi_fetch_slave.req               = obi_fetch_req.req;
@@ -743,272 +757,272 @@ module cva6_tb_wrapper
     `uvm_info("BASE TEST", $sformatf("OBI Cache Status is: %b", s_obi_cache_status), UVM_NONE)
   end
 
-  initial begin
-    forever begin
-    @(posedge clk_i);
-      if (axi_slave.ar_valid) begin
-        `uvm_info("AXI_AR_MONITOR", $sformatf("AR Channel - Valid: %b, Ready: %b, ID: %h, Addr: %h, Len: %h, Size: %h, Burst: %h, Lock: %b, Cache: %h, Prot: %h, QoS: %h, Region: %h, User: %h", 
-          axi_slave.ar_valid, axi_slave.ar_ready, axi_slave.ar_id, axi_slave.ar_addr, 
-          axi_slave.ar_len, axi_slave.ar_size, axi_slave.ar_burst, axi_slave.ar_lock, 
-          axi_slave.ar_cache, axi_slave.ar_prot, axi_slave.ar_qos, axi_slave.ar_region, 
-          axi_slave.ar_user), UVM_INFO)
+  // initial begin
+  //   forever begin
+  //   @(posedge clk_i);
+  //     if (axi_slave.ar_valid) begin
+  //       `uvm_info("AXI_AR_MONITOR", $sformatf("AR Channel - Valid: %b, Ready: %b, ID: %h, Addr: %h, Len: %h, Size: %h, Burst: %h, Lock: %b, Cache: %h, Prot: %h, QoS: %h, Region: %h, User: %h", 
+  //         axi_slave.ar_valid, axi_slave.ar_ready, axi_slave.ar_id, axi_slave.ar_addr, 
+  //         axi_slave.ar_len, axi_slave.ar_size, axi_slave.ar_burst, axi_slave.ar_lock, 
+  //         axi_slave.ar_cache, axi_slave.ar_prot, axi_slave.ar_qos, axi_slave.ar_region, 
+  //         axi_slave.ar_user), UVM_INFO)
 
-        @(posedge clk_i);
-        while (axi_slave.ar_valid) begin
-          `uvm_info("AXI_AR_MONITOR", $sformatf("AR Channel - Valid: %b, Ready: %b, ID: %h, Addr: %h, Len: %h, Size: %h, Burst: %h, Lock: %b, Cache: %h, Prot: %h, QoS: %h, Region: %h, User: %h", 
-          axi_slave.ar_valid, axi_slave.ar_ready, axi_slave.ar_id, axi_slave.ar_addr, 
-          axi_slave.ar_len, axi_slave.ar_size, axi_slave.ar_burst, axi_slave.ar_lock, 
-          axi_slave.ar_cache, axi_slave.ar_prot, axi_slave.ar_qos, axi_slave.ar_region, 
-          axi_slave.ar_user), UVM_INFO)
-          @(posedge clk_i);
-        end
-        `uvm_info("AXI_AR_MONITOR", $sformatf("AR Channel - Valid: %b, Ready: %b, ID: %h, Addr: %h, Len: %h, Size: %h, Burst: %h, Lock: %b, Cache: %h, Prot: %h, QoS: %h, Region: %h, User: %h", 
-          axi_slave.ar_valid, axi_slave.ar_ready, axi_slave.ar_id, axi_slave.ar_addr, 
-          axi_slave.ar_len, axi_slave.ar_size, axi_slave.ar_burst, axi_slave.ar_lock, 
-          axi_slave.ar_cache, axi_slave.ar_prot, axi_slave.ar_qos, axi_slave.ar_region, 
-          axi_slave.ar_user), UVM_INFO)
-      end
-    end
-  end
-
-  initial begin
-    forever begin
-    @(posedge clk_i);
-      if (axi_slave.aw_valid) begin
-        `uvm_info("AXI_AW_MONITOR", $sformatf("AW Channel - Valid: %b, Ready: %b, ID: %h, Addr: %h, Len: %h, Size: %h, Burst: %h, Lock: %b, Cache: %h, Prot: %h, QoS: %h, Region: %h, ATOP: %h, User: %h", 
-          axi_slave.aw_valid, axi_slave.aw_ready, axi_slave.aw_id, axi_slave.aw_addr, 
-          axi_slave.aw_len, axi_slave.aw_size, axi_slave.aw_burst, axi_slave.aw_lock, 
-          axi_slave.aw_cache, axi_slave.aw_prot, axi_slave.aw_qos, axi_slave.aw_region, 
-          axi_slave.aw_atop, axi_slave.aw_user), UVM_INFO)
-        @(posedge clk_i);
-        while (axi_slave.aw_valid) begin
-          `uvm_info("AXI_AW_MONITOR", $sformatf("AW Channel - Valid: %b, Ready: %b, ID: %h, Addr: %h, Len: %h, Size: %h, Burst: %h, Lock: %b, Cache: %h, Prot: %h, QoS: %h, Region: %h, ATOP: %h, User: %h", 
-            axi_slave.aw_valid, axi_slave.aw_ready, axi_slave.aw_id, axi_slave.aw_addr, 
-            axi_slave.aw_len, axi_slave.aw_size, axi_slave.aw_burst, axi_slave.aw_lock, 
-            axi_slave.aw_cache, axi_slave.aw_prot, axi_slave.aw_qos, axi_slave.aw_region, 
-            axi_slave.aw_atop, axi_slave.aw_user), UVM_INFO)
-          @(posedge clk_i);
-        end
-        `uvm_info("AXI_AW_MONITOR", $sformatf("AW Channel - Valid: %b, Ready: %b, ID: %h, Addr: %h, Len: %h, Size: %h, Burst: %h, Lock: %b, Cache: %h, Prot: %h, QoS: %h, Region: %h, ATOP: %h, User: %h", 
-            axi_slave.aw_valid, axi_slave.aw_ready, axi_slave.aw_id, axi_slave.aw_addr, 
-            axi_slave.aw_len, axi_slave.aw_size, axi_slave.aw_burst, axi_slave.aw_lock, 
-            axi_slave.aw_cache, axi_slave.aw_prot, axi_slave.aw_qos, axi_slave.aw_region, 
-            axi_slave.aw_atop, axi_slave.aw_user), UVM_INFO)
-      end
-    end
-  end  
-
-  initial begin
-    forever begin
-    @(posedge clk_i);
-      if (axi_slave.w_valid) begin
-        `uvm_info("AXI_W_MONITOR", $sformatf("W Channel - Valid: %b, Ready: %b, Data: %h, Strb: %h, Last: %b, User: %h", 
-          axi_slave.w_valid, axi_slave.w_ready, axi_slave.w_data, 
-          axi_slave.w_strb, axi_slave.w_last, axi_slave.w_user), UVM_INFO)
-        @(posedge clk_i);
-        while (axi_slave.w_valid) begin
-          `uvm_info("AXI_W_MONITOR", $sformatf("W Channel - Valid: %b, Ready: %b, Data: %h, Strb: %h, Last: %b, User: %h", 
-            axi_slave.w_valid, axi_slave.w_ready, axi_slave.w_data, 
-            axi_slave.w_strb, axi_slave.w_last, axi_slave.w_user), UVM_INFO)
-          @(posedge clk_i);
-        end
-        `uvm_info("AXI_W_MONITOR", $sformatf("W Channel - Valid: %b, Ready: %b, Data: %h, Strb: %h, Last: %b, User: %h", 
-          axi_slave.w_valid, axi_slave.w_ready, axi_slave.w_data, 
-          axi_slave.w_strb, axi_slave.w_last, axi_slave.w_user), UVM_INFO)
-      end
-    end
-  end
-  
-  initial begin
-    forever begin
-    @(posedge clk_i);
-      if (axi_slave.b_valid) begin
-        `uvm_info("AXI_B_MONITOR", $sformatf("B Channel - Valid: %b, Ready: %b, ID: %h, Resp: %h, User: %h", 
-          axi_slave.b_valid, axi_slave.b_ready, axi_slave.b_id, 
-          axi_slave.b_resp, axi_slave.b_user), UVM_INFO)
-        @(posedge clk_i);
-        while (axi_slave.b_valid) begin
-          `uvm_info("AXI_B_MONITOR", $sformatf("B Channel - Valid: %b, Ready: %b, ID: %h, Resp: %h, User: %h", 
-            axi_slave.b_valid, axi_slave.b_ready, axi_slave.b_id, 
-            axi_slave.b_resp, axi_slave.b_user), UVM_INFO)
-          @(posedge clk_i);
-        end
-        `uvm_info("AXI_B_MONITOR", $sformatf("B Channel - Valid: %b, Ready: %b, ID: %h, Resp: %h, User: %h", 
-          axi_slave.b_valid, axi_slave.b_ready, axi_slave.b_id, 
-          axi_slave.b_resp, axi_slave.b_user), UVM_INFO)
-      end
-    end
-  end
-
-  initial begin
-    forever begin
-    @(posedge clk_i);
-      if (axi_slave.r_valid) begin
-        `uvm_info("AXI_R_MONITOR", $sformatf("R Channel - Valid: %b, Ready: %b, ID: %h, Data: %h, Resp: %h, Last: %b, User: %h", 
-          axi_slave.r_valid, axi_slave.r_ready, axi_slave.r_id, axi_slave.r_data, 
-          axi_slave.r_resp, axi_slave.r_last, axi_slave.r_user), UVM_INFO)
-        @(posedge clk_i);
-        while (axi_slave.r_valid) begin
-          `uvm_info("AXI_R_MONITOR", $sformatf("R Channel - Valid: %b, Ready: %b, ID: %h, Data: %h, Resp: %h, Last: %b, User: %h", 
-            axi_slave.r_valid, axi_slave.r_ready, axi_slave.r_id, axi_slave.r_data, 
-            axi_slave.r_resp, axi_slave.r_last, axi_slave.r_user), UVM_INFO)
-          @(posedge clk_i);
-        end
-        `uvm_info("AXI_R_MONITOR", $sformatf("R Channel - Valid: %b, Ready: %b, ID: %h, Data: %h, Resp: %h, Last: %b, User: %h", 
-          axi_slave.r_valid, axi_slave.r_ready, axi_slave.r_id, axi_slave.r_data, 
-          axi_slave.r_resp, axi_slave.r_last, axi_slave.r_user), UVM_INFO)
-      end
-    end
-  end
+  //       @(posedge clk_i);
+  //       while (axi_slave.ar_valid) begin
+  //         `uvm_info("AXI_AR_MONITOR", $sformatf("AR Channel - Valid: %b, Ready: %b, ID: %h, Addr: %h, Len: %h, Size: %h, Burst: %h, Lock: %b, Cache: %h, Prot: %h, QoS: %h, Region: %h, User: %h", 
+  //         axi_slave.ar_valid, axi_slave.ar_ready, axi_slave.ar_id, axi_slave.ar_addr, 
+  //         axi_slave.ar_len, axi_slave.ar_size, axi_slave.ar_burst, axi_slave.ar_lock, 
+  //         axi_slave.ar_cache, axi_slave.ar_prot, axi_slave.ar_qos, axi_slave.ar_region, 
+  //         axi_slave.ar_user), UVM_INFO)
+  //         @(posedge clk_i);
+  //       end
+  //       `uvm_info("AXI_AR_MONITOR", $sformatf("AR Channel - Valid: %b, Ready: %b, ID: %h, Addr: %h, Len: %h, Size: %h, Burst: %h, Lock: %b, Cache: %h, Prot: %h, QoS: %h, Region: %h, User: %h", 
+  //         axi_slave.ar_valid, axi_slave.ar_ready, axi_slave.ar_id, axi_slave.ar_addr, 
+  //         axi_slave.ar_len, axi_slave.ar_size, axi_slave.ar_burst, axi_slave.ar_lock, 
+  //         axi_slave.ar_cache, axi_slave.ar_prot, axi_slave.ar_qos, axi_slave.ar_region, 
+  //         axi_slave.ar_user), UVM_INFO)
+  //     end
+  //   end
+  // end
 
   // initial begin
   //   forever begin
-  //     @(posedge clk_i);
-  //     if (ypb_fetch_req.preq) begin
-  //       `uvm_info("YPB_FETCH_REQ_MONITOR", $sformatf("YPB Fetch Req - Vreq: %b, Preq: %b, Vaddr: %h, Paddr: %h, Be: %h, Size: %h, We: %b, Wdata: %h, Aid: %h, Access_type: %b, Cacheable: %b, Kill_req: %b, Rready: %b", 
-  //         ypb_fetch_req.vreq, ypb_fetch_req.preq, ypb_fetch_req.vaddr, 
-  //         ypb_fetch_req.paddr, ypb_fetch_req.be, ypb_fetch_req.size, 
-  //         ypb_fetch_req.we, ypb_fetch_req.wdata, ypb_fetch_req.aid,
-  //         ypb_fetch_req.access_type, ypb_fetch_req.cacheable,
-  //         ypb_fetch_req.kill_req, ypb_fetch_req.rready), UVM_INFO)
+  //   @(posedge clk_i);
+  //     if (axi_slave.aw_valid) begin
+  //       `uvm_info("AXI_AW_MONITOR", $sformatf("AW Channel - Valid: %b, Ready: %b, ID: %h, Addr: %h, Len: %h, Size: %h, Burst: %h, Lock: %b, Cache: %h, Prot: %h, QoS: %h, Region: %h, ATOP: %h, User: %h", 
+  //         axi_slave.aw_valid, axi_slave.aw_ready, axi_slave.aw_id, axi_slave.aw_addr, 
+  //         axi_slave.aw_len, axi_slave.aw_size, axi_slave.aw_burst, axi_slave.aw_lock, 
+  //         axi_slave.aw_cache, axi_slave.aw_prot, axi_slave.aw_qos, axi_slave.aw_region, 
+  //         axi_slave.aw_atop, axi_slave.aw_user), UVM_INFO)
+  //       @(posedge clk_i);
+  //       while (axi_slave.aw_valid) begin
+  //         `uvm_info("AXI_AW_MONITOR", $sformatf("AW Channel - Valid: %b, Ready: %b, ID: %h, Addr: %h, Len: %h, Size: %h, Burst: %h, Lock: %b, Cache: %h, Prot: %h, QoS: %h, Region: %h, ATOP: %h, User: %h", 
+  //           axi_slave.aw_valid, axi_slave.aw_ready, axi_slave.aw_id, axi_slave.aw_addr, 
+  //           axi_slave.aw_len, axi_slave.aw_size, axi_slave.aw_burst, axi_slave.aw_lock, 
+  //           axi_slave.aw_cache, axi_slave.aw_prot, axi_slave.aw_qos, axi_slave.aw_region, 
+  //           axi_slave.aw_atop, axi_slave.aw_user), UVM_INFO)
+  //         @(posedge clk_i);
+  //       end
+  //       `uvm_info("AXI_AW_MONITOR", $sformatf("AW Channel - Valid: %b, Ready: %b, ID: %h, Addr: %h, Len: %h, Size: %h, Burst: %h, Lock: %b, Cache: %h, Prot: %h, QoS: %h, Region: %h, ATOP: %h, User: %h", 
+  //           axi_slave.aw_valid, axi_slave.aw_ready, axi_slave.aw_id, axi_slave.aw_addr, 
+  //           axi_slave.aw_len, axi_slave.aw_size, axi_slave.aw_burst, axi_slave.aw_lock, 
+  //           axi_slave.aw_cache, axi_slave.aw_prot, axi_slave.aw_qos, axi_slave.aw_region, 
+  //           axi_slave.aw_atop, axi_slave.aw_user), UVM_INFO)
+  //     end
+  //   end
+  // end  
+
+  // initial begin
+  //   forever begin
+  //   @(posedge clk_i);
+  //     if (axi_slave.w_valid) begin
+  //       `uvm_info("AXI_W_MONITOR", $sformatf("W Channel - Valid: %b, Ready: %b, Data: %h, Strb: %h, Last: %b, User: %h", 
+  //         axi_slave.w_valid, axi_slave.w_ready, axi_slave.w_data, 
+  //         axi_slave.w_strb, axi_slave.w_last, axi_slave.w_user), UVM_INFO)
+  //       @(posedge clk_i);
+  //       while (axi_slave.w_valid) begin
+  //         `uvm_info("AXI_W_MONITOR", $sformatf("W Channel - Valid: %b, Ready: %b, Data: %h, Strb: %h, Last: %b, User: %h", 
+  //           axi_slave.w_valid, axi_slave.w_ready, axi_slave.w_data, 
+  //           axi_slave.w_strb, axi_slave.w_last, axi_slave.w_user), UVM_INFO)
+  //         @(posedge clk_i);
+  //       end
+  //       `uvm_info("AXI_W_MONITOR", $sformatf("W Channel - Valid: %b, Ready: %b, Data: %h, Strb: %h, Last: %b, User: %h", 
+  //         axi_slave.w_valid, axi_slave.w_ready, axi_slave.w_data, 
+  //         axi_slave.w_strb, axi_slave.w_last, axi_slave.w_user), UVM_INFO)
   //     end
   //   end
   // end
   
   // initial begin
   //   forever begin
-  //     @(posedge clk_i);
-  //     if (ypb_fetch_rsp.rvalid) begin
-  //       `uvm_info("YPB_FETCH_RSP_MONITOR", $sformatf("YPB Fetch Rsp - Vgnt: %b, Pgnt: %b, Rvalid: %b, Rdata: %h, Rid: %h, Err: %b", 
-  //         ypb_fetch_rsp.vgnt, ypb_fetch_rsp.pgnt, ypb_fetch_rsp.rvalid, 
-  //         ypb_fetch_rsp.rdata, ypb_fetch_rsp.rid, ypb_fetch_rsp.err), UVM_INFO)
+  //   @(posedge clk_i);
+  //     if (axi_slave.b_valid) begin
+  //       `uvm_info("AXI_B_MONITOR", $sformatf("B Channel - Valid: %b, Ready: %b, ID: %h, Resp: %h, User: %h", 
+  //         axi_slave.b_valid, axi_slave.b_ready, axi_slave.b_id, 
+  //         axi_slave.b_resp, axi_slave.b_user), UVM_INFO)
+  //       @(posedge clk_i);
+  //       while (axi_slave.b_valid) begin
+  //         `uvm_info("AXI_B_MONITOR", $sformatf("B Channel - Valid: %b, Ready: %b, ID: %h, Resp: %h, User: %h", 
+  //           axi_slave.b_valid, axi_slave.b_ready, axi_slave.b_id, 
+  //           axi_slave.b_resp, axi_slave.b_user), UVM_INFO)
+  //         @(posedge clk_i);
+  //       end
+  //       `uvm_info("AXI_B_MONITOR", $sformatf("B Channel - Valid: %b, Ready: %b, ID: %h, Resp: %h, User: %h", 
+  //         axi_slave.b_valid, axi_slave.b_ready, axi_slave.b_id, 
+  //         axi_slave.b_resp, axi_slave.b_user), UVM_INFO)
   //     end
   //   end
   // end
 
   // initial begin
   //   forever begin
-  //     @(posedge clk_i);
-  //     if (ypb_store_req.preq) begin
-  //       `uvm_info("YPB_STORE_REQ_MONITOR", $sformatf("YPB Store Req - Vreq: %b, Preq: %b, Vaddr: %h, Paddr: %h, Be: %h, Size: %h, We: %b, Wdata: %h, Aid: %h, Access_type: %b, Cacheable: %b, Kill_req: %b, Rready: %b", 
-  //         ypb_store_req.vreq, ypb_store_req.preq, ypb_store_req.vaddr, 
-  //         ypb_store_req.paddr, ypb_store_req.be, ypb_store_req.size, 
-  //         ypb_store_req.we, ypb_store_req.wdata, ypb_store_req.aid,
-  //         ypb_store_req.access_type, ypb_store_req.cacheable,
-  //         ypb_store_req.kill_req, ypb_store_req.rready), UVM_INFO)
+  //   @(posedge clk_i);
+  //     if (axi_slave.r_valid) begin
+  //       `uvm_info("AXI_R_MONITOR", $sformatf("R Channel - Valid: %b, Ready: %b, ID: %h, Data: %h, Resp: %h, Last: %b, User: %h", 
+  //         axi_slave.r_valid, axi_slave.r_ready, axi_slave.r_id, axi_slave.r_data, 
+  //         axi_slave.r_resp, axi_slave.r_last, axi_slave.r_user), UVM_INFO)
+  //       @(posedge clk_i);
+  //       while (axi_slave.r_valid) begin
+  //         `uvm_info("AXI_R_MONITOR", $sformatf("R Channel - Valid: %b, Ready: %b, ID: %h, Data: %h, Resp: %h, Last: %b, User: %h", 
+  //           axi_slave.r_valid, axi_slave.r_ready, axi_slave.r_id, axi_slave.r_data, 
+  //           axi_slave.r_resp, axi_slave.r_last, axi_slave.r_user), UVM_INFO)
+  //         @(posedge clk_i);
+  //       end
+  //       `uvm_info("AXI_R_MONITOR", $sformatf("R Channel - Valid: %b, Ready: %b, ID: %h, Data: %h, Resp: %h, Last: %b, User: %h", 
+  //         axi_slave.r_valid, axi_slave.r_ready, axi_slave.r_id, axi_slave.r_data, 
+  //         axi_slave.r_resp, axi_slave.r_last, axi_slave.r_user), UVM_INFO)
   //     end
   //   end
   // end
 
-  // initial begin
-  //   forever begin
-  //     @(posedge clk_i);
-  //     if (ypb_store_rsp.rvalid) begin
-  //       `uvm_info("YPB_STORE_RSP_MONITOR", $sformatf("YPB Store Rsp - Vgnt: %b, Pgnt: %b, Rvalid: %b, Rdata: %h, Rid: %h, Err: %b", 
-  //         ypb_store_rsp.vgnt, ypb_store_rsp.pgnt, ypb_store_rsp.rvalid, 
-  //         ypb_store_rsp.rdata, ypb_store_rsp.rid, ypb_store_rsp.err), UVM_INFO)
-  //     end
-  //   end
-  // end
+  initial begin
+    forever begin
+      @(posedge clk_i);
+      if (ypb_fetch_req.preq) begin
+        `uvm_info("YPB_FETCH_REQ_MONITOR", $sformatf("YPB Fetch Req - Vreq: %b, Preq: %b, Vaddr: %h, Paddr: %h, Be: %h, Size: %h, We: %b, Wdata: %h, Aid: %h, Access_type: %b, Cacheable: %b, Kill_req: %b, Rready: %b", 
+          ypb_fetch_req.vreq, ypb_fetch_req.preq, ypb_fetch_req.vaddr, 
+          ypb_fetch_req.paddr, ypb_fetch_req.be, ypb_fetch_req.size, 
+          ypb_fetch_req.we, ypb_fetch_req.wdata, ypb_fetch_req.aid,
+          ypb_fetch_req.access_type, ypb_fetch_req.cacheable,
+          ypb_fetch_req.kill_req, ypb_fetch_req.rready), UVM_INFO)
+      end
+    end
+  end
+  
+  initial begin
+    forever begin
+      @(posedge clk_i);
+      if (ypb_fetch_rsp.rvalid) begin
+        `uvm_info("YPB_FETCH_RSP_MONITOR", $sformatf("YPB Fetch Rsp - Vgnt: %b, Pgnt: %b, Rvalid: %b, Rdata: %h, Rid: %h, Err: %b", 
+          ypb_fetch_rsp.vgnt, ypb_fetch_rsp.pgnt, ypb_fetch_rsp.rvalid, 
+          ypb_fetch_rsp.rdata, ypb_fetch_rsp.rid, ypb_fetch_rsp.err), UVM_INFO)
+      end
+    end
+  end
 
-  // initial begin
-  //   forever begin
-  //     @(posedge clk_i);
-  //     if (ypb_amo_req.preq) begin
-  //       `uvm_info("YPB_AMO_REQ_MONITOR", $sformatf("YPB AMO Req - Vreq: %b, Preq: %b, Vaddr: %h, Paddr: %h, Be: %h, Size: %h, We: %b, Wdata: %h, Aid: %h, Access_type: %b, Cacheable: %b, Kill_req: %b, Rready: %b", 
-  //         ypb_amo_req.vreq, ypb_amo_req.preq, ypb_amo_req.vaddr, 
-  //         ypb_amo_req.paddr, ypb_amo_req.be, ypb_amo_req.size, 
-  //         ypb_amo_req.we, ypb_amo_req.wdata, ypb_amo_req.aid,
-  //         ypb_amo_req.access_type, ypb_amo_req.cacheable,
-  //         ypb_amo_req.kill_req, ypb_amo_req.rready), UVM_INFO)
-  //     end
-  //   end
-  // end
+  initial begin
+    forever begin
+      @(posedge clk_i);
+      if (ypb_store_req.preq) begin
+        `uvm_info("YPB_STORE_REQ_MONITOR", $sformatf("YPB Store Req - Vreq: %b, Preq: %b, Vaddr: %h, Paddr: %h, Be: %h, Size: %h, We: %b, Wdata: %h, Aid: %h, Access_type: %b, Cacheable: %b, Kill_req: %b, Rready: %b", 
+          ypb_store_req.vreq, ypb_store_req.preq, ypb_store_req.vaddr, 
+          ypb_store_req.paddr, ypb_store_req.be, ypb_store_req.size, 
+          ypb_store_req.we, ypb_store_req.wdata, ypb_store_req.aid,
+          ypb_store_req.access_type, ypb_store_req.cacheable,
+          ypb_store_req.kill_req, ypb_store_req.rready), UVM_INFO)
+      end
+    end
+  end
 
-  // initial begin
-  //   forever begin
-  //     @(posedge clk_i);
-  //     if (ypb_amo_rsp.rvalid) begin
-  //       `uvm_info("YPB_AMO_RSP_MONITOR", $sformatf("YPB AMO Rsp - Vgnt: %b, Pgnt: %b, Rvalid: %b, Rdata: %h, Rid: %h, Err: %b", 
-  //         ypb_amo_rsp.vgnt, ypb_amo_rsp.pgnt, ypb_amo_rsp.rvalid, 
-  //         ypb_amo_rsp.rdata, ypb_amo_rsp.rid, ypb_amo_rsp.err), UVM_INFO)
-  //     end
-  //   end
-  // end
+  initial begin
+    forever begin
+      @(posedge clk_i);
+      if (ypb_store_rsp.rvalid) begin
+        `uvm_info("YPB_STORE_RSP_MONITOR", $sformatf("YPB Store Rsp - Vgnt: %b, Pgnt: %b, Rvalid: %b, Rdata: %h, Rid: %h, Err: %b", 
+          ypb_store_rsp.vgnt, ypb_store_rsp.pgnt, ypb_store_rsp.rvalid, 
+          ypb_store_rsp.rdata, ypb_store_rsp.rid, ypb_store_rsp.err), UVM_INFO)
+      end
+    end
+  end
 
-  // initial begin
-  //   forever begin
-  //     @(posedge clk_i);
-  //     if (ypb_load_req.preq) begin
-  //       `uvm_info("YPB_LOAD_REQ_MONITOR", $sformatf("YPB Load Req - Vreq: %b, Preq: %b, Vaddr: %h, Paddr: %h, Be: %h, Size: %h, We: %b, Wdata: %h, Aid: %h, Access_type: %b, Cacheable: %b, Kill_req: %b, Rready: %b", 
-  //         ypb_load_req.vreq, ypb_load_req.preq, ypb_load_req.vaddr, 
-  //         ypb_load_req.paddr, ypb_load_req.be, ypb_load_req.size, 
-  //         ypb_load_req.we, ypb_load_req.wdata, ypb_load_req.aid,
-  //         ypb_load_req.access_type, ypb_load_req.cacheable,
-  //         ypb_load_req.kill_req, ypb_load_req.rready), UVM_INFO)
-  //     end
-  //   end
-  // end
+  initial begin
+    forever begin
+      @(posedge clk_i);
+      if (ypb_amo_req.preq) begin
+        `uvm_info("YPB_AMO_REQ_MONITOR", $sformatf("YPB AMO Req - Vreq: %b, Preq: %b, Vaddr: %h, Paddr: %h, Be: %h, Size: %h, We: %b, Wdata: %h, Aid: %h, Access_type: %b, Cacheable: %b, Kill_req: %b, Rready: %b", 
+          ypb_amo_req.vreq, ypb_amo_req.preq, ypb_amo_req.vaddr, 
+          ypb_amo_req.paddr, ypb_amo_req.be, ypb_amo_req.size, 
+          ypb_amo_req.we, ypb_amo_req.wdata, ypb_amo_req.aid,
+          ypb_amo_req.access_type, ypb_amo_req.cacheable,
+          ypb_amo_req.kill_req, ypb_amo_req.rready), UVM_INFO)
+      end
+    end
+  end
 
-  // initial begin
-  //   forever begin
-  //     @(posedge clk_i);
-  //     if (ypb_load_rsp.rvalid) begin
-  //       `uvm_info("YPB_LOAD_RSP_MONITOR", $sformatf("YPB Load Rsp - Vgnt: %b, Pgnt: %b, Rvalid: %b, Rdata: %h, Rid: %h, Err: %b", 
-  //         ypb_load_rsp.vgnt, ypb_load_rsp.pgnt, ypb_load_rsp.rvalid, 
-  //         ypb_load_rsp.rdata, ypb_load_rsp.rid, ypb_load_rsp.err), UVM_INFO)
-  //     end
-  //   end
-  // end
+  initial begin
+    forever begin
+      @(posedge clk_i);
+      if (ypb_amo_rsp.rvalid) begin
+        `uvm_info("YPB_AMO_RSP_MONITOR", $sformatf("YPB AMO Rsp - Vgnt: %b, Pgnt: %b, Rvalid: %b, Rdata: %h, Rid: %h, Err: %b", 
+          ypb_amo_rsp.vgnt, ypb_amo_rsp.pgnt, ypb_amo_rsp.rvalid, 
+          ypb_amo_rsp.rdata, ypb_amo_rsp.rid, ypb_amo_rsp.err), UVM_INFO)
+      end
+    end
+  end
 
-  // initial begin
-  //   forever begin
-  //     @(posedge clk_i);
-  //     if (ypb_mmu_ptw_req.preq) begin
-  //       `uvm_info("YPB_MMU_PTW_REQ_MONITOR", $sformatf("YPB MMU PTW Req - Vreq: %b, Preq: %b, Vaddr: %h, Paddr: %h, Be: %h, Size: %h, We: %b, Wdata: %h, Aid: %h, Access_type: %b, Cacheable: %b, Kill_req: %b, Rready: %b", 
-  //         ypb_mmu_ptw_req.vreq, ypb_mmu_ptw_req.preq, ypb_mmu_ptw_req.vaddr, 
-  //         ypb_mmu_ptw_req.paddr, ypb_mmu_ptw_req.be, ypb_mmu_ptw_req.size, 
-  //         ypb_mmu_ptw_req.we, ypb_mmu_ptw_req.wdata, ypb_mmu_ptw_req.aid,
-  //         ypb_mmu_ptw_req.access_type, ypb_mmu_ptw_req.cacheable,
-  //         ypb_mmu_ptw_req.kill_req, ypb_mmu_ptw_req.rready), UVM_INFO)
-  //     end
-  //   end
-  // end
+  initial begin
+    forever begin
+      @(posedge clk_i);
+      if (ypb_load_req.preq) begin
+        `uvm_info("YPB_LOAD_REQ_MONITOR", $sformatf("YPB Load Req - Vreq: %b, Preq: %b, Vaddr: %h, Paddr: %h, Be: %h, Size: %h, We: %b, Wdata: %h, Aid: %h, Access_type: %b, Cacheable: %b, Kill_req: %b, Rready: %b", 
+          ypb_load_req.vreq, ypb_load_req.preq, ypb_load_req.vaddr, 
+          ypb_load_req.paddr, ypb_load_req.be, ypb_load_req.size, 
+          ypb_load_req.we, ypb_load_req.wdata, ypb_load_req.aid,
+          ypb_load_req.access_type, ypb_load_req.cacheable,
+          ypb_load_req.kill_req, ypb_load_req.rready), UVM_INFO)
+      end
+    end
+  end
 
-  // initial begin
-  //   forever begin
-  //     @(posedge clk_i);
-  //     if (ypb_mmu_ptw_rsp.rvalid) begin
-  //       `uvm_info("YPB_MMU_PTW_RSP_MONITOR", $sformatf("YPB MMU PTW Rsp - Vgnt: %b, Pgnt: %b, Rvalid: %b, Rdata: %h, Rid: %h, Err: %b", 
-  //         ypb_mmu_ptw_rsp.vgnt, ypb_mmu_ptw_rsp.pgnt, ypb_mmu_ptw_rsp.rvalid, 
-  //         ypb_mmu_ptw_rsp.rdata, ypb_mmu_ptw_rsp.rid, ypb_mmu_ptw_rsp.err), UVM_INFO)
-  //     end
-  //   end
-  // end
+  initial begin
+    forever begin
+      @(posedge clk_i);
+      if (ypb_load_rsp.rvalid) begin
+        `uvm_info("YPB_LOAD_RSP_MONITOR", $sformatf("YPB Load Rsp - Vgnt: %b, Pgnt: %b, Rvalid: %b, Rdata: %h, Rid: %h, Err: %b", 
+          ypb_load_rsp.vgnt, ypb_load_rsp.pgnt, ypb_load_rsp.rvalid, 
+          ypb_load_rsp.rdata, ypb_load_rsp.rid, ypb_load_rsp.err), UVM_INFO)
+      end
+    end
+  end
 
-  // initial begin
-  //   forever begin
-  //     @(posedge clk_i);
-  //     if (ypb_zcmt_req.preq) begin
-  //       `uvm_info("YPB_ZCMT_REQ_MONITOR", $sformatf("YPB ZCMT Req - Vreq: %b, Preq: %b, Vaddr: %h, Paddr: %h, Be: %h, Size: %h, We: %b, Wdata: %h, Aid: %h, Access_type: %b, Cacheable: %b, Kill_req: %b, Rready: %b", 
-  //         ypb_zcmt_req.vreq, ypb_zcmt_req.preq, ypb_zcmt_req.vaddr, 
-  //         ypb_zcmt_req.paddr, ypb_zcmt_req.be, ypb_zcmt_req.size, 
-  //         ypb_zcmt_req.we, ypb_zcmt_req.wdata, ypb_zcmt_req.aid,
-  //         ypb_zcmt_req.access_type, ypb_zcmt_req.cacheable,
-  //         ypb_zcmt_req.kill_req, ypb_zcmt_req.rready), UVM_INFO)
-  //     end
-  //   end
-  // end
+  initial begin
+    forever begin
+      @(posedge clk_i);
+      if (ypb_mmu_ptw_req.preq) begin
+        `uvm_info("YPB_MMU_PTW_REQ_MONITOR", $sformatf("YPB MMU PTW Req - Vreq: %b, Preq: %b, Vaddr: %h, Paddr: %h, Be: %h, Size: %h, We: %b, Wdata: %h, Aid: %h, Access_type: %b, Cacheable: %b, Kill_req: %b, Rready: %b", 
+          ypb_mmu_ptw_req.vreq, ypb_mmu_ptw_req.preq, ypb_mmu_ptw_req.vaddr, 
+          ypb_mmu_ptw_req.paddr, ypb_mmu_ptw_req.be, ypb_mmu_ptw_req.size, 
+          ypb_mmu_ptw_req.we, ypb_mmu_ptw_req.wdata, ypb_mmu_ptw_req.aid,
+          ypb_mmu_ptw_req.access_type, ypb_mmu_ptw_req.cacheable,
+          ypb_mmu_ptw_req.kill_req, ypb_mmu_ptw_req.rready), UVM_INFO)
+      end
+    end
+  end
 
-  // initial begin
-  //   forever begin
-  //     @(posedge clk_i);
-  //     if (ypb_zcmt_rsp.rvalid) begin
-  //       `uvm_info("YPB_ZCMT_RSP_MONITOR", $sformatf("YPB ZCMT Rsp - Vgnt: %b, Pgnt: %b, Rvalid: %b, Rdata: %h, Rid: %h, Err: %b", 
-  //         ypb_zcmt_rsp.vgnt, ypb_zcmt_rsp.pgnt, ypb_zcmt_rsp.rvalid, 
-  //         ypb_zcmt_rsp.rdata, ypb_zcmt_rsp.rid, ypb_zcmt_rsp.err), UVM_INFO)
-  //     end
-  //   end
-  // end
+  initial begin
+    forever begin
+      @(posedge clk_i);
+      if (ypb_mmu_ptw_rsp.rvalid) begin
+        `uvm_info("YPB_MMU_PTW_RSP_MONITOR", $sformatf("YPB MMU PTW Rsp - Vgnt: %b, Pgnt: %b, Rvalid: %b, Rdata: %h, Rid: %h, Err: %b", 
+          ypb_mmu_ptw_rsp.vgnt, ypb_mmu_ptw_rsp.pgnt, ypb_mmu_ptw_rsp.rvalid, 
+          ypb_mmu_ptw_rsp.rdata, ypb_mmu_ptw_rsp.rid, ypb_mmu_ptw_rsp.err), UVM_INFO)
+      end
+    end
+  end
+
+  initial begin
+    forever begin
+      @(posedge clk_i);
+      if (ypb_zcmt_req.preq) begin
+        `uvm_info("YPB_ZCMT_REQ_MONITOR", $sformatf("YPB ZCMT Req - Vreq: %b, Preq: %b, Vaddr: %h, Paddr: %h, Be: %h, Size: %h, We: %b, Wdata: %h, Aid: %h, Access_type: %b, Cacheable: %b, Kill_req: %b, Rready: %b", 
+          ypb_zcmt_req.vreq, ypb_zcmt_req.preq, ypb_zcmt_req.vaddr, 
+          ypb_zcmt_req.paddr, ypb_zcmt_req.be, ypb_zcmt_req.size, 
+          ypb_zcmt_req.we, ypb_zcmt_req.wdata, ypb_zcmt_req.aid,
+          ypb_zcmt_req.access_type, ypb_zcmt_req.cacheable,
+          ypb_zcmt_req.kill_req, ypb_zcmt_req.rready), UVM_INFO)
+      end
+    end
+  end
+
+  initial begin
+    forever begin
+      @(posedge clk_i);
+      if (ypb_zcmt_rsp.rvalid) begin
+        `uvm_info("YPB_ZCMT_RSP_MONITOR", $sformatf("YPB ZCMT Rsp - Vgnt: %b, Pgnt: %b, Rvalid: %b, Rdata: %h, Rid: %h, Err: %b", 
+          ypb_zcmt_rsp.vgnt, ypb_zcmt_rsp.pgnt, ypb_zcmt_rsp.rvalid, 
+          ypb_zcmt_rsp.rdata, ypb_zcmt_rsp.rid, ypb_zcmt_rsp.err), UVM_INFO)
+      end
+    end
+  end
 
 endmodule
