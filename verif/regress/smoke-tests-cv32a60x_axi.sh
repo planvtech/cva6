@@ -49,7 +49,7 @@ cd verif/sim/
 
 make -C ../.. clean
 make clean_all
-python3 cva6.py --c_tests ../tests/custom/hello_world/hello_world.c --iss_yaml cva6.yaml --target cv32a60x_axi --iss=$DV_SIMULATORS --linker=../../config/gen_from_riscv_config/cv32a65x/linker/link.ld --gcc_opts="$CC_OPTS" $DV_OPTS --sv_seed 1
+python3 cva6.py --iss_timeout=30000 --c_tests ../tests/custom/hello_world/hello_world.c --iss_yaml cva6.yaml --target cv32a60x_axi --iss=$DV_SIMULATORS --linker=../../config/gen_from_riscv_config/cv32a65x/linker/link.ld --gcc_opts="$CC_OPTS" $DV_OPTS --sv_seed 1
 make -C ../.. clean
 make clean_all
 
