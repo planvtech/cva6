@@ -106,7 +106,8 @@ module cva6_mmu
 
   // memory management, pte for cva6
   localparam type pte_cva6_t = struct packed {
-    logic [9:0] reserved;
+    logic n;
+    logic [8:0] reserved;
     logic [CVA6Cfg.PPNW-1:0] ppn;  // PPN length for
     logic [1:0] rsw;
     logic d;
@@ -120,14 +121,15 @@ module cva6_mmu
   };
 
   localparam type tlb_update_cva6_t = struct packed {
-    logic                                   valid;
+    logic valid;
+    logic is_napot_64k;  // Svnapot: Flag indicating a 64KiB NAPOT page
     logic [CVA6Cfg.PtLevels-2:0][HYP_EXT:0] is_page;
-    logic [CVA6Cfg.VpnLen-1:0]              vpn;
-    logic [CVA6Cfg.ASID_WIDTH-1:0]          asid;
-    logic [CVA6Cfg.VMID_WIDTH-1:0]          vmid;
-    logic [HYP_EXT*2:0]                     v_st_enbl;  // v_i,g-stage enabled, s-stage enabled
-    pte_cva6_t                              content;
-    pte_cva6_t                              g_content;
+    logic [CVA6Cfg.VpnLen-1:0] vpn;
+    logic [CVA6Cfg.ASID_WIDTH-1:0] asid;
+    logic [CVA6Cfg.VMID_WIDTH-1:0] vmid;
+    logic [HYP_EXT*2:0] v_st_enbl;  // v_i,g-stage enabled, s-stage enabled
+    pte_cva6_t content;
+    pte_cva6_t g_content;
   };
 
   logic iaccess_err;  // insufficient privilege to access this instruction page
@@ -143,6 +145,7 @@ module cva6_mmu
   logic ptw_access_exception;  // PTW threw an access exception (PMPs)
   logic [CVA6Cfg.PLEN-1:0] ptw_bad_paddr;  // PTW page fault bad physical addr
   logic [CVA6Cfg.GPLEN-1:0] ptw_bad_gpaddr;  // PTW guest page fault bad guest physical addr
+  logic [CVA6Cfg.PPNW-1:0] final_fetch_ppn;
 
   logic [CVA6Cfg.VLEN-1:0] update_vaddr, shared_tlb_vaddr;
 
@@ -170,7 +173,7 @@ module cva6_mmu
   // Assignments
 
   assign itlb_lu_access = icache_areq_i.fetch_req;
-  assign dtlb_lu_access = lsu_req_i;
+  assign dtlb_lu_access = lsu_req_i & !misaligned_ex_i.valid;
   assign itlb_lu_asid   = v_i ? vs_asid_i : asid_i;
   assign dtlb_lu_asid   = (ld_st_v_i || flush_tlb_vvma_i) ? vs_asid_i : asid_i;
 
@@ -394,13 +397,13 @@ module cva6_mmu
 
       icache_areq_o.fetch_valid = 1'b0;
 
-      icache_areq_o.fetch_paddr = {
-        (enable_g_translation_i && CVA6Cfg.RVH) ? itlb_g_content.ppn : itlb_content.ppn,
-        icache_areq_i.fetch_vaddr[11:0]
-      };
+      final_fetch_ppn = (enable_g_translation_i && CVA6Cfg.RVH)? itlb_g_content.ppn : itlb_content.ppn;
+      icache_areq_o.fetch_paddr = {final_fetch_ppn, icache_areq_i.fetch_vaddr[11:0]};
 
       if (CVA6Cfg.PtLevels == 3 && itlb_is_page[CVA6Cfg.PtLevels-2]) begin
 
+        // strange 9+PtLevels to avoid CI errors on (purely syntactic) checks on Sv32, where
+        // `PPNWMin-(CVA6Cfg.VpnLen/CVA6Cfg.PtLevels)` equals `11` and would lead to `icache_areq_i.fetch_vaddr[11:12]`
         icache_areq_o.fetch_paddr[PPNWMin-(CVA6Cfg.VpnLen/CVA6Cfg.PtLevels):9+CVA6Cfg.PtLevels] = icache_areq_i.fetch_vaddr[PPNWMin-(CVA6Cfg.VpnLen/CVA6Cfg.PtLevels):9+CVA6Cfg.PtLevels];
 
       end
@@ -453,7 +456,7 @@ module cva6_mmu
             if (CVA6Cfg.TvalEn) icache_areq_o.fetch_exception.tval = CVA6Cfg.XLEN'(update_vaddr);
             if (CVA6Cfg.RVH) begin
               icache_areq_o.fetch_exception.tval2 = ptw_bad_gpaddr[CVA6Cfg.GPLEN-1:0];
-              icache_areq_o.fetch_exception.tinst=(ptw_err_at_g_int_st ? (CVA6Cfg.IS_XLEN64 ? riscv::READ_64_PSEUDOINSTRUCTION : riscv::READ_32_PSEUDOINSTRUCTION) : '0);
+              icache_areq_o.fetch_exception.tinst = (ptw_err_at_g_int_st ? (CVA6Cfg.IS_XLEN64 ? riscv::READ_64_PSEUDOINSTRUCTION : riscv::READ_32_PSEUDOINSTRUCTION) : '0);
               icache_areq_o.fetch_exception.gva = v_i;
             end
           end else begin
@@ -544,13 +547,15 @@ module cva6_mmu
     if ((en_ld_st_translation_i || en_ld_st_g_translation_i) && !misaligned_ex_q.valid) begin
       lsu_valid_o = 1'b0;
 
-      lsu_dtlb_ppn_o = (en_ld_st_g_translation_i && CVA6Cfg.RVH)? dtlb_g_content.ppn :dtlb_content.ppn;
+      lsu_dtlb_ppn_o = (en_ld_st_g_translation_i && CVA6Cfg.RVH) ? dtlb_g_content.ppn : dtlb_content.ppn;
       lsu_paddr_o = {
         (en_ld_st_g_translation_i && CVA6Cfg.RVH) ? dtlb_gpte_q.ppn : dtlb_pte_q.ppn,
         lsu_vaddr_q[11:0]
       };
 
       if (CVA6Cfg.PtLevels == 3 && dtlb_is_page_q[CVA6Cfg.PtLevels-2]) begin
+        // Strange 9+PtLevels to avoid CI errors on (purely syntactic) checks on Sv32, where
+        // `PPNWMin-(CVA6Cfg.VpnLen/CVA6Cfg.PtLevels)` equals `11` and would lead to `lsu_paddr_o[11:12]`
         lsu_paddr_o[PPNWMin-(CVA6Cfg.VpnLen/CVA6Cfg.PtLevels):9+CVA6Cfg.PtLevels] = lsu_vaddr_q[PPNWMin-(CVA6Cfg.VpnLen/CVA6Cfg.PtLevels):9+CVA6Cfg.PtLevels];
         lsu_dtlb_ppn_o[PPNWMin-(CVA6Cfg.VpnLen/CVA6Cfg.PtLevels):9+CVA6Cfg.PtLevels] = lsu_vaddr_n[PPNWMin-(CVA6Cfg.VpnLen/CVA6Cfg.PtLevels):9+CVA6Cfg.PtLevels];
       end
@@ -584,7 +589,7 @@ module cva6_mmu
                 {CVA6Cfg.XLEN - CVA6Cfg.VLEN{lsu_vaddr_q[CVA6Cfg.VLEN-1]}}, lsu_vaddr_q
               };
             if (CVA6Cfg.RVH) begin
-              lsu_exception_o.tval2= CVA6Cfg.GPLEN'(lsu_gpaddr_q[(CVA6Cfg.XLEN==32?CVA6Cfg.VLEN : CVA6Cfg.GPLEN)-1:0]);
+              lsu_exception_o.tval2 = CVA6Cfg.GPLEN'(lsu_gpaddr_q[(CVA6Cfg.XLEN==32 ? CVA6Cfg.VLEN : CVA6Cfg.GPLEN)-1:0]);
               lsu_exception_o.tinst = '0;
               lsu_exception_o.gva = ld_st_v_i;
             end
@@ -611,7 +616,7 @@ module cva6_mmu
                 {CVA6Cfg.XLEN - CVA6Cfg.VLEN{lsu_vaddr_q[CVA6Cfg.VLEN-1]}}, lsu_vaddr_q
               };
             if (CVA6Cfg.RVH) begin
-              lsu_exception_o.tval2= CVA6Cfg.GPLEN'(lsu_gpaddr_q[(CVA6Cfg.XLEN==32?CVA6Cfg.VLEN : CVA6Cfg.GPLEN)-1:0]);
+              lsu_exception_o.tval2 = CVA6Cfg.GPLEN'(lsu_gpaddr_q[(CVA6Cfg.XLEN==32 ? CVA6Cfg.VLEN : CVA6Cfg.GPLEN)-1:0]);
               lsu_exception_o.tinst = '0;
               lsu_exception_o.gva = ld_st_v_i;
             end
@@ -652,7 +657,7 @@ module cva6_mmu
                 };
               if (CVA6Cfg.RVH) begin
                 lsu_exception_o.tval2 = ptw_bad_gpaddr[CVA6Cfg.GPLEN-1:0];
-                lsu_exception_o.tinst= (ptw_err_at_g_int_st ? (CVA6Cfg.IS_XLEN64 ? riscv::READ_64_PSEUDOINSTRUCTION : riscv::READ_32_PSEUDOINSTRUCTION) : '0);
+                lsu_exception_o.tinst = (ptw_err_at_g_int_st ? (CVA6Cfg.IS_XLEN64 ? riscv::READ_64_PSEUDOINSTRUCTION : riscv::READ_32_PSEUDOINSTRUCTION) : '0);
                 lsu_exception_o.gva = ld_st_v_i;
               end
             end else begin
@@ -678,7 +683,7 @@ module cva6_mmu
                 };
               if (CVA6Cfg.RVH) begin
                 lsu_exception_o.tval2 = ptw_bad_gpaddr[CVA6Cfg.GPLEN-1:0];
-                lsu_exception_o.tinst= (ptw_err_at_g_int_st ? (CVA6Cfg.IS_XLEN64 ? riscv::READ_64_PSEUDOINSTRUCTION : riscv::READ_32_PSEUDOINSTRUCTION) : '0);
+                lsu_exception_o.tinst = (ptw_err_at_g_int_st ? (CVA6Cfg.IS_XLEN64 ? riscv::READ_64_PSEUDOINSTRUCTION : riscv::READ_32_PSEUDOINSTRUCTION) : '0);
                 lsu_exception_o.gva = ld_st_v_i;
               end
             end else begin
@@ -743,19 +748,19 @@ module cva6_mmu
       hs_ld_st_inst_q <= '0;
       misaligned_ex_q <= '0;
     end else begin
-      lsu_vaddr_q    <= lsu_vaddr_n;
-      lsu_req_q      <= lsu_req_n;
-      dtlb_pte_q     <= dtlb_pte_n;
-      dtlb_hit_q     <= dtlb_hit_n;
-      lsu_is_store_q <= lsu_is_store_n;
-      dtlb_is_page_q <= dtlb_is_page_n;
+      lsu_vaddr_q     <= lsu_vaddr_n;
+      lsu_req_q       <= lsu_req_n;
+      dtlb_pte_q      <= dtlb_pte_n;
+      dtlb_hit_q      <= dtlb_hit_n;
+      lsu_is_store_q  <= lsu_is_store_n;
+      dtlb_is_page_q  <= dtlb_is_page_n;
+      misaligned_ex_q <= misaligned_ex_n;
 
       if (CVA6Cfg.RVH) begin
         lsu_tinst_q     <= lsu_tinst_n;
         hs_ld_st_inst_q <= hs_ld_st_inst_n;
         dtlb_gpte_q     <= dtlb_gpte_n;
         lsu_gpaddr_q    <= lsu_gpaddr_n;
-        misaligned_ex_q <= misaligned_ex_n;
       end
     end
   end

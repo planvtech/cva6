@@ -39,7 +39,7 @@ package ariane_pkg;
   // we could in principle do without the commit queue in this case, but the timing degrades if we do that due
   // to longer paths into the commit stage
   // if CVA6Cfg.DCacheType = cva6_config_pkg::WB
-  // allocate more space for the commit buffer to be on the save side, this needs to be a power of two
+  // allocate more space for the commit buffer to be on the safe side, this needs to be a power of two
   localparam logic [2:0] DEPTH_COMMIT = 'd4;
 
   // Transprecision float unit
@@ -54,6 +54,7 @@ package ariane_pkg;
 
   localparam logic [31:0] OPENHWGROUP_MVENDORID = 32'h0602;
   localparam logic [31:0] ARIANE_MARCHID = 32'd3;
+  localparam logic [31:0] ARIANE_MIMPID = 32'd0;
 
   // 32 registers
   localparam REG_ADDR_SIZE = 5;
@@ -108,7 +109,7 @@ package ariane_pkg;
   localparam bit ZERO_TVAL = 1'b0;
 `endif
 
-  // read mask for SSTATUS over MMSTATUS
+  // read mask for SSTATUS over MSTATUS
   function automatic logic [63:0] smode_status_read_mask(config_pkg::cva6_cfg_t Cfg);
     return riscv::SSTATUS_UIE
     | riscv::SSTATUS_SIE
@@ -532,6 +533,11 @@ package ariane_pkg;
     SHA512SUM1
   } fu_op;
 
+  typedef struct packed {
+    logic rs1_from_rd;
+    logic rs2_from_rd;
+  } alu_bypass_t;
+
   function automatic logic op_is_branch(input fu_op op);
     unique case (op) inside
       EQ, NE, LTS, GES, LTU, GEU: return 1'b1;
@@ -567,7 +573,7 @@ package ariane_pkg;
       [FSD : FSB],  // FP Stores
       [FADD : FMIN_MAX],  // Computational Operations (no sqrt)
       [FMADD : FNMADD],  // Fused Computational Operations
-      FCVT_F2F,  // Vectorial F2F Conversions requrie target
+      FCVT_F2F,  // Vectorial F2F Conversions require target
       [FSGNJ : FMV_F2X],  // Sign Injections and moves mapped to SGNJ
       FCMP,  // Comparisons
       [VFMIN : VFCPKCD_D]:
