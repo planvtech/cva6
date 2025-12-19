@@ -414,10 +414,20 @@ module frontend
     if (fetchbuf_r && (!FETCHBUF_FALLTHROUGH || !fetchbuf_w)) begin
       fetchbuf_valid_d[fetchbuf_rindex] = 1'b0;
     end
+
     // Flush on bp_valid
-    if (bp_valid) begin
+    //mkdigitals commented_out begin:
+    // if (bp_valid) begin
+    //   fetchbuf_flushed_d[fetchbuf_last_id_q] = 1'b1;
+    // end
+    //mkdigitals commented_out end
+
+    //mkdigital added begin:
+    if (kill_s2) begin
       fetchbuf_flushed_d[fetchbuf_last_id_q] = 1'b1;
-    end
+    end    
+    //mkdigital added end
+    
     // Free on exception
     //if (fetchbuf_w_q && ((CVA6Cfg.MmuPresent && ex_s1) || bp_valid) || kill_req_q) begin
     //  fetchbuf_valid_d[fetchbuf_windex_q] = 1'b0;
