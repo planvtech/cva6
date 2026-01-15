@@ -492,7 +492,7 @@ module frontend
   assign ypb_fetch_req_o.vaddr = npc_fetch_address;
   assign paddr = CVA6Cfg.MmuPresent ? arsp_i.fetch_paddr : npc_fetch_address;
 
-  assign data_req = (CVA6Cfg.MmuPresent ? fetchbuf_w_q && !ex_s1 && !bp_valid : fetchbuf_w);
+  assign data_req = (CVA6Cfg.MmuPresent ? fetchbuf_w_q && !ex_s1 : fetchbuf_w);
 
   always_comb begin : p_fsm_common
     // default assignmen
@@ -554,7 +554,8 @@ module frontend
   assign ypb_fetch_req_o.wdata = '0;
   assign ypb_fetch_req_o.aid = (!CVA6Cfg.MmuPresent && (ypb_a_state_q == TRANSPARENT)) ? fetchbuf_windex : fetchbuf_windex_q;
   assign ypb_fetch_req_o.atop = ariane_pkg::AMO_NONE;
-  assign ypb_fetch_req_o.cacheable = (!CVA6Cfg.MmuPresent && (ypb_a_state_q == TRANSPARENT)) ? paddr_is_cacheable : paddr_is_cacheable_q;
+  //assign ypb_fetch_req_o.cacheable = (!CVA6Cfg.MmuPresent && (ypb_a_state_q == TRANSPARENT)) ? paddr_is_cacheable : paddr_is_cacheable_q;
+  assign ypb_fetch_req_o.cacheable = paddr_is_cacheable;
   assign ypb_fetch_req_o.access_type = '0;  //  0 = fetch
   assign ypb_fetch_req_o.rready = '1;  //always ready  TODO maybe manage instr_queue_ready & replay with this signal
 
