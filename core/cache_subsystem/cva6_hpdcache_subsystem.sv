@@ -296,8 +296,8 @@ module cva6_hpdcache_subsystem
   localparam int NUM_SNOOP_PORTS = HPDCACHE_ENABLE_CMO ? 3 : 2;
 
   localparam int MMU_PTW_INDEX = 0;
-  localparam int ZCMT_INDEX = (CVA6Cfg.RVZCMT ? 1 : 0);
-  localparam int LOAD_INDEX = (CVA6Cfg.MmuPresent ? ZCMT_INDEX + 1 : ZCMT_INDEX);
+  localparam int ZCMT_INDEX = (CVA6Cfg.MmuPresent ? 1 : 0);
+  localparam int LOAD_INDEX = (CVA6Cfg.RVZCMT ? ZCMT_INDEX + 1 : ZCMT_INDEX);
   localparam int STORE_AMO_INDEX = LOAD_INDEX + 1;
   localparam int CMO_INDEX = STORE_AMO_INDEX + 1;
   localparam int HWPF_INDEX = (HPDCACHE_ENABLE_CMO ? CMO_INDEX + 1 : CMO_INDEX);
