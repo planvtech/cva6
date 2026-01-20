@@ -469,7 +469,7 @@ module frontend
 
   assign stall_ni = spec_req_non_idempot;
   assign stall_ypb = (ypb_a_state_q == REGISTRED);  //&& !ypb_load_rsp_i.pgnt;
-  assign stall_translation = CVA6Cfg.MmuPresent ? areq_o.fetch_req && (!arsp_i.fetch_valid) : 1'b0;
+  assign stall_translation = CVA6Cfg.MmuPresent ? areq_o.fetch_req && (!arsp_i.fetch_valid || (arsp_i.fetch_valid && arsp_i.fetch_exception.valid)) : 1'b0;
   assign stall_instr_queue = !instr_queue_ready;
 
   assign ex_s1 = (CVA6Cfg.MmuPresent && arsp_i.fetch_exception.valid);
@@ -509,7 +509,7 @@ module frontend
     areq_o.fetch_req = 1'b1;
     ypb_fetch_req_o.vreq = 1'b1;
     if (!CVA6Cfg.MmuPresent || ypb_fetch_rsp_i.vgnt) begin
-      if (stall_ni || stall_ypb || stall_instr_queue || fetchbuf_full) begin
+      if (stall_ni || stall_ypb || stall_instr_queue || stall_translation || fetchbuf_full) begin
         kill_req_d = CVA6Cfg.MmuPresent ? 1'b1 :  1'b0; // MmuPresent only : next cycle is s2 but we need to kill because not ready to sent tag
       end else begin
         fetchbuf_w  = !kill_s1 && !flush_i; // record request into outstanding fetch fifo and trigger YPB physical request
@@ -526,9 +526,9 @@ module frontend
       // RETIRE EXCEPTION (low priority)
     end else if (CVA6Cfg.MmuPresent && ex_s1) begin
       vaddr_rvalid = CVA6Cfg.MmuPresent ? fetchbuf_q[fetchbuf_windex_q].vaddr : npc_fetch_address;
-      rvalid    = !bp_valid && !flush_i;
+      rvalid    = arsp_i.fetch_valid; //!bp_valid && !flush_i;
       ex_rvalid = 1'b1;
-      pop_fetch = 1'b1; // release lsu_bypass fifo
+      pop_fetch = arsp_i.fetch_valid; //1'b1; // release lsu_bypass fifo
     end
 
   end
@@ -689,6 +689,7 @@ module frontend
     // 5. Exception/Interrupt
     if (ex_valid_i) begin
       npc_d = trap_vector_base_i;
+      fetch_address = trap_vector_base_i;
     end
     // 6. Pipeline Flush because of CSR side effects
     // On a pipeline flush start fetching from the next address
