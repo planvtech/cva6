@@ -525,8 +525,8 @@ module frontend
       ex_rvalid = 1'b0;
       // RETIRE EXCEPTION (low priority)
     end else if (CVA6Cfg.MmuPresent && ex_s1) begin
-      vaddr_rvalid = CVA6Cfg.MmuPresent ? fetchbuf_q[fetchbuf_windex_q].vaddr : npc_fetch_address;
-      rvalid    = arsp_i.fetch_valid; //!bp_valid && !flush_i;
+      vaddr_rvalid = npc_fetch_address;
+      rvalid    = arsp_i.fetch_valid && !bp_valid && !flush_i;
       ex_rvalid = 1'b1;
       pop_fetch = arsp_i.fetch_valid; //1'b1; // release lsu_bypass fifo
     end
