@@ -233,6 +233,7 @@ module cva6_hpdcache_if_adapter
       assign ypb_mmu_ptw_rsp_o.rdata = hpdcache_rsp_i.rdata;
       assign ypb_mmu_ptw_rsp_o.rid = hpdcache_rsp_i.tid;
       assign ypb_mmu_ptw_rsp_o.vgnt = hpdcache_req_ready_i;
+      assign ypb_mmu_ptw_rsp_o.pgnt = hpdcache_req_ready_i;
 
       //  Assertions
       //  {{{
