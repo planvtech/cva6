@@ -277,6 +277,7 @@ else if (IsZcmtPort == 1'b1) begin : zcmt_port_gen
       assign ypb_zcmt_rsp_o.rdata = hpdcache_rsp_i.rdata;
       assign ypb_zcmt_rsp_o.rid = hpdcache_rsp_i.tid;
       assign ypb_zcmt_rsp_o.vgnt = hpdcache_req_ready_i;
+      assign ypb_zcmt_rsp_o.pgnt = hpdcache_req_ready_i;
 
       //  Assertions
       //  {{{
