@@ -42,7 +42,7 @@ package cva6_config_pkg;
       RVV: bit'(0),
       RVC: bit'(1),
       RVH: bit'(0),
-      RVZCMT: bit'(1),
+      RVZCMT: bit'(0),
       RVZCB: bit'(1),
       RVZCMP: bit'(0),
       XFVec: bit'(0),
@@ -50,7 +50,7 @@ package cva6_config_pkg;
       CoproType: config_pkg::COPRO_EXAMPLE,
       RVZiCond: bit'(0),
       RVZicntr: bit'(0),
-      RVZifencei: bit'(1), //needed for zcmt
+      RVZifencei: bit'(0), //needed for zcmt
       RVZihpm: bit'(0),
       NrScoreboardEntries: unsigned'(4),
       PerfCounterEn: bit'(0),
