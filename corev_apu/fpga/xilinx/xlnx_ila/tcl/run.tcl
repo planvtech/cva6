@@ -7,9 +7,27 @@ create_project $ipName . -force -part $partNumber
 set_property board_part $boardName [current_project]
 
 create_ip -name ila -vendor xilinx.com -library ip -module_name $ipName
-set_property -dict [list  CONFIG.C_NUM_OF_PROBES {8} \
-                          CONFIG.C_PROBE3_WIDTH {4} \
-                          CONFIG.C_PROBE6_WIDTH {4} \
+set_property -dict [list  CONFIG.C_NUM_OF_PROBES {50} \
+                          CONFIG.C_PROBE3_WIDTH {32} \
+                          CONFIG.C_PROBE7_WIDTH {32} \
+                          CONFIG.C_PROBE10_WIDTH {32} \
+                          CONFIG.C_PROBE11_WIDTH {32} \
+                          CONFIG.C_PROBE13_WIDTH {32} \
+                          CONFIG.C_PROBE14_WIDTH {32} \
+                          CONFIG.C_PROBE15_WIDTH {32} \
+                          CONFIG.C_PROBE18_WIDTH {32} \
+                          CONFIG.C_PROBE20_WIDTH {32} \
+                          CONFIG.C_PROBE22_WIDTH {32} \
+                          CONFIG.C_PROBE26_WIDTH {32} \
+                          CONFIG.C_PROBE28_WIDTH {32} \
+                          CONFIG.C_PROBE29_WIDTH {32} \
+                          CONFIG.C_PROBE32_WIDTH {32} \
+                          CONFIG.C_PROBE34_WIDTH {32} \
+                          CONFIG.C_PROBE38_WIDTH {8} \
+                          CONFIG.C_PROBE39_WIDTH {32} \
+                          CONFIG.C_PROBE42_WIDTH {32} \
+                          CONFIG.C_PROBE45_WIDTH {5} \
+                          CONFIG.C_PROBE49_WIDTH {32} \
                           CONFIG.C_DATA_DEPTH {16384}  \
                           CONFIG.C_INPUT_PIPE_STAGES {1} \
                     ] [get_ips $ipName]
@@ -20,3 +38,8 @@ generate_target all [get_files  ./$ipName.srcs/sources_1/ip/$ipName/$ipName.xci]
 create_ip_run [get_files -of_objects [get_fileset sources_1] ./$ipName.srcs/sources_1/ip/$ipName/$ipName.xci]
 launch_run -jobs 8 ${ipName}_synth_1
 wait_on_run ${ipName}_synth_1
+
+
+
+
+
