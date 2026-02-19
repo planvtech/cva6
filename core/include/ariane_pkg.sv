@@ -39,7 +39,7 @@ package ariane_pkg;
   // we could in principle do without the commit queue in this case, but the timing degrades if we do that due
   // to longer paths into the commit stage
   // if CVA6Cfg.DCacheType = cva6_config_pkg::WB
-  // allocate more space for the commit buffer to be on the safe side, this needs to be a power of two
+  // allocate more space for the commit buffer to be on the save side, this needs to be a power of two
   localparam logic [2:0] DEPTH_COMMIT = 'd4;
 
   // Transprecision float unit
@@ -54,7 +54,6 @@ package ariane_pkg;
 
   localparam logic [31:0] OPENHWGROUP_MVENDORID = 32'h0602;
   localparam logic [31:0] ARIANE_MARCHID = 32'd3;
-  localparam logic [31:0] ARIANE_MIMPID = 32'd0;
 
   // 32 registers
   localparam REG_ADDR_SIZE = 5;
@@ -109,12 +108,11 @@ package ariane_pkg;
   localparam bit ZERO_TVAL = 1'b0;
 `endif
 
-  // read mask for SSTATUS over MSTATUS
+  // read mask for SSTATUS over MMSTATUS
   function automatic logic [63:0] smode_status_read_mask(config_pkg::cva6_cfg_t Cfg);
     return riscv::SSTATUS_UIE
     | riscv::SSTATUS_SIE
     | riscv::SSTATUS_SPIE
-    | riscv::SSTATUS_UBE
     | riscv::SSTATUS_SPP
     | riscv::SSTATUS_FS
     | riscv::SSTATUS_XS
@@ -198,8 +196,7 @@ package ariane_pkg;
     FPU,        // 7
     FPU_VEC,    // 8
     CVXIF,      // 9
-    ACCEL,      // 10
-    AES         // 11
+    ACCEL       // 10
   } fu_t;
 
   // Index of writeback ports
@@ -364,11 +361,6 @@ package ariane_pkg;
     AMO_MAXDU,
     AMO_MIND,
     AMO_MINDU,
-    // cache block operations (CBO)
-    CBO_CLEAN,
-    CBO_FLUSH,
-    CBO_INVAL,
-    CBO_NONE,
     // Multiplications
     MUL,
     MULH,
@@ -504,45 +496,8 @@ package ariane_pkg;
     BREV8,
     // Zip instructions
     UNZIP,
-    ZIP,
-    // Xperm instructions
-    XPERM8,
-    XPERM4,
-    // AES Encryption instructions
-    AES32ESI,
-    AES32ESMI,
-    AES64ES,
-    AES64ESM,
-    // AES Decryption instructions
-    AES32DSI,
-    AES32DSMI,
-    AES64DS,
-    AES64DSM,
-    AES64IM,
-    // AES Key-Schedule instructions
-    AES64KS1I,
-    AES64KS2,
-    // Hashing instructions
-    SHA256SIG0,
-    SHA256SIG1,
-    SHA256SUM0,
-    SHA256SUM1,
-    SHA512SIG0H,
-    SHA512SIG0L,
-    SHA512SIG1H,
-    SHA512SIG1L,
-    SHA512SUM0R,
-    SHA512SUM1R,
-    SHA512SIG0,
-    SHA512SIG1,
-    SHA512SUM0,
-    SHA512SUM1
+    ZIP
   } fu_op;
-
-  typedef struct packed {
-    logic rs1_from_rd;
-    logic rs2_from_rd;
-  } alu_bypass_t;
 
   function automatic logic op_is_branch(input fu_op op);
     unique case (op) inside
@@ -579,7 +534,7 @@ package ariane_pkg;
       [FSD : FSB],  // FP Stores
       [FADD : FMIN_MAX],  // Computational Operations (no sqrt)
       [FMADD : FNMADD],  // Fused Computational Operations
-      FCVT_F2F,  // Vectorial F2F Conversions require target
+      FCVT_F2F,  // Vectorial F2F Conversions requrie target
       [FSGNJ : FMV_F2X],  // Sign Injections and moves mapped to SGNJ
       FCMP,  // Comparisons
       [VFMIN : VFCPKCD_D]:
@@ -616,17 +571,6 @@ package ariane_pkg;
       ACCEL_OP_FD:
       return 1'b1;  // Accelerator instructions
       default: return 1'b0;  // all other ops
-    endcase
-  endfunction
-
-  function automatic logic fd_changes_rd_state(input fu_op op);
-    unique case (op) inside
-      FSD, FSW, FSH, FSB,  // stores
-      FCVT_F2I,  // conversion to int
-      FMV_F2X,  // move as-is to int
-      FCLASS:  // classification (writes output to integer register)
-      return 1'b0;  // floating-point registers are only read
-      default: return 1'b1;  // other ops - floating-point registers are written as well
     endcase
   endfunction
 
@@ -846,7 +790,6 @@ package ariane_pkg;
       end
       LH, LHU, HLV_H, HLV_HU, HLVX_HU, SH, HSV_H, FLH, FSH: return 2'b01;
       LB, LBU, HLV_B, HLV_BU, SB, HSV_B, FLB, FSB:          return 2'b00;
-      CBO_CLEAN, CBO_FLUSH, CBO_INVAL:                      return 2'b00;
       default:                                              return 2'b11;
     endcase
   endfunction
@@ -900,13 +843,5 @@ package ariane_pkg;
     end
     return gppn;
   endfunction : make_gppn
-
-  // ----------------------
-  // Helper functions
-  // ----------------------
-  // Avoid negative array slices when defining parametrized sizes
-  function automatic int unsigned avoid_neg(int n);
-    return (n < 0) ? 0 : n;
-  endfunction : avoid_neg
 
 endpackage

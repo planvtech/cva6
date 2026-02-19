@@ -26,7 +26,6 @@ package cva6_config_pkg;
       FpgaAlteraEn: bit'(0),  // for Altera (only)
       TechnoCut: bit'(0),
       SuperscalarEn: bit'(0),
-      ALUBypass: bit'(0),
       NrCommitPorts: unsigned'(1),
       AxiAddrWidth: unsigned'(CVA6ConfigAxiAddrWidth),
       AxiDataWidth: unsigned'(CVA6ConfigAxiDataWidth),
@@ -42,7 +41,7 @@ package cva6_config_pkg;
       RVB: bit'(0),
       ZKN: bit'(0),
       RVV: bit'(0),
-      RVC: bit'(0),
+      RVC: bit'(1),
       RVH: bit'(0),
       RVZCMT: bit'(0),
       RVZCB: bit'(0),
