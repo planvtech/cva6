@@ -945,7 +945,7 @@ def load_config(args, cwd):
       args.priv  = "m"
     elif base == "cv32a65x":
       args.mabi = "ilp32"
-      args.isa  = "rv32imc_zba_zbb_zbs_zbc"
+      args.isa  = "rv32im_zca_zba_zbb_zbs_zbc_zcmt"
       args.priv  = "m"
     elif base == "cv32a60x_axi":
       args.mabi = "ilp32"
@@ -953,7 +953,7 @@ def load_config(args, cwd):
       args.priv  = "m"
     elif base == "cv32a65x_axi":
       args.mabi = "ilp32"
-      args.isa  = "rv32imc_zba_zbb_zbs_zbc"
+      args.isa  = "rv32im_zca_zba_zbb_zbs_zbc_zcmt"
       args.priv  = "m"
     elif base == "cv32a65x_sv32":
       args.mabi = "ilp32"
