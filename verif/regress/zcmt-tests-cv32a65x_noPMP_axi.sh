@@ -37,10 +37,10 @@ export DV_OPTS="$DV_OPTS --issrun_opts=+debug_disable=1+UVM_VERBOSITY=$UVM_VERBO
 cd verif/sim/
 make clean_all
 
-python3 cva6.py --target cv32a60x_axi --iss=$DV_SIMULATORS --iss_yaml=cva6.yaml --asm_tests ../tests/custom/zcmt/cm_jalt_long_ret.S --linker=../tests/custom/zcmt/link.ld --gcc_opts="-static -mcmodel=medany -fvisibility=hidden -nostdlib"
-python3 cva6.py --target cv32a60x_axi --iss=$DV_SIMULATORS --iss_yaml=cva6.yaml --asm_tests ../tests/custom/zcmt/cm_jalt_long.S --linker=../tests/custom/zcmt/link.ld --gcc_opts="-static -mcmodel=medany -fvisibility=hidden -nostdlib"
-python3 cva6.py --target cv32a60x_axi --iss=$DV_SIMULATORS --iss_yaml=cva6.yaml --asm_tests ../tests/custom/zcmt/cm_jt_long.S --linker=../tests/custom/zcmt/link.ld --gcc_opts="-static -mcmodel=medany -fvisibility=hidden -nostdlib"
-python3 cva6.py --target cv32a60x_axi --iss=$DV_SIMULATORS --iss_yaml=cva6.yaml --asm_tests ../tests/custom/zcmt/jvt_csr.S --linker=../tests/custom/zcmt/link.ld --gcc_opts="-static -mcmodel=medany -fvisibility=hidden -nostdlib"
+python3 cva6.py --target cv32a65x_noPMP_axi --iss=$DV_SIMULATORS --iss_yaml=cva6.yaml --asm_tests ../tests/custom/zcmt/cm_jalt_long_ret.S --linker=../tests/custom/zcmt/link.ld --gcc_opts="-static -mcmodel=medany -fvisibility=hidden -nostdlib"
+python3 cva6.py --target cv32a65x_noPMP_axi --iss=$DV_SIMULATORS --iss_yaml=cva6.yaml --asm_tests ../tests/custom/zcmt/cm_jalt_long.S --linker=../tests/custom/zcmt/link.ld --gcc_opts="-static -mcmodel=medany -fvisibility=hidden -nostdlib"
+python3 cva6.py --target cv32a65x_noPMP_axi --iss=$DV_SIMULATORS --iss_yaml=cva6.yaml --asm_tests ../tests/custom/zcmt/cm_jt_long.S --linker=../tests/custom/zcmt/link.ld --gcc_opts="-static -mcmodel=medany -fvisibility=hidden -nostdlib"
+python3 cva6.py --target cv32a65x_noPMP_axi --iss=$DV_SIMULATORS --iss_yaml=cva6.yaml --asm_tests ../tests/custom/zcmt/jvt_csr.S --linker=../tests/custom/zcmt/link.ld --gcc_opts="-static -mcmodel=medany -fvisibility=hidden -nostdlib"
 
 make clean_all
 cd -
