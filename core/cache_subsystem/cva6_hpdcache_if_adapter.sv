@@ -473,7 +473,7 @@ else if (IsZcmtPort == 1'b1) begin : zcmt_port_gen
       assign ypb_amo_valid = hpdcache_rsp_valid_i && (hpdcache_rsp_i.tid == '1);
 
       //ypb
-      assign ypb_store_rsp_o.pgnt = hpdcache_req_ready_i;
+      assign ypb_store_rsp_o.pgnt = ypb_store_req_i.preq & hpdcache_req_ready_i;
       assign ypb_store_rsp_o.rvalid = ypb_store_valid;
       assign ypb_store_rsp_o.rid = '0;
       assign ypb_store_rsp_o.err = '0;
