@@ -702,6 +702,7 @@ module frontend
     // IMPROVEMENT: This adder can at least be merged with the one in the csr_regfile stage
     if (set_pc_commit_i) begin
       npc_d = pc_commit_i + (halt_i ? '0 : {{CVA6Cfg.VLEN - 3{1'b0}}, 3'b100});
+      fetch_address = pc_commit_i + (halt_i ? '0 : {{CVA6Cfg.VLEN - 3{1'b0}}, 3'b100});
     end
     // 7. Debug
     // enter debug on a hard-coded base-address
