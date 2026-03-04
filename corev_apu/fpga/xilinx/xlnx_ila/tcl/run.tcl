@@ -6,31 +6,51 @@ set ipName xlnx_ila
 create_project $ipName . -force -part $partNumber
 set_property board_part $boardName [current_project]
 
+
+
 create_ip -name ila -vendor xilinx.com -library ip -module_name $ipName
-set_property -dict [list  CONFIG.C_NUM_OF_PROBES {50} \
-                          CONFIG.C_PROBE3_WIDTH {32} \
-                          CONFIG.C_PROBE7_WIDTH {32} \
-                          CONFIG.C_PROBE10_WIDTH {32} \
-                          CONFIG.C_PROBE11_WIDTH {32} \
-                          CONFIG.C_PROBE13_WIDTH {32} \
-                          CONFIG.C_PROBE14_WIDTH {32} \
-                          CONFIG.C_PROBE15_WIDTH {32} \
-                          CONFIG.C_PROBE18_WIDTH {32} \
-                          CONFIG.C_PROBE20_WIDTH {32} \
-                          CONFIG.C_PROBE22_WIDTH {32} \
-                          CONFIG.C_PROBE26_WIDTH {32} \
-                          CONFIG.C_PROBE28_WIDTH {32} \
-                          CONFIG.C_PROBE29_WIDTH {32} \
-                          CONFIG.C_PROBE32_WIDTH {32} \
-                          CONFIG.C_PROBE34_WIDTH {32} \
-                          CONFIG.C_PROBE38_WIDTH {8} \
-                          CONFIG.C_PROBE39_WIDTH {32} \
-                          CONFIG.C_PROBE42_WIDTH {32} \
-                          CONFIG.C_PROBE45_WIDTH {5} \
-                          CONFIG.C_PROBE49_WIDTH {32} \
-                          CONFIG.C_DATA_DEPTH {16384}  \
-                          CONFIG.C_INPUT_PIPE_STAGES {1} \
-                    ] [get_ips $ipName]
+set_property -dict [list  CONFIG.C_NUM_OF_PROBES {55} \
+  CONFIG.C_PROBE2_WIDTH {8} \
+  CONFIG.C_PROBE4_WIDTH {8} \
+  CONFIG.C_PROBE8_WIDTH {32} \
+  CONFIG.C_PROBE10_WIDTH {4} \
+  CONFIG.C_PROBE11_WIDTH {32} \
+  CONFIG.C_PROBE12_WIDTH {32} \
+  CONFIG.C_PROBE13_WIDTH {32} \
+  CONFIG.C_PROBE17_WIDTH {32} \
+  CONFIG.C_PROBE20_WIDTH {32} \
+  CONFIG.C_PROBE27_WIDTH {32} \
+  CONFIG.C_PROBE29_WIDTH {32} \
+  CONFIG.C_PROBE30_WIDTH {32} \
+  CONFIG.C_PROBE33_WIDTH {5} \
+  CONFIG.C_PROBE35_WIDTH {5} \
+  CONFIG.C_PROBE37_WIDTH {32} \
+  CONFIG.C_PROBE38_WIDTH {5} \
+  CONFIG.C_PROBE39_WIDTH {5} \
+  CONFIG.C_PROBE46_WIDTH {32} \
+  CONFIG.C_PROBE47_WIDTH {5} \
+  CONFIG.C_PROBE33_WIDTH {32} \
+  CONFIG.C_PROBE34_WIDTH {32} \
+  CONFIG.C_PROBE35_WIDTH {32} \
+  CONFIG.C_PROBE37_WIDTH {32} \
+  CONFIG.C_PROBE38_WIDTH {32} \
+  CONFIG.C_PROBE39_WIDTH {32} \
+  CONFIG.C_PROBE40_WIDTH {32} \
+  CONFIG.C_PROBE41_WIDTH {32} \
+  CONFIG.C_PROBE42_WIDTH {32} \
+  CONFIG.C_PROBE43_WIDTH {32} \
+  CONFIG.C_PROBE44_WIDTH {32} \
+  CONFIG.C_PROBE45_WIDTH {32} \
+  CONFIG.C_PROBE46_WIDTH {32} \
+  CONFIG.C_PROBE47_WIDTH {32} \
+  CONFIG.C_PROBE50_WIDTH {32} \
+  CONFIG.C_PROBE51_WIDTH {32} \
+  CONFIG.C_PROBE54_WIDTH {8} \
+  CONFIG.C_DATA_DEPTH {16384}  \
+  CONFIG.C_INPUT_PIPE_STAGES {1} \
+] [get_ips $ipName]
+
+
 
 
 generate_target {instantiation_template} [get_files ./$ipName.srcs/sources_1/ip/$ipName/$ipName.xci]
