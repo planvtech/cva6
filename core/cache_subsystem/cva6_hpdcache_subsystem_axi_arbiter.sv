@@ -187,7 +187,7 @@ module cva6_hpdcache_subsystem_axi_arbiter
 
   always_comb begin : build_resp_read_rt_comb
     for (int i = 0; i < MEM_RESP_RT_DEPTH; i++) begin
-      mem_resp_read_rt[i] = (i < 16) ? 0 : 1;
+      mem_resp_read_rt[i] = (i < (2**(CVA6Cfg.AxiIdWidth - 1))) ? 0 : 1;
     end
   end
 
@@ -245,7 +245,6 @@ module cva6_hpdcache_subsystem_axi_arbiter
       .w_chan_t             (axi_w_chan_t),
       .b_chan_t             (axi_b_chan_t)
   ) i_hpdcache_mem_to_axi_write (
-      .clk_i(clk_i),
       .req_ready_o(dcache_write_ready_o),
       .req_valid_i(dcache_write_valid_i),
       .req_i      (dcache_write_idx),
