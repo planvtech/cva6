@@ -156,7 +156,7 @@ module frontend
   logic            [           CVA6Cfg.VLEN-1:0]                   vpc_bht;
 
   // branch-predict update
-  logic                                                            is_mispredict;
+  logic                                                            is_mispredict, was_mispredicted;
   logic ras_push, ras_pop;
   logic [           CVA6Cfg.VLEN-1:0] ras_update;
 
@@ -525,8 +525,8 @@ module frontend
       ex_rvalid = 1'b0;
       // RETIRE EXCEPTION (low priority)
     end else if (CVA6Cfg.MmuPresent && ex_s1) begin
-      vaddr_rvalid = npc_fetch_address;
-      rvalid    = arsp_i.fetch_valid && !bp_valid && !flush_i;
+      vaddr_rvalid = vaddr_q; //npc_fetch_address;
+      rvalid    = arsp_i.fetch_valid && !bp_valid && !flush_i && !was_mispredicted;
       ex_rvalid = 1'b1;
       pop_fetch = arsp_i.fetch_valid; //1'b1; // release lsu_bypass fifo
     end
@@ -669,7 +669,7 @@ module frontend
       npc_d = predict_address;
     end
     // 1. Default assignment
-    if (pop_fetch) begin
+    if (pop_fetch && !was_mispredicted) begin
       npc_d = {
         fetch_address[CVA6Cfg.VLEN-1:CVA6Cfg.FETCH_ALIGN_BITS] + 1, {CVA6Cfg.FETCH_ALIGN_BITS{1'b0}}
       };
@@ -733,6 +733,7 @@ module frontend
       fetch_ex_valid_q <= ariane_pkg::FE_NONE;
       btb_q            <= '0;
       bht_q            <= '0;
+      was_mispredicted <= '0;
     end else begin
       npc_rst_load_q <= 1'b0;
       npc_q <= npc_d;
@@ -765,6 +766,11 @@ module frontend
         btb_q <= btb_prediction[CVA6Cfg.INSTR_PER_FETCH-1];
         bht_q <= bht_prediction[CVA6Cfg.INSTR_PER_FETCH-1];
       end
+
+      if(is_mispredict & !arsp_i.fetch_valid) // translation request for misprediction ongoing
+        was_mispredicted <= '1; 
+      if(arsp_i.fetch_valid) // translation finished, can clear flag
+        was_mispredicted <= '0; 
     end
   end
 
