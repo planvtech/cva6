@@ -237,6 +237,11 @@ module cva6_hpdcache_subsystem_axi_arbiter
 
   //  AXI adapters
   //  {{{
+  hpdcache_mem_resp_w_idext_t  dcache_write_resp_idx;
+  assign dcache_write_resp_o.mem_resp_w_is_atomic = dcache_write_resp_idx.mem_resp_w_is_atomic;
+  assign dcache_write_resp_o.mem_resp_w_error=dcache_write_resp_idx.mem_resp_w_error;
+  assign dcache_write_resp_o.mem_resp_w_id=dcache_write_resp_idx.mem_resp_w_id[0+:(CVA6Cfg.AxiIdWidth-1)];;
+
   hpdcache_mem_to_axi_write #(
       .hpdcache_mem_req_t   (hpdcache_mem_req_idext_t),
       .hpdcache_mem_req_w_t (hpdcache_mem_req_w_idext_t),
@@ -255,7 +260,7 @@ module cva6_hpdcache_subsystem_axi_arbiter
 
       .resp_ready_i(dcache_write_resp_ready_i),
       .resp_valid_o(dcache_write_resp_valid_o),
-      .resp_o      (dcache_write_resp_o),
+      .resp_o      (dcache_write_resp_idx),
 
       .axi_aw_valid_o(axi_req_o.aw_valid),
       .axi_aw_o      (axi_req_o.aw),
