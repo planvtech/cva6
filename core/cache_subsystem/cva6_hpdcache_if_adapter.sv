@@ -372,6 +372,7 @@ else if (IsZcmtPort == 1'b1) begin : zcmt_port_gen
 
       //  Request forwarding
       //  {{{
+      assign amo_data_size = ypb_amo_req_i.size; //mkdigitals added
       assign amo_is_word = (amo_data_size == 2'b10);
       assign amo_is_word_hi = ypb_amo_req_i.paddr[2];
       if (CVA6Cfg.XLEN == 64) begin : amo_data_64_gen
