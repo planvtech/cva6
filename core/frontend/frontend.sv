@@ -492,7 +492,7 @@ module frontend
   assign ypb_fetch_req_o.vaddr = npc_fetch_address;
   assign paddr = CVA6Cfg.MmuPresent ? arsp_i.fetch_paddr : npc_fetch_address;
 
-  assign data_req = (CVA6Cfg.MmuPresent ? fetchbuf_w_q && !ex_s1 : fetchbuf_w);
+  assign data_req = (CVA6Cfg.MmuPresent ? fetchbuf_w_q && !ex_s1 && arsp_i.fetch_valid: fetchbuf_w);
 
   always_comb begin : p_fsm_common
     // default assignmen
@@ -681,6 +681,7 @@ module frontend
     // 3. Control flow change request
     if (is_mispredict) begin
       npc_d = resolved_branch_i.target_address;
+      fetch_address = resolved_branch_i.target_address;
     end
     // 4. Return from environment call
     if (eret_i) begin

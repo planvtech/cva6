@@ -408,6 +408,5 @@ module cva6
   assign ypb_mmu_ptw_rsp_o = ypb_mmu_ptw_rsp;
   assign ypb_zcmt_req_o    = ypb_zcmt_req;
   assign ypb_zcmt_rsp_o    = ypb_zcmt_rsp;
-  
 
 endmodule  // ariane
