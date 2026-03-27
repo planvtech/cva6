@@ -669,8 +669,7 @@ module frontend
       npc_d = predict_address;
     end
     // 1. Default assignment
-    if (pop_fetch) begin
-      // if (pop_fetch && !was_mispredicted) begin
+    if (pop_fetch && (!was_mispredicted || !stall_translation)) begin
       npc_d = {
         fetch_address[CVA6Cfg.VLEN-1:CVA6Cfg.FETCH_ALIGN_BITS] + 1, {CVA6Cfg.FETCH_ALIGN_BITS{1'b0}}
       };
