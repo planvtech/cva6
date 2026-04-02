@@ -513,7 +513,7 @@ module frontend
         kill_req_d = CVA6Cfg.MmuPresent ? 1'b1 :  1'b0; // MmuPresent only : next cycle is s2 but we need to kill because not ready to sent tag
       end else begin
         fetchbuf_w  = !kill_s1 && !flush_i; // record request into outstanding fetch fifo and trigger YPB physical request
-        pop_fetch = 1'b1;  // release lsu_bypass fifo
+        pop_fetch = arsp_i.fetch_valid;//1'b1;  // release lsu_bypass fifo
       end
     end
     //end
@@ -609,7 +609,7 @@ module frontend
       kill_req_q <= kill_req_d;
       //if (!ex_s1) begin
       fetchbuf_windex_q <= fetchbuf_windex;
-      fetchbuf_w_q <= fetchbuf_w;
+      fetchbuf_w_q <= ( CVA6Cfg.MmuPresent && arsp_i.fetch_valid) ? fetchbuf_w : fetchbuf_w_q;
       //end
       vaddr_q <= vaddr_d;
     end
@@ -686,6 +686,7 @@ module frontend
     // 4. Return from environment call
     if (eret_i) begin
       npc_d = epc_i;
+      fetch_address = epc_i;
     end
     // 5. Exception/Interrupt
     if (ex_valid_i) begin
