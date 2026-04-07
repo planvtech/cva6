@@ -442,8 +442,8 @@ package config_pkg;
     else `ASSERT_FATAL("");
     assert (!(Cfg.RVH && !Cfg.SoftwareInterruptEn))
     else `ASSERT_FATAL("");
-    // assert ((Cfg.RVZCMT && ~Cfg.MmuPresent))
-    // else `ASSERT_FATAL("");
+    assert (!(Cfg.RVZCMT && Cfg.MmuPresent))
+    else `ASSERT_FATAL("");
     // pragma translate_on
   endfunction
 
