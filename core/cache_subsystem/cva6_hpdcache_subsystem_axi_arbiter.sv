@@ -160,7 +160,7 @@ module cva6_hpdcache_subsystem_axi_arbiter
   assign mem_req_read_idext_arb.mem_req_cacheable = mem_req_read_arb.mem_req_cacheable;
   //  }}}
 
-//Add prefix to write requests index from data cache (only data writes, so all...)
+  //Add prefix to write requests index from data cache (only data writes, so all...)
   hpdcache_mem_req_idext_t dcache_write_idx;
   assign dcache_write_idx.mem_req_id = {1'b1, dcache_write_i.mem_req_id[CVA6Cfg.AxiIdWidth-2:0]};
   assign dcache_write_idx.mem_req_addr = dcache_write_i.mem_req_addr;
@@ -187,7 +187,7 @@ module cva6_hpdcache_subsystem_axi_arbiter
 
   always_comb begin : build_resp_read_rt_comb
     for (int i = 0; i < MEM_RESP_RT_DEPTH; i++) begin
-      mem_resp_read_rt[i] = (i < (2**(CVA6Cfg.AxiIdWidth - 1))) ? 0 : 1;
+      mem_resp_read_rt[i] = (i < (2 ** (CVA6Cfg.AxiIdWidth - 1))) ? 0 : 1;
     end
   end
 
@@ -237,10 +237,10 @@ module cva6_hpdcache_subsystem_axi_arbiter
 
   //  AXI adapters
   //  {{{
-  hpdcache_mem_resp_w_idext_t  dcache_write_resp_idx;
+  hpdcache_mem_resp_w_idext_t dcache_write_resp_idx;
   assign dcache_write_resp_o.mem_resp_w_is_atomic = dcache_write_resp_idx.mem_resp_w_is_atomic;
-  assign dcache_write_resp_o.mem_resp_w_error=dcache_write_resp_idx.mem_resp_w_error;
-  assign dcache_write_resp_o.mem_resp_w_id=dcache_write_resp_idx.mem_resp_w_id[0+:(CVA6Cfg.AxiIdWidth-1)];;
+  assign dcache_write_resp_o.mem_resp_w_error = dcache_write_resp_idx.mem_resp_w_error;
+  assign dcache_write_resp_o.mem_resp_w_id=dcache_write_resp_idx.mem_resp_w_id[0+:(CVA6Cfg.AxiIdWidth-1)];
 
   hpdcache_mem_to_axi_write #(
       .hpdcache_mem_req_t   (hpdcache_mem_req_idext_t),

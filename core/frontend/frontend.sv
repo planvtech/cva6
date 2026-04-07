@@ -156,7 +156,7 @@ module frontend
   logic            [           CVA6Cfg.VLEN-1:0]                   vpc_bht;
 
   // branch-predict update
-  logic                                                            is_mispredict, was_mispredicted;
+  logic is_mispredict, was_mispredicted;
   logic ras_push, ras_pop;
   logic [           CVA6Cfg.VLEN-1:0] ras_update;
 
@@ -415,19 +415,10 @@ module frontend
       fetchbuf_valid_d[fetchbuf_rindex] = 1'b0;
     end
 
-    // Flush on bp_valid
-    //mkdigitals commented_out begin:
-    // if (bp_valid) begin
-    //   fetchbuf_flushed_d[fetchbuf_last_id_q] = 1'b1;
-    // end
-    //mkdigitals commented_out end
-
-    //mkdigital added begin:
     if (kill_s2) begin
       fetchbuf_flushed_d[fetchbuf_last_id_q] = 1'b1;
-    end    
-    //mkdigital added end
-    
+    end
+
     // Free on exception
     //if (fetchbuf_w_q && ((CVA6Cfg.MmuPresent && ex_s1) || bp_valid) || kill_req_q) begin
     //  fetchbuf_valid_d[fetchbuf_windex_q] = 1'b0;
@@ -513,7 +504,7 @@ module frontend
         kill_req_d = CVA6Cfg.MmuPresent ? 1'b1 :  1'b0; // MmuPresent only : next cycle is s2 but we need to kill because not ready to sent tag
       end else begin
         fetchbuf_w  = !kill_s1 && !flush_i; // record request into outstanding fetch fifo and trigger YPB physical request
-        pop_fetch = arsp_i.fetch_valid;//1'b1;  // release lsu_bypass fifo
+        pop_fetch = arsp_i.fetch_valid;  // release lsu_bypass fifo
       end
     end
     //end
@@ -528,7 +519,7 @@ module frontend
       vaddr_rvalid = vaddr_q; //npc_fetch_address;
       rvalid    = arsp_i.fetch_valid && !bp_valid && !flush_i && !was_mispredicted;
       ex_rvalid = 1'b1;
-      pop_fetch = arsp_i.fetch_valid; //1'b1; // release lsu_bypass fifo
+      pop_fetch = arsp_i.fetch_valid; // release lsu_bypass fifo
     end
 
   end
@@ -609,7 +600,7 @@ module frontend
       kill_req_q <= kill_req_d;
       //if (!ex_s1) begin
       fetchbuf_windex_q <= fetchbuf_windex;
-      fetchbuf_w_q <= ( CVA6Cfg.MmuPresent && arsp_i.fetch_valid) ? fetchbuf_w : fetchbuf_w_q;
+      fetchbuf_w_q <= (CVA6Cfg.MmuPresent && arsp_i.fetch_valid) ? fetchbuf_w : fetchbuf_w_q;
       //end
       vaddr_q <= vaddr_d;
     end
@@ -769,10 +760,10 @@ module frontend
         bht_q <= bht_prediction[CVA6Cfg.INSTR_PER_FETCH-1];
       end
 
-      if(is_mispredict & !arsp_i.fetch_valid) // translation request for misprediction ongoing
-        was_mispredicted <= '1; 
-      if(arsp_i.fetch_valid) // translation finished, can clear flag
-        was_mispredicted <= '0; 
+      if (is_mispredict & !arsp_i.fetch_valid)  // translation request for misprediction ongoing
+        was_mispredicted <= '1;
+      if (arsp_i.fetch_valid)  // translation finished, can clear flag
+        was_mispredicted <= '0;
     end
   end
 
