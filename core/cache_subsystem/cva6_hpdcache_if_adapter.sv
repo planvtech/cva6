@@ -519,7 +519,4 @@ else if (IsZcmtPort == 1'b1) begin : zcmt_port_gen
 
   assign hpdcache_req_o = hpdcache_req;
   //  }}}
-
-
-
 endmodule

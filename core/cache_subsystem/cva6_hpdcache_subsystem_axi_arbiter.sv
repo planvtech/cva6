@@ -151,7 +151,6 @@ module cva6_hpdcache_subsystem_axi_arbiter
   hpdcache_mem_req_idext_t mem_req_read_idext_arb;
   assign mem_req_read_index = (mem_req_read_arb == mem_req_read[0]) ? 1'b0 : 1'b1;
   assign mem_req_read_idext_arb.mem_req_id = {mem_req_read_index, mem_req_read_arb.mem_req_id};
-  //assign mem_req_read_idext_arb.mem_req_id = mem_req_read_arb == mem_req_read[0] ? {1'b0, mem_req_read_arb.mem_req_id} : {1'b1, mem_req_read_arb.mem_req_id}; //mkdigitals : changed to this line
   assign mem_req_read_idext_arb.mem_req_addr = mem_req_read_arb.mem_req_addr;
   assign mem_req_read_idext_arb.mem_req_len = mem_req_read_arb.mem_req_len;
   assign mem_req_read_idext_arb.mem_req_size = mem_req_read_arb.mem_req_size;
@@ -169,7 +168,6 @@ module cva6_hpdcache_subsystem_axi_arbiter
   assign dcache_write_idx.mem_req_command = dcache_write_i.mem_req_command;
   assign dcache_write_idx.mem_req_atomic = dcache_write_i.mem_req_atomic;
   assign dcache_write_idx.mem_req_cacheable = dcache_write_i.mem_req_cacheable;
-
   //  Read response demultiplexor
   //  {{{
   //
