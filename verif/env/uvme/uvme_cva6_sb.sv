@@ -265,6 +265,9 @@ function void uvme_cva6_sb_c::check_pc_trap(uvma_isacov_instr_c instr,
 endfunction : check_pc_trap
 
 function void uvme_cva6_sb_c::check_mepc(uvma_isacov_instr_c instr);
+  bit [XLEN-1:0] expected_epc;
+  string         epc_name;
+  bit            epc_found;
 
   if (instr.trap) begin
      trap_pc = instr.rvfi.pc_rdata[31:0];
@@ -275,11 +278,30 @@ function void uvme_cva6_sb_c::check_mepc(uvma_isacov_instr_c instr);
      else begin
         trap_is_compressed = 1'h1;
      end
-     if (trap_pc == instr.rvfi.name_csrs["mepc"].wdata) begin
-         `uvm_info(get_type_name(), $sformatf("Trap PC has been written successfully "), UVM_DEBUG)
+     // Dispatch on which xepc was actually written this cycle: traps delegated
+     // to S-mode update sepc (not mepc), so checking mepc unconditionally
+     // produces false mismatches whenever medeleg routes the cause to S-mode.
+     epc_found = 1'b0;
+     if (instr.rvfi.name_csrs.exists("mepc") && instr.rvfi.name_csrs["mepc"].wmask) begin
+        expected_epc = instr.rvfi.name_csrs["mepc"].wdata;
+        epc_name     = "mepc";
+        epc_found    = 1'b1;
+     end
+     else if (instr.rvfi.name_csrs.exists("sepc") && instr.rvfi.name_csrs["sepc"].wmask) begin
+        expected_epc = instr.rvfi.name_csrs["sepc"].wdata;
+        epc_name     = "sepc";
+        epc_found    = 1'b1;
+     end
+     if (epc_found) begin
+        if (trap_pc == expected_epc[31:0]) begin
+            `uvm_info(get_type_name(), $sformatf("Trap PC has been written into %s successfully", epc_name), UVM_DEBUG)
+        end
+        else begin
+            `uvm_error(get_type_name(), $sformatf("ERROR -> Trap PC != %s pc_rdata=0x%0h %s_wdata=0x%0h insn=0x%0h", epc_name, instr.rvfi.pc_rdata, epc_name, expected_epc, instr.rvfi.insn))
+        end
      end
      else begin
-         `uvm_error(get_type_name(), "ERROR -> Trap PC != MEPC")
+        `uvm_info(get_type_name(), $sformatf("Trap commit with no xepc write this cycle (pc=0x%0h) - skipping epc check", trap_pc), UVM_DEBUG)
      end
      has_trap = 1'h1;
   end
