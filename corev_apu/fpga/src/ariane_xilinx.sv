@@ -181,10 +181,10 @@ module ariane_xilinx (
   output logic        spi_clk_o   ,
   // common part
  // input logic         trst_n      ,
-  // input  logic        tck         ,
-  // input  logic        tms         ,
-  // input  logic        tdi         ,
-  // output  wire         tdo         ,
+  input  logic        tck         ,
+  input  logic        tms         ,
+  input  logic        tdi         ,
+  output  wire         tdo         ,
   input  logic        prog_clko   ,
   input  logic        prog_rxen   ,
   input  logic        prog_txen   ,
@@ -387,24 +387,24 @@ axi_xbar_intf #(
 // ---------------
 // Debug Module
 // ---------------
-// dmi_jtag i_dmi_jtag (
-//     .clk_i                ( clk                  ),
-//     .rst_ni               ( rst_n                ),
-//     .dmi_rst_no           (                      ), // keep open
-//     .testmode_i           ( test_en              ),
-//     .dmi_req_valid_o      ( debug_req_valid      ),
-//     .dmi_req_ready_i      ( debug_req_ready      ),
-//     .dmi_req_o            ( debug_req            ),
-//     .dmi_resp_valid_i     ( debug_resp_valid     ),
-//     .dmi_resp_ready_o     ( debug_resp_ready     ),
-//     .dmi_resp_i           ( debug_resp           ),
-//     .tck_i                ( tck    ),
-//     .tms_i                ( tms    ),
-//     .trst_ni              ( trst_n ),
-//     .td_i                 ( tdi    ),
-//     .td_o                 ( tdo    ),
-//     .tdo_oe_o             (        )
-// );
+dmi_jtag i_dmi_jtag (
+    .clk_i                ( clk                  ),
+    .rst_ni               ( rst_n                ),
+    .dmi_rst_no           (                      ), // keep open
+    .testmode_i           ( test_en              ),
+    .dmi_req_valid_o      ( debug_req_valid      ),
+    .dmi_req_ready_i      ( debug_req_ready      ),
+    .dmi_req_o            ( debug_req            ),
+    .dmi_resp_valid_i     ( debug_resp_valid     ),
+    .dmi_resp_ready_o     ( debug_resp_ready     ),
+    .dmi_resp_i           ( debug_resp           ),
+    .tck_i                ( tck    ),
+    .tms_i                ( tms    ),
+    .trst_ni              ( trst_n ),
+    .td_i                 ( tdi    ),
+    .td_o                 ( tdo    ),
+    .tdo_oe_o             (        )
+);
 
 ariane_axi::req_t    dm_axi_m_req;
 ariane_axi::resp_t   dm_axi_m_resp;

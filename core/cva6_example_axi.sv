@@ -103,7 +103,20 @@ module cva6_example_axi
       .cvxif_req_o(cvxif_req_o),
       .cvxif_resp_i(cvxif_resp_i),
       .noc_req_o(noc_req_o),
-      .noc_resp_i(noc_resp_i)
+      .noc_resp_i(noc_resp_i),
+      .obi_cache_status_o(),
+      .ypb_fetch_req_o(),
+      .ypb_fetch_rsp_o(),
+      .ypb_store_req_o(),
+      .ypb_store_rsp_o(),
+      .ypb_amo_req_o(),
+      .ypb_amo_rsp_o(),
+      .ypb_load_req_o(),
+      .ypb_load_rsp_o(),
+      .ypb_mmu_ptw_req_o(),
+      .ypb_mmu_ptw_rsp_o(),
+      .ypb_zcmt_req_o(),
+      .ypb_zcmt_rsp_o()
   );
 
 endmodule  // ariane

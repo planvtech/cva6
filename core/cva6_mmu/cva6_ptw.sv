@@ -35,6 +35,7 @@ module cva6_ptw
     input logic flush_i,  // flush everything, we need to do this because
                           // actually everything we do is speculative at this stage
                           // e.g.: there could be a CSR instruction that changes everything
+    input new_req_i,  //set when the request from shared tlb has changed
     output logic ptw_active_o,
     output logic walking_instr_o,  // set when walking for TLB
     output logic ptw_error_o,  // set when an error occurred
@@ -86,7 +87,8 @@ module cva6_ptw
     input riscv::pmpcfg_t [(CVA6Cfg.NrPMPEntries > 0 ? CVA6Cfg.NrPMPEntries-1 : 0):0] pmpcfg_i,
     input logic [(CVA6Cfg.NrPMPEntries > 0 ? CVA6Cfg.NrPMPEntries-1 : 0):0][CVA6Cfg.PLEN-3:0] pmpaddr_i,
     output logic [CVA6Cfg.PLEN-1:0] bad_paddr_o,
-    output logic [CVA6Cfg.GPLEN-1:0] bad_gpaddr_o
+    output logic [CVA6Cfg.GPLEN-1:0] bad_gpaddr_o,
+    output logic aborted_req_o
 );
 
   // input registers
@@ -321,6 +323,7 @@ module cva6_ptw
         ptw_lvl_n        = '0;
         global_mapping_n = 1'b0;
         is_instr_ptw_n   = 1'b0;
+        aborted_req_o    = 1'b0;
 
 
         if (CVA6Cfg.RVH) begin
@@ -601,11 +604,12 @@ module cva6_ptw
     // Flush
     // -------
     // should we have flushed before we got an rvalid, wait for it until going back to IDLE
-    if (flush_i) begin
+    if (flush_i || (new_req_i && state_q != IDLE && state_q != LATENCY)) begin
       // on a flush check whether we are
       // 1. in the PTE Lookup check whether we still need to wait for an rvalid
       // 2. waiting for a grant, if so: wait for it
       // if not, go back to idle
+      aborted_req_o = 1'b1;
       if (((state_q inside {PTE_LOOKUP, WAIT_RVALID}) && !data_rvalid_q) || ((state_q == WAIT_GRANT)))
         state_d = WAIT_RVALID;
       else state_d = LATENCY;

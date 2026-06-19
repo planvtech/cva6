@@ -88,6 +88,7 @@ module cva6_hpicache_if_adapter
   hpdcache_req_t hpicache_req_fetch;
   hpdcache_req_t hpicache_req_flush;
   logic forward_fetch, forward_flush;
+  logic flush_not_sent;
 
   //  ICACHE flush request
   //  {{{
@@ -98,6 +99,10 @@ module cva6_hpicache_if_adapter
       flush_fsm_q <= FLUSH_IDLE;
     end else begin
       flush_fsm_q <= flush_fsm_d;
+
+      if (flush_fsm_q == FLUSH_IDLE && cva6_icache_flush_i && !hpicache_req_ready_i)
+        flush_not_sent <= '1;
+      else flush_not_sent <= forward_flush;
     end
   end
 
@@ -109,7 +114,7 @@ module cva6_hpicache_if_adapter
 
     case (flush_fsm_q)
       FLUSH_IDLE: begin
-        if (cva6_icache_flush_i) begin
+        if (cva6_icache_flush_i || flush_not_sent) begin
           forward_flush = 1'b1;
           if (hpicache_req_ready_i) begin
             flush_fsm_d = FLUSH_PEND;
@@ -191,7 +196,6 @@ module cva6_hpicache_if_adapter
   assign ypb_fetch_rsp_o.err = '0;
   assign ypb_fetch_rsp_o.rdata = hpicache_rsp_i.rdata;
   //  }}}
-
   //  Assertions
   //  {{{
 `ifndef HPDCACHE_ASSERT_OFF

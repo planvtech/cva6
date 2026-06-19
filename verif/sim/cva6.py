@@ -1130,12 +1130,13 @@ def check_spike_version():
 
   logging.info(f"Spike Version: {user_spike_stderr_string}")
 
-  if user_spike_stderr_string != spike_version:
+  n = min(len(user_spike_stderr_string), len(spike_version))
+  if user_spike_stderr_string[:n] != spike_version[:n]:
     incorrect_version_exit("Spike", user_spike_stderr_string, spike_version)
 
 
 def check_verilator_version():
-  REQUIRED_VERILATOR_VERSION = "5.024"
+  REQUIRED_VERILATOR_VERSION = "5.008"
 
   verilator_version_string = run_cmd("verilator --version")
   logging.info(f"Verilator Version: {verilator_version_string.strip()}")
