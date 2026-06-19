@@ -378,7 +378,7 @@ module cva6_mmu
       // we work with SV39 or SV32, so if VM is enabled, check that all bits [CVA6Cfg.VLEN-1:CVA6Cfg.SV-1] are equal
       if (fetch_areq_i.fetch_req && !((&fetch_areq_i.fetch_vaddr[CVA6Cfg.VLEN-1:CVA6Cfg.SV-1]) == 1'b1 || (|fetch_areq_i.fetch_vaddr[CVA6Cfg.VLEN-1:CVA6Cfg.SV-1]) == 1'b0)) begin
 
-        fetch_arsp_o.fetch_exception.cause = riscv::INSTR_ACCESS_FAULT;
+        fetch_arsp_o.fetch_exception.cause = riscv::INSTR_PAGE_FAULT;
         fetch_arsp_o.fetch_exception.valid = 1'b1;
         if (CVA6Cfg.TvalEn)
           fetch_arsp_o.fetch_exception.tval = CVA6Cfg.XLEN'(fetch_areq_i.fetch_vaddr);
