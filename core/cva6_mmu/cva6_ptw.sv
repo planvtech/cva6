@@ -406,7 +406,10 @@ module cva6_ptw
           // Invalid PTE
           // -------------
           // If pte.v = 0, or if pte.r = 0 and pte.w = 1, or if pte.reserved !=0 in sv39 and sv39x4, stop and raise a page-fault exception.
-          if (!pte.v || (!pte.r && pte.w) || (|pte.reserved && CVA6Cfg.XLEN == 64))
+          // Note: Svnapot is not implemented in this core; the N bit (bit 63) is part of
+          // pte.reserved, so a set N bit is already caught by the |pte.reserved check above.
+          if (!pte.v || (!pte.r && pte.w) || (|pte.reserved && CVA6Cfg.IS_XLEN64)
+              || ((!pte.r && !pte.w && !pte.x) && (pte.u || pte.a || pte.d)))
             state_d = PROPAGATE_ERROR;
           // -----------
           // Valid PTE
