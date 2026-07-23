@@ -1,0 +1,211 @@
+[
+  {
+    "id": 29964510260,
+    "source": "github-actions",
+    "simulator": "verilator",
+    "run_number": 1,
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/planvtech/cva6/actions/runs/29964510260",
+    "head_branch": "master",
+    "head_sha": "a3dc2c5e",
+    "event": "schedule",
+    "created_at": "2026-07-22T22:55:43Z",
+    "updated_at": "2026-07-23T00:19:14Z",
+    "run_started_at": "2026-07-22T22:55:43Z",
+    "duration_seconds": 5011,
+    "total_jobs": 17,
+    "passed_jobs": 17,
+    "failed_jobs": 0,
+    "skipped_jobs": 0,
+    "jobs": [
+      {
+        "name": "RV64 Tier2 cv64a6_imafdc_sv39_hpdcache_wb / dv-riscv-tests-v",
+        "conclusion": "success",
+        "started_at": "2026-07-22T23:20:38Z",
+        "completed_at": "2026-07-23T00:19:13Z",
+        "duration_seconds": 3515,
+        "html_url": "https://github.com/planvtech/cva6/actions/runs/29964510260/job/89076973154",
+        "arch": "rv64",
+        "config": "cv64a6_imafdc_sv39_hpdcache_wb",
+        "testcase": "dv-riscv-tests-v"
+      },
+      {
+        "name": "RV64 Tier2 cv64a6_imafdc_sv39_hpdcache_wb / dv-riscv-arch-test",
+        "conclusion": "success",
+        "started_at": "2026-07-22T23:20:38Z",
+        "completed_at": "2026-07-23T00:13:27Z",
+        "duration_seconds": 3169,
+        "html_url": "https://github.com/planvtech/cva6/actions/runs/29964510260/job/89076973164",
+        "arch": "rv64",
+        "config": "cv64a6_imafdc_sv39_hpdcache_wb",
+        "testcase": "dv-riscv-arch-test"
+      },
+      {
+        "name": "RV64 Tier2 cv64a6_imafdc_sv39_hpdcache_wb / cv64a6_imafdc_tests",
+        "conclusion": "success",
+        "started_at": "2026-07-22T23:20:38Z",
+        "completed_at": "2026-07-22T23:26:43Z",
+        "duration_seconds": 365,
+        "html_url": "https://github.com/planvtech/cva6/actions/runs/29964510260/job/89076973178",
+        "arch": "rv64",
+        "config": "cv64a6_imafdc_sv39_hpdcache_wb",
+        "testcase": "cv64a6_imafdc_tests"
+      },
+      {
+        "name": "RV64 Tier2 cv64a6_imafdc_sv39_hpdcache_wb / dv-riscv-compliance",
+        "conclusion": "success",
+        "started_at": "2026-07-22T23:20:37Z",
+        "completed_at": "2026-07-22T23:50:44Z",
+        "duration_seconds": 1807,
+        "html_url": "https://github.com/planvtech/cva6/actions/runs/29964510260/job/89076973180",
+        "arch": "rv64",
+        "config": "cv64a6_imafdc_sv39_hpdcache_wb",
+        "testcase": "dv-riscv-compliance"
+      },
+      {
+        "name": "RV64 Tier2 cv64a6_imafdc_sv39_hpdcache_wb / dv-riscv-tests-p",
+        "conclusion": "success",
+        "started_at": "2026-07-22T23:20:38Z",
+        "completed_at": "2026-07-22T23:50:50Z",
+        "duration_seconds": 1812,
+        "html_url": "https://github.com/planvtech/cva6/actions/runs/29964510260/job/89076973192",
+        "arch": "rv64",
+        "config": "cv64a6_imafdc_sv39_hpdcache_wb",
+        "testcase": "dv-riscv-tests-p"
+      },
+      {
+        "name": "RV32 Tier2 cv32a65x / dv-riscv-arch-test",
+        "conclusion": "success",
+        "started_at": "2026-07-22T23:20:38Z",
+        "completed_at": "2026-07-22T23:42:51Z",
+        "duration_seconds": 1333,
+        "html_url": "https://github.com/planvtech/cva6/actions/runs/29964510260/job/89076973263",
+        "arch": "rv32",
+        "config": "cv32a65x",
+        "testcase": "dv-riscv-arch-test"
+      },
+      {
+        "name": "RV32 Tier2 cv32a65x / dv-csr-embedded-tests",
+        "conclusion": "success",
+        "started_at": "2026-07-22T23:20:37Z",
+        "completed_at": "2026-07-22T23:24:06Z",
+        "duration_seconds": 209,
+        "html_url": "https://github.com/planvtech/cva6/actions/runs/29964510260/job/89076973270",
+        "arch": "rv32",
+        "config": "cv32a65x",
+        "testcase": "dv-csr-embedded-tests"
+      },
+      {
+        "name": "RV32 Tier2 cv32a60x / dv-riscv-tests-p",
+        "conclusion": "success",
+        "started_at": "2026-07-22T23:20:38Z",
+        "completed_at": "2026-07-22T23:31:07Z",
+        "duration_seconds": 629,
+        "html_url": "https://github.com/planvtech/cva6/actions/runs/29964510260/job/89076973282",
+        "arch": "rv32",
+        "config": "cv32a60x",
+        "testcase": "dv-riscv-tests-p"
+      },
+      {
+        "name": "RV32 Tier2 cv32a60x / dv-riscv-compliance",
+        "conclusion": "success",
+        "started_at": "2026-07-22T23:20:39Z",
+        "completed_at": "2026-07-22T23:44:29Z",
+        "duration_seconds": 1430,
+        "html_url": "https://github.com/planvtech/cva6/actions/runs/29964510260/job/89076973284",
+        "arch": "rv32",
+        "config": "cv32a60x",
+        "testcase": "dv-riscv-compliance"
+      },
+      {
+        "name": "RV32 Tier2 cv32a65x / hwconfig_tests",
+        "conclusion": "success",
+        "started_at": "2026-07-22T23:20:38Z",
+        "completed_at": "2026-07-22T23:22:51Z",
+        "duration_seconds": 133,
+        "html_url": "https://github.com/planvtech/cva6/actions/runs/29964510260/job/89076973289",
+        "arch": "rv32",
+        "config": "cv32a65x",
+        "testcase": "hwconfig_tests"
+      },
+      {
+        "name": "RV32 Tier2 cv32a65x / cv32a6_tests",
+        "conclusion": "success",
+        "started_at": "2026-07-22T23:20:37Z",
+        "completed_at": "2026-07-22T23:24:04Z",
+        "duration_seconds": 207,
+        "html_url": "https://github.com/planvtech/cva6/actions/runs/29964510260/job/89076973293",
+        "arch": "rv32",
+        "config": "cv32a65x",
+        "testcase": "cv32a6_tests"
+      },
+      {
+        "name": "RV32 Tier2 cv32a60x / dv-riscv-arch-test",
+        "conclusion": "success",
+        "started_at": "2026-07-22T23:20:38Z",
+        "completed_at": "2026-07-22T23:56:44Z",
+        "duration_seconds": 2166,
+        "html_url": "https://github.com/planvtech/cva6/actions/runs/29964510260/job/89076973301",
+        "arch": "rv32",
+        "config": "cv32a60x",
+        "testcase": "dv-riscv-arch-test"
+      },
+      {
+        "name": "RV32 Tier2 cv32a65x / smoke-tests-cv32a65x",
+        "conclusion": "success",
+        "started_at": "2026-07-22T23:20:38Z",
+        "completed_at": "2026-07-22T23:23:09Z",
+        "duration_seconds": 151,
+        "html_url": "https://github.com/planvtech/cva6/actions/runs/29964510260/job/89076973303",
+        "arch": "rv32",
+        "config": "cv32a65x",
+        "testcase": "smoke-tests-cv32a65x"
+      },
+      {
+        "name": "RV32 Tier2 cv32a65x / dv-riscv-compliance",
+        "conclusion": "success",
+        "started_at": "2026-07-22T23:20:38Z",
+        "completed_at": "2026-07-22T23:44:09Z",
+        "duration_seconds": 1411,
+        "html_url": "https://github.com/planvtech/cva6/actions/runs/29964510260/job/89076973306",
+        "arch": "rv32",
+        "config": "cv32a65x",
+        "testcase": "dv-riscv-compliance"
+      },
+      {
+        "name": "RV32 Tier2 cv32a60x / cv32a6_tests",
+        "conclusion": "success",
+        "started_at": "2026-07-22T23:20:38Z",
+        "completed_at": "2026-07-22T23:24:07Z",
+        "duration_seconds": 209,
+        "html_url": "https://github.com/planvtech/cva6/actions/runs/29964510260/job/89076973316",
+        "arch": "rv32",
+        "config": "cv32a60x",
+        "testcase": "cv32a6_tests"
+      },
+      {
+        "name": "RV32 Tier2 cv32a65x / dv-riscv-tests-p",
+        "conclusion": "success",
+        "started_at": "2026-07-22T23:20:38Z",
+        "completed_at": "2026-07-22T23:31:15Z",
+        "duration_seconds": 637,
+        "html_url": "https://github.com/planvtech/cva6/actions/runs/29964510260/job/89076973329",
+        "arch": "rv32",
+        "config": "cv32a65x",
+        "testcase": "dv-riscv-tests-p"
+      },
+      {
+        "name": "RV32 Tier2 cv32a65x / coremark",
+        "conclusion": "success",
+        "started_at": "2026-07-22T23:20:38Z",
+        "completed_at": "2026-07-22T23:26:38Z",
+        "duration_seconds": 360,
+        "html_url": "https://github.com/planvtech/cva6/actions/runs/29964510260/job/89076973359",
+        "arch": "rv32",
+        "config": "cv32a65x",
+        "testcase": "coremark"
+      }
+    ]
+  }
+]
