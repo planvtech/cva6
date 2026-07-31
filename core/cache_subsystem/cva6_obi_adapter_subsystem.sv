@@ -160,12 +160,12 @@ module cva6_obi_adapter_subsystem
 
   //REQ assignemnts
 
-  // assign noc_req_o.obi_fetch_req = obi_fetch_req;
-  // assign noc_req_o.obi_store_req = obi_store_req;
-  // assign noc_req_o.obi_amo_req = obi_amo_req;
-  // assign noc_req_o.obi_load_req = obi_load_req;
-  // assign noc_req_o.obi_mmu_ptw_req = obi_mmu_ptw_req;
-  // assign noc_req_o.obi_zcmt_req = obi_zcmt_req;
+  assign noc_req_o.obi_fetch_req = obi_fetch_req;
+  assign noc_req_o.obi_store_req = obi_store_req;
+  assign noc_req_o.obi_amo_req = obi_amo_req;
+  assign noc_req_o.obi_load_req = obi_load_req;
+  assign noc_req_o.obi_mmu_ptw_req = obi_mmu_ptw_req;
+  assign noc_req_o.obi_zcmt_req = obi_zcmt_req;
 
   assign obi_fetch_req.req = ypb_fetch_req_i.preq;
   assign obi_fetch_req.reqpar = !ypb_fetch_req_i.preq;
@@ -290,12 +290,12 @@ module cva6_obi_adapter_subsystem
 
   //RSP assignemnts
 
-  // assign obi_fetch_rsp = noc_resp_i.obi_fetch_rsp;
-  // assign obi_store_rsp = noc_resp_i.obi_store_rsp;
-  // assign obi_amo_rsp = noc_resp_i.obi_amo_rsp;
-  // assign obi_load_rsp = noc_resp_i.obi_load_rsp;
-  // assign obi_mmu_ptw_rsp = noc_resp_i.obi_mmu_ptw_rsp;
-  // assign obi_zcmt_rsp = noc_resp_i.obi_zcmt_rsp;
+  assign obi_fetch_rsp = noc_resp_i.obi_fetch_rsp;
+  assign obi_store_rsp = noc_resp_i.obi_store_rsp;
+  assign obi_amo_rsp = noc_resp_i.obi_amo_rsp;
+  assign obi_load_rsp = noc_resp_i.obi_load_rsp;
+  assign obi_mmu_ptw_rsp = noc_resp_i.obi_mmu_ptw_rsp;
+  assign obi_zcmt_rsp = noc_resp_i.obi_zcmt_rsp;
 
   assign ypb_fetch_rsp_o.pgnt = obi_fetch_rsp.gnt;
   assign ypb_fetch_rsp_o.rvalid = obi_fetch_rsp.rvalid;
