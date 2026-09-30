@@ -27,8 +27,8 @@ module load_store_unit
     parameter type ypb_mmu_ptw_rsp_t = logic,
     parameter type exception_t = logic,
     parameter type fu_data_t = logic,
-    parameter type fetch_areq_t = logic,
-    parameter type fetch_arsp_t = logic,
+    parameter type mmu_areq_t = logic,
+    parameter type mmu_arsp_t = logic,
     parameter type lsu_ctrl_t = logic
 ) (
     // Subsystem Clock - SUBSYSTEM
@@ -87,9 +87,9 @@ module load_store_unit
     input logic en_ld_st_g_translation_i,
 
     // Instruction cache input request - FETCH
-    input  fetch_areq_t fetch_areq_i,
+    input  mmu_areq_t fetch_areq_i,
     // Instruction cache output response - FETCH
-    output fetch_arsp_t fetch_arsp_o,
+    output mmu_arsp_t fetch_arsp_o,
 
     // Current privilege mode - CSR_REGFILE
     input riscv::priv_lvl_t priv_lvl_i,
@@ -221,7 +221,7 @@ module load_store_unit
   logic                                    mmu_hlvx_inst;
   exception_t                              mmu_exception;
   exception_t                              pmp_exception;
-  fetch_arsp_t                             pmp_fetch_arsp;
+  mmu_arsp_t                               pmp_fetch_arsp;
   logic                                    pmp_translation_valid;
   logic                                    dtlb_hit;
   logic        [         CVA6Cfg.PPNW-1:0] dtlb_ppn;
@@ -257,8 +257,8 @@ module load_store_unit
     cva6_mmu #(
         .CVA6Cfg          (CVA6Cfg),
         .exception_t      (exception_t),
-        .fetch_areq_t     (fetch_areq_t),
-        .fetch_arsp_t     (fetch_arsp_t),
+        .mmu_areq_t     (mmu_areq_t),
+        .mmu_arsp_t     (mmu_arsp_t),
         .ypb_mmu_ptw_req_t(ypb_mmu_ptw_req_t),
         .ypb_mmu_ptw_rsp_t(ypb_mmu_ptw_rsp_t),
         .HYP_EXT          (HYP_EXT)
@@ -322,13 +322,13 @@ module load_store_unit
     );
   end else begin : gen_no_mmu
     // fetch request without MMU, virtual and physical address are identical
-    assign pmp_fetch_arsp.fetch_valid = fetch_areq_i.fetch_req;
+    assign pmp_fetch_arsp.valid = fetch_areq_i.req;
     if (CVA6Cfg.VLEN >= CVA6Cfg.PLEN) begin : gen_virtual_physical_address_instruction_vlen_greater
-      assign pmp_fetch_arsp.fetch_paddr = fetch_areq_i.fetch_vaddr[CVA6Cfg.PLEN-1:0];
+      assign pmp_fetch_arsp.paddr = fetch_areq_i.vaddr[CVA6Cfg.PLEN-1:0];
     end else begin : gen_virtual_physical_address_instruction_plen_greater
-      assign pmp_fetch_arsp.fetch_paddr = CVA6Cfg.PLEN'(fetch_areq_i.fetch_vaddr);
+      assign pmp_fetch_arsp.paddr = CVA6Cfg.PLEN'(fetch_areq_i.vaddr);
     end
-    assign pmp_fetch_arsp.fetch_exception = 'h0;
+    assign pmp_fetch_arsp.exception = 'h0;
     assign pmp_exception = misaligned_exception;
     assign pmp_translation_valid = translation_req;
 
@@ -351,14 +351,14 @@ module load_store_unit
 
   pmp_data_if #(
       .CVA6Cfg      (CVA6Cfg),
-      .icache_areq_t(fetch_arsp_t),
+      .icache_areq_t(mmu_arsp_t),
       .exception_t  (exception_t)
   ) i_pmp_data_if (
       .clk_i               (clk_i),
       .rst_ni              (rst_ni),
       .icache_areq_i       (pmp_fetch_arsp),
       .icache_areq_o       (fetch_arsp_o),
-      .icache_fetch_vaddr_i(fetch_areq_i.fetch_vaddr),
+      .icache_fetch_vaddr_i(fetch_areq_i.vaddr),
       .lsu_valid_i         (pmp_translation_valid),
       .lsu_paddr_i         (lsu_paddr),
       .lsu_vaddr_i         (mmu_vaddr),

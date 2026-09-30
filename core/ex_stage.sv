@@ -30,8 +30,8 @@ module ex_stage
     parameter type ypb_mmu_ptw_rsp_t = logic,
     parameter type exception_t = logic,
     parameter type fu_data_t = logic,
-    parameter type fetch_areq_t = logic,
-    parameter type fetch_arsp_t = logic,
+    parameter type mmu_areq_t = logic,
+    parameter type mmu_arsp_t = logic,
     parameter type lsu_ctrl_t = logic,
     parameter type x_result_t = logic
 ) (
@@ -210,9 +210,9 @@ module ex_stage
     // TO_BE_COMPLETED - CSR_REGFILE
     input logic [CVA6Cfg.VMID_WIDTH-1:0] vmid_i,
     // fetch translation request - FETCH
-    input fetch_areq_t fetch_areq_i,
+    input mmu_areq_t fetch_areq_i,
     // fetch translation response - FETCH
-    output fetch_arsp_t fetch_arsp_o,
+    output mmu_arsp_t fetch_arsp_o,
     // Store cache response - DCACHE
     output ypb_store_req_t ypb_store_req_o,
     // Store cache request - DCACHE
@@ -550,8 +550,8 @@ module ex_stage
       .ypb_mmu_ptw_rsp_t(ypb_mmu_ptw_rsp_t),
       .exception_t      (exception_t),
       .fu_data_t        (fu_data_t),
-      .fetch_areq_t     (fetch_areq_t),
-      .fetch_arsp_t     (fetch_arsp_t),
+      .mmu_areq_t     (mmu_areq_t),
+      .mmu_arsp_t     (mmu_arsp_t),
       .lsu_ctrl_t       (lsu_ctrl_t)
   ) lsu_i (
       .clk_i,

@@ -24,8 +24,8 @@ module frontend
     parameter config_pkg::cva6_cfg_t CVA6Cfg = config_pkg::cva6_cfg_empty,
     parameter type bp_resolve_t = logic,
     parameter type fetch_entry_t = logic,
-    parameter type fetch_areq_t = logic,
-    parameter type fetch_arsp_t = logic,
+    parameter type mmu_areq_t = logic,
+    parameter type mmu_arsp_t = logic,
     parameter type ypb_fetch_req_t = logic,
     parameter type ypb_fetch_rsp_t = logic,
     parameter type bht_inputs_t = logic
@@ -61,9 +61,9 @@ module frontend
     // Debug mode state - CSR
     input logic debug_mode_i,
     // address translation request chanel - EXECUTE
-    input fetch_arsp_t arsp_i,
+    input mmu_arsp_t fetch_arsp_i,
     // address translation response chanel - EXECUTE
-    output fetch_areq_t areq_o,
+    output mmu_areq_t fetch_areq_o,
     // YPB Fetch Request channel - CACHES
     output ypb_fetch_req_t ypb_fetch_req_o,
     // YPB Fetch Response channel - CACHES
@@ -325,7 +325,7 @@ module frontend
   logic spec_req_non_idempot;
 
   // MMU interface
-  assign areq_o.fetch_vaddr = (vaddr_d >> CVA6Cfg.FETCH_ALIGN_BITS) << CVA6Cfg.FETCH_ALIGN_BITS;
+  assign fetch_areq_o.vaddr = (vaddr_d >> CVA6Cfg.FETCH_ALIGN_BITS) << CVA6Cfg.FETCH_ALIGN_BITS;
 
   // CHECK PMA regions
 
@@ -335,8 +335,8 @@ module frontend
   );
 
   logic paddr_nonidempotent;
-  assign paddr_nonidempotent = arsp_i.fetch_valid && config_pkg::is_inside_nonidempotent_regions(
-      CVA6Cfg, {{64 - CVA6Cfg.PLEN{1'b0}}, arsp_i.fetch_paddr}  //TO DO CHECK GRANULARITY
+  assign paddr_nonidempotent = fetch_arsp_i.valid && config_pkg::is_inside_nonidempotent_regions(
+      CVA6Cfg, {{64 - CVA6Cfg.PLEN{1'b0}}, fetch_arsp_i.paddr}  //TO DO CHECK GRANULARITY
   );
 
   // Caches optimisation signals
@@ -463,10 +463,10 @@ module frontend
 
   assign stall_ni = spec_req_non_idempot;
   assign stall_ypb = (ypb_a_state_q == REGISTRED);  //&& !ypb_load_rsp_i.pgnt;
-  assign stall_translation = CVA6Cfg.MmuPresent ? areq_o.fetch_req && (!arsp_i.fetch_valid || (arsp_i.fetch_valid && arsp_i.fetch_exception.valid)) : 1'b0;
+  assign stall_translation = CVA6Cfg.MmuPresent ? fetch_areq_o.req && (!fetch_arsp_i.valid || (fetch_arsp_i.valid && fetch_arsp_i.exception.valid)) : 1'b0;
   assign stall_instr_queue = !instr_queue_ready;
 
-  assign ex_s1 = (CVA6Cfg.MmuPresent && arsp_i.fetch_exception.valid);
+  assign ex_s1 = (CVA6Cfg.MmuPresent && fetch_arsp_i.exception.valid);
 
   // We need to flush the cache pipeline if:
   // 1. We mispredicted
@@ -484,9 +484,9 @@ module frontend
   //assign ypb_vaddr_d = pop_fetch ?  : ypb_vaddr_qvaddr_d;
   assign vaddr_d = npc_fetch_address;
   assign ypb_fetch_req_o.vaddr = npc_fetch_address;
-  assign paddr = CVA6Cfg.MmuPresent ? arsp_i.fetch_paddr : npc_fetch_address;
+  assign paddr = CVA6Cfg.MmuPresent ? fetch_arsp_i.paddr : npc_fetch_address;
 
-  assign data_req = (CVA6Cfg.MmuPresent ? (fetchbuf_w || fetchbuf_w_q) && !ex_s1 && arsp_i.fetch_valid: fetchbuf_w);
+  assign data_req = (CVA6Cfg.MmuPresent ? (fetchbuf_w || fetchbuf_w_q) && !ex_s1 && fetch_arsp_i.valid: fetchbuf_w);
 
   always_comb begin : p_fsm_common
     // default assignmen
@@ -500,14 +500,14 @@ module frontend
 
     // REQUEST
     //if (instr_queue_ready) begin
-    areq_o.fetch_req = 1'b1;
+    fetch_areq_o.req = 1'b1;
     ypb_fetch_req_o.vreq = 1'b1;
     if (!CVA6Cfg.MmuPresent || ypb_fetch_rsp_i.vgnt) begin
       if (stall_ni || stall_ypb || stall_instr_queue || stall_translation || fetchbuf_full) begin
         kill_req_d = CVA6Cfg.MmuPresent ? 1'b1 :  1'b0; // MmuPresent only : next cycle is s2 but we need to kill because not ready to sent tag
       end else begin
         fetchbuf_w  = !kill_s1 && !flush_i; // record request into outstanding fetch fifo and trigger YPB physical request
-        pop_fetch = arsp_i.fetch_valid;  // release lsu_bypass fifo
+        pop_fetch = fetch_arsp_i.valid;  // release lsu_bypass fifo
       end
     end
     //end
@@ -520,9 +520,9 @@ module frontend
       // RETIRE EXCEPTION (low priority)
     end else if (CVA6Cfg.MmuPresent && ex_s1) begin
       vaddr_rvalid = vaddr_q;
-      rvalid    = arsp_i.fetch_valid && !bp_valid && !flush_i && !was_mispredicted;
-      ex_rvalid = arsp_i.fetch_valid; //1'b1;
-      pop_fetch = arsp_i.fetch_valid; // release lsu_bypass fifo
+      rvalid    = fetch_arsp_i.valid && !bp_valid && !flush_i && !was_mispredicted;
+      ex_rvalid = fetch_arsp_i.valid; //1'b1;
+      pop_fetch = fetch_arsp_i.valid; // release lsu_bypass fifo
     end
 
   end
@@ -600,7 +600,7 @@ module frontend
       kill_req_q <= kill_req_d;
       if (!ex_s1) begin
         fetchbuf_windex_q <= fetchbuf_windex;
-        fetchbuf_w_q <= (CVA6Cfg.MmuPresent && !arsp_i.fetch_valid) ? fetchbuf_w : fetchbuf_w_q;
+        fetchbuf_w_q <= (CVA6Cfg.MmuPresent && !fetch_arsp_i.valid) ? fetchbuf_w : fetchbuf_w_q;
       end
       vaddr_q <= vaddr_d;
     end
@@ -737,9 +737,9 @@ module frontend
         fetch_data_q  <= fetch_data;
         fetch_vaddr_q <= fetch_vaddr_d;
         if (CVA6Cfg.RVH) begin
-          fetch_gpaddr_q <= arsp_i.fetch_exception.tval2[CVA6Cfg.GPLEN-1:0];
-          fetch_tinst_q  <= arsp_i.fetch_exception.tinst;
-          fetch_gva_q    <= arsp_i.fetch_exception.gva;
+          fetch_gpaddr_q <= fetch_arsp_i.exception.tval2[CVA6Cfg.GPLEN-1:0];
+          fetch_tinst_q  <= fetch_arsp_i.exception.tinst;
+          fetch_gva_q    <= fetch_arsp_i.exception.gva;
         end else begin
           fetch_gpaddr_q <= 'b0;
           fetch_tinst_q  <= 'b0;
@@ -747,11 +747,11 @@ module frontend
         end
 
         // Map the only three exceptions which can occur in the frontend to a two bit enum
-        if (CVA6Cfg.MmuPresent && arsp_i.fetch_valid && arsp_i.fetch_exception.cause == riscv::INSTR_GUEST_PAGE_FAULT) begin
+        if (CVA6Cfg.MmuPresent && fetch_arsp_i.valid && fetch_arsp_i.exception.cause == riscv::INSTR_GUEST_PAGE_FAULT) begin
           fetch_ex_valid_q <= ariane_pkg::FE_INSTR_GUEST_PAGE_FAULT;
-        end else if (CVA6Cfg.MmuPresent && arsp_i.fetch_valid && arsp_i.fetch_exception.cause == riscv::INSTR_PAGE_FAULT) begin
+        end else if (CVA6Cfg.MmuPresent && fetch_arsp_i.valid && fetch_arsp_i.exception.cause == riscv::INSTR_PAGE_FAULT) begin
           fetch_ex_valid_q <= ariane_pkg::FE_INSTR_PAGE_FAULT;
-        end else if (CVA6Cfg.NrPMPEntries != 0 && arsp_i.fetch_valid && arsp_i.fetch_exception.cause == riscv::INSTR_ACCESS_FAULT) begin
+        end else if (CVA6Cfg.NrPMPEntries != 0 && fetch_arsp_i.valid && fetch_arsp_i.exception.cause == riscv::INSTR_ACCESS_FAULT) begin
           fetch_ex_valid_q <= ariane_pkg::FE_INSTR_ACCESS_FAULT;
         end else begin
           fetch_ex_valid_q <= ariane_pkg::FE_NONE;
@@ -761,9 +761,9 @@ module frontend
         bht_q <= bht_prediction[CVA6Cfg.INSTR_PER_FETCH-1];
       end
 
-      if (arsp_i.fetch_valid)  // translation finished, can clear flag
+      if (fetch_arsp_i.valid)  // translation finished, can clear flag
         was_mispredicted <= '0;
-      else if (is_mispredict & !arsp_i.fetch_valid)  // translation request for misprediction ongoing
+      else if (is_mispredict & !fetch_arsp_i.valid)  // translation request for misprediction ongoing
         was_mispredicted <= '1;
     end
   end
