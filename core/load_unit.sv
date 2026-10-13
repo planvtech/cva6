@@ -259,7 +259,7 @@ module load_unit
   assign ypb_load_req_o.kill_req = kill_req_q || kill_s1;
 
   assign stall_ni = (inflight_stores || not_commit_time) && (paddr_nonidempotent && CVA6Cfg.NonIdemPotenceEn);
-  assign stall_ypb = (ypb_a_state_q == REGISTRED);  //&& !ypb_load_rsp_i.pgnt;
+  assign stall_ypb = (ypb_a_state_q == REGISTRED) || (CVA6Cfg.MmuPresent && ypb_a_state_d == REGISTRED);  //&& !ypb_load_rsp_i.pgnt;
   assign stall_translation = CVA6Cfg.MmuPresent ? translation_req_o && !dtlb_hit_i : 1'b0;
 
   assign ex_s0 = CVA6Cfg.MmuPresent && stall_translation && ex_i.valid;
@@ -324,7 +324,10 @@ module load_unit
   //default ypb state registred
   assign ypb_load_req_o.paddr = ypb_a_state_q == TRANSPARENT ? paddr : paddr_q;
   assign ypb_load_req_o.we = '0;
-  assign ypb_load_req_o.be = (ypb_a_state_q == TRANSPARENT) && valid_i ? lsu_ctrl_i.be : be_q;
+  // With an MMU paddr comes from s1 while lsu_ctrl_i already presents the next
+  // request, so the registered byte enable is the one belonging to it.
+  assign ypb_load_req_o.be = (ypb_a_state_q == TRANSPARENT) && valid_i && !CVA6Cfg.MmuPresent
+                             ? lsu_ctrl_i.be : be_q;
   assign ypb_load_req_o.size = (CVA6Cfg.XLEN == 64) ? ariane_pkg::size_gen(
       ypb_load_req_o.be
   ) : ariane_pkg::size_gen_32(
@@ -380,12 +383,14 @@ module load_unit
     end else begin
       if (ypb_a_state_q == TRANSPARENT) begin
         paddr_q <= paddr;
-        if (valid_i) be_q <= lsu_ctrl_i.be;
+        if (valid_i && (!CVA6Cfg.MmuPresent || ypb_a_state_d == TRANSPARENT)) 
+          be_q <= lsu_ctrl_i.be;
       end
       ypb_a_state_q <= ypb_a_state_d;
       kill_req_q <= kill_req_d;
       //if (!ex_s1) begin
-      ldbuf_windex_q <= ldbuf_windex;
+      if (!CVA6Cfg.MmuPresent || ypb_a_state_d == TRANSPARENT)
+        ldbuf_windex_q <= ldbuf_windex;
       ldbuf_w_q <= ldbuf_w;
       //end
     end
