@@ -56,11 +56,14 @@ SECTIONS
     *(.sdata .sdata.* .gnu.linkonce.s.*)
   }
 
+  . = ALIGN(0X1000);
   /* bss segment */
   .sbss : {
     *(.sbss .sbss.* .gnu.linkonce.sb.*)
     *(.scommon)
   }
+
+  . = ALIGN(0X1000);
   .bss : { *(.bss) }
 
   /* thread-local data segment */
