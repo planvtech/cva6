@@ -10,20 +10,42 @@
 # Please refer to flows/README.md to add target
 
 from pathlib import Path
+import fnmatch
 import shutil
 import typer
-from flows.utils.utils import (
-    autocompletion_target,
-    print_recipe_title,
-    print_recipe_end,
-    print_step,
-    print_error,
-    print_success,
-    print_info,
-    run_cmd,
-)
+from flows.utils.run_cmd import run_cmd
+from flows.utils.target_config import read_config_or_exit_flist
+from flows.utils.autocompletion import autocompletion_target
+from flows.utils.recipe_report import RecipeReport
 
 app = typer.Typer()
+
+# Same scope as the CI Verible check (.github/workflows/verible.yml): the
+# CVA6 RTL under core/, without its submodules and the generated configuration
+# packages.
+FORMAT_ROOT = "core"
+FORMAT_EXCLUDE = [
+    "core/include/*_config_pkg.sv",
+    "core/cvfpu/*",
+    "core/cache_subsystem/hpdcache/*",
+]
+
+
+def files_to_format(files, repo_dir):
+    """Keep the files of `files` that belong to the formatted scope."""
+    repo_dir = Path(repo_dir).resolve()
+    kept = []
+    for f in files:
+        try:
+            rel = Path(f).resolve().relative_to(repo_dir).as_posix()
+        except ValueError:
+            continue
+        if not rel.startswith(FORMAT_ROOT + "/"):
+            continue
+        if any(fnmatch.fnmatch(rel, pat) for pat in FORMAT_EXCLUDE):
+            continue
+        kept.append(f)
+    return kept
 
 
 @app.command()
@@ -43,79 +65,48 @@ def verible_rtl_formating(
     Format CVA6 RTL files with Verible (mandatory for submit PR)
     """
 
-    # Title
-    print_recipe_title("Verible RTL formating", quiet=quiet)
-
     repo_dir = Path.cwd()
+    verible_dir = repo_dir / "build" / target / "verible"
+
+    # Init report (written in verible_dir at the end of the recipe):
+    # prints the title banner and the "Options" table from the context
+    report = RecipeReport(
+        "verible-rtl-formating",
+        out_dir=verible_dir,
+        title="Verible RTL formating",
+        context={"target": target},
+        quiet=quiet,
+    )
 
     verible_path = shutil.which("verible-verilog-format")
     if verible_path is not None:
-        print_success(f"verible-verilog-format: {verible_path}", quiet=quiet)
+        report.success(f"verible-verilog-format: {verible_path}")
     else:
-        print_error("verible-verilog-format: Not found", quiet=quiet)
-        raise typer.Exit(code=1)
-
-    verible_dir = repo_dir / "build" / target / "verible"
+        report.error_exit("verible-verilog-format: Not found", env=True)
 
     # ==========================================================
     # CLEAN
     # ==========================================================
-    print_step("Clean", quiet=quiet)
+    report.step("Clean")
     try:
         if verible_dir.exists():
             shutil.rmtree(verible_dir)
-            print_info(f"remove {verible_dir}", quiet=quiet)
+            report.info(f"remove {verible_dir}")
     except Exception as e:
-        print_error(f"Clean error : {e}", quiet=quiet)
-        raise typer.Exit(code=1)
+        report.error_exit(f"Clean error : {e}", env=True)
 
     verible_dir.mkdir(parents=True, exist_ok=True)
-    print_info(f"create {verible_dir}", quiet=quiet)
+    report.info(f"create {verible_dir}")
 
     # ==========================================================
     # GET FILE LIST TO FORMAT
     # ==========================================================
 
-    def parse_flist(flist_path, patterns, collected=None):
-
-        if collected is None:
-            collected = []
-
-        flist_path = Path(flist_path)
-        if not flist_path.exists():
-            raise FileNotFoundError(f"Flist not found: {flist_path}")
-
-        with flist_path.open("r", encoding="utf-8") as f:
-            text = f.read()
-            # Expand environement variables to be able to follow include Flist
-            for search, replace in patterns:
-                text = text.replace(search, replace)
-            lines = text.splitlines()
-
-        for line in lines:
-            l = line.strip()
-            # Skip empty/comments/+incdir
-            if not l or l.startswith("//") or l.startswith("+incdir+"):
-                continue
-
-            # Recursive include -F
-            if l.startswith("-F"):
-                flist_incl = l[2:].strip()
-                parse_flist(flist_incl, patterns, collected)
-                continue
-
-            collected.append(l)
-
-        return collected
-
-    flist_envvar = [
-        ("${TARGET_CFG}", target),
-        ("${CVA6_REPO_DIR}", str(repo_dir)),
-        ("${HPDCACHE_DIR}", str(repo_dir / "core" / "cache_subsystem" / "hpdcache")),
-    ]
-
-    analyse_files = parse_flist(
-        repo_dir / "config" / "target" / target / "Flist.cva6", flist_envvar
+    flist_files = read_config_or_exit_flist(target, report)
+    analyse_files = files_to_format(flist_files, repo_dir)
+    report.info(
+        f"{len(analyse_files)} of {len(flist_files)} filelist files in scope"
+        f" ({FORMAT_ROOT}/, without {', '.join(FORMAT_EXCLUDE)})"
     )
 
     # ==========================================================
@@ -128,12 +119,13 @@ def verible_rtl_formating(
     # ==========================================================
     # LAUNCH VERIBLE
     # ==========================================================
-    print_step("Launch Verible", quiet=quiet)
+    report.step("Launch Verible")
 
     log_file = verible_dir / "verible-cmd.log"
 
     run_cmd(
         cmd=verible_cmd,
+        report=report,
         cwd=None,
         env=None,
         error_patterns=None,
@@ -143,8 +135,9 @@ def verible_rtl_formating(
         timeout=300,
         check=False,
         capture_output=False,
-        quiet=quiet,
     )
+
+    report.success(f"Formatted {len(analyse_files)} RTL files")
 
     # ==========================================================
     # List
@@ -152,9 +145,9 @@ def verible_rtl_formating(
 
     gen_files = [log_file]
 
-    print_step("Generated files", quiet=quiet)
+    report.step("Generated files")
     for genfile in gen_files:
         if genfile.exists():
-            print_info(f"> {genfile}", quiet=quiet)
+            report.info(f"> {genfile}")
 
-    print_recipe_end("Completed", quiet=quiet)
+    report.end("Completed")

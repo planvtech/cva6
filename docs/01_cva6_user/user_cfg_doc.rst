@@ -34,7 +34,7 @@
 
    * - ``ZKN``
      - ``bit``
-     - Scalar Cryptography RISC-V entension
+     - Scalar Cryptography RISC-V extension
 
    * - ``RVV``
      - ``bit``
@@ -64,6 +64,10 @@
      - ``bit``
      - Zicond RISC-V extension
 
+   * - ``RVZiCbom``
+     - ``bit``
+     - Zicbom RISC-V extension (cache management / CBO)
+
    * - ``RVZicntr``
      - ``bit``
      - Zicntr RISC-V extension
@@ -75,6 +79,10 @@
    * - ``RVZihpm``
      - ``bit``
      - Zihpm RISC-V extension
+
+   * - ``BigEndianEn``
+     - ``bit``
+     - Big endian data accesses: mstatus.MBE, SBE and UBE are writable
 
    * - ``RVF``
      - ``bit``
@@ -200,6 +208,18 @@
      - ``logic [NrMaxRules-1:0][63:0]``
      - PMA cache region rules
 
+   * - ``NrBufferableRegionRules``
+     - ``int unsigned``
+     - PMA regions with bufferable rules number
+
+   * - ``BufferableRegionAddrBase``
+     - ``logic [NrMaxRules-1:0][63:0]``
+     - PMA bufferable region base address
+
+   * - ``BufferableRegionLength``
+     - ``logic [NrMaxRules-1:0][63:0]``
+     - PMA bufferable region length
+
    * - ``CvxifEn``
      - ``bit``
      - CV-X-IF coprocessor interface enable
@@ -244,9 +264,9 @@
      - ``int unsigned``
      - Instruction cache line width
 
-   * - ``DCacheType``
-     - ``cache_type_t``
-     - Cache Type
+   * - ``CacheWritePolicy``
+     - ``cache_write_policy_e``
+     - Write policy of the data cache
 
    * - ``DcacheIdWidth``
      - ``int unsigned``
@@ -266,11 +286,15 @@
 
    * - ``DcacheFlushOnFence``
      - ``bit``
-     - Data cache flush on fence
+     - DcacheInvalidateOnFlush causes dcache to also be invalidated when flushed
+
+   * - ``DcacheFlushOnFenceI``
+     - ``bit``
+     - TO_BE_COMPLETED
 
    * - ``DcacheInvalidateOnFlush``
      - ``bit``
-     - Data cache invalidate on flush
+     - TO_BE_COMPLETED
 
    * - ``DataUserEn``
      - ``bit``
@@ -298,11 +322,15 @@
 
    * - ``TechnoCut``
      - ``bit``
-     - Is Techno Cut instanciated
+     - Is Techno Cut instantiated
 
    * - ``SuperscalarEn``
      - ``bit``
      - Enable superscalar* with 2 issue ports and 2 commit ports.
+
+   * - ``ALUBypass``
+     - ``bit``
+     - Enable ALU-ALU bypass (superscalar mode only)
 
    * - ``NrCommitPorts``
      - ``int unsigned``
@@ -356,10 +384,30 @@
      - ``int unsigned``
      - MMU depth of shared TLB
 
-   * - ``ObiVersion``
-     - ``int unsigned``
-     - OBI version compliance, 0 means not compliant -> best performance
-
-   * - ``PipelineOnly``
+   * - ``SvnapotEn``
      - ``bit``
-     - Configuration defines cva6_pipeline module as top instead of cva6 (no cache and OBI instead of AXI)
+     - Option to enable Svnapot extension
+
+   * - ``MemSubsystem``
+     - ``mem_subsystem_e``
+     - Memory subsystem between the pipeline and the system bus
+
+   * - ``NrStoreInFlight``
+     - ``int unsigned``
+     - the store bus and the memory.
+
+   * - ``DclsEn``
+     - ``bit``
+     - DCLS parameters
+
+   * - ``DclsDelay``
+     - ``int unsigned``
+     - Number of cycles o
+
+   * - ``DclsCommonRegfile``
+     - ``bit``
+     - TO_BE_COMPLETED
+
+   * - ``DclsCommonBHT``
+     - ``bit``
+     - TO_BE_COMPLETED

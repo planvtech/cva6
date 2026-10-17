@@ -69,12 +69,12 @@ module cva6_tb_wrapper import uvmt_cva6_pkg::*; #(
   localparam type hartid_t            = `HARTID_T(CVA6Cfg),
   localparam type x_compressed_req_t  = `X_COMPRESSED_REQ_T(CVA6Cfg, hartid_t),
   localparam type x_compressed_resp_t = `X_COMPRESSED_RESP_T(CVA6Cfg),
-  localparam type x_issue_req_t       = `X_ISSUE_REQ_T(CVA6Cfg, hartit_t, id_t),
+  localparam type x_issue_req_t       = `X_ISSUE_REQ_T(CVA6Cfg, hartid_t, id_t),
   localparam type x_issue_resp_t      = `X_ISSUE_RESP_T(CVA6Cfg, writeregflags_t, readregflags_t),
   localparam type x_register_t        = `X_REGISTER_T(CVA6Cfg, hartid_t, id_t, readregflags_t),
   localparam type x_commit_t          = `X_COMMIT_T(CVA6Cfg, hartid_t, id_t),
   localparam type x_result_t          = `X_RESULT_T(CVA6Cfg, hartid_t, id_t, writeregflags_t),
-  localparam type cvxif_req_t         = `CVXIF_REQ_T(CVA6Cfg, x_compressed_req_t, x_issue_req_t, x_register_req_t, x_commit_t),
+  localparam type cvxif_req_t         = `CVXIF_REQ_T(CVA6Cfg, x_compressed_req_t, x_issue_req_t, x_register_t, x_commit_t),
   localparam type cvxif_resp_t        = `CVXIF_RESP_T(CVA6Cfg, x_compressed_resp_t, x_issue_resp_t, x_result_t),
   //
   `OBI_LOCALPARAM_TYPE_GLOBAL_ALL(obi_fetch, CVA6Cfg.ObiFetchbusCfg),
@@ -164,7 +164,7 @@ module cva6_tb_wrapper import uvmt_cva6_pkg::*; #(
 
   // DUT 
 
-  if (!CVA6Cfg.PipelineOnly || config_pkg::OBI_NOT_COMPLIANT) begin : cva6_top
+  if (CVA6Cfg.MemSubsystem != config_pkg::MEM_OBI) begin : cva6_top
 
     noc_axi_req_t  noc_axi_req;
     noc_axi_resp_t noc_axi_resp;

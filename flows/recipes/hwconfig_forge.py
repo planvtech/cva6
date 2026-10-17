@@ -14,16 +14,16 @@ import shutil
 import re
 from datetime import datetime
 import typer
-from flows.utils.utils import (
+from flows.utils.autocompletion import (
     autocompletion_target,
     autocompletion_param_config,
-    print_recipe_title,
-    print_recipe_end,
-    print_step,
-    print_info,
-    print_error,
-    print_param_table,
-    print_table,
+)
+from flows.utils.recipe_report import RecipeReport
+from flows.utils.rtl_config import parse_rtl_cfg
+from flows.utils.target_config import (
+    HIER_OF_MEM_SUBSYSTEM,
+    read_config_or_exit_rtl_cfg,
+    target_dir,
 )
 
 app = typer.Typer()
@@ -58,7 +58,17 @@ def hwconfig_forge(
     """
     Hardware config modify/overwrite
     """
-    print_recipe_title("HWCONFIG : Forging new config", quiet=quiet)
+    report = RecipeReport(
+        "hwconfig-forge",
+        out_dir=Path.cwd() / "config" / "target" / new_target_name,
+        title="HWCONFIG : Forging new config",
+        context={
+            "new_target_name": new_target_name,
+            "target": target,
+            "arg_replace": arg_replace,
+        },
+        quiet=quiet,
+    )
 
     # ==========================================================
     # GENERATE MODIFICATIONS DICTIONARY
@@ -66,65 +76,50 @@ def hwconfig_forge(
 
     try:
         arg_replace_dict = dict(item.split("=") for item in arg_replace)
-        arg_replace_str = ""
-        for key, value in arg_replace_dict.items():
-            arg_replace_str += f"{key}: {value}\n"
     except Exception as e:
-        print_error(
+        report.error_exit(
             f'\033[1mThe list of arguments to overwrite is incorrect, please use ./cook.py hwconfig-forge TARGET "PARAMETER=VALUE" "PARAMETER=VALUE"...\033[0m{e}',
-            quiet=quiet,
         )
-        raise typer.Exit(code=1)
-
-    print_param_table(
-        {
-            "New target config": new_target_name,
-            "Original target config": target,
-            "Values to overwrite": arg_replace_str,
-        },
-        "Options",
-        quiet=quiet,
-    )
 
     # ==========================================================
     # FETCH TEMPLATE (ORIGINAL TARGET CONFIG PKG)
     # ==========================================================
 
-    print_step("Target config package fetch", quiet=quiet)
+    report.step("Target config package fetch")
     repo_dir = Path.cwd()
-    config_pkg_dir = repo_dir / "core" / "include"
-    config_pkg = config_pkg_dir / f"{target}_config_pkg.sv"
-    forged_config_pkg = config_pkg_dir / f"{new_target_name}_config_pkg.sv"
-    config_linker = repo_dir / "config" / "target" / target / "link.ld"
-    forged_config_linker = (
-        repo_dir
-        / "config"
-        / "gen_from_riscv_config"
-        / new_target_name
-        / "linker"
-        / "link.ld"
-    )
-    config_spike_file = repo_dir / "config" / "target" / target / "spike.yaml"
-    forged_config_spike_file = (
-        repo_dir
-        / "config"
-        / "gen_from_riscv_config"
-        / new_target_name
-        / "spike"
-        / "spike.yaml"
-    )
-    if config_pkg.exists():
-        print_info(
-            f"{config_pkg_dir}/{target}_config_pkg.sv exists and found", quiet=quiet
-        )
-        config_pkg = config_pkg.open()
-    else:
-        print_error(
-            f"{config_pkg_dir}/{target}_config_pkg.sv does not exist", quiet=quiet
-        )
-        raise typer.Exit(code=1)
+    config_pkg = target_dir(target, repo_dir) / "rtl_cfg_pkg.sv"
+    forged_target_dir = target_dir(new_target_name, repo_dir)
+    forged_config_pkg = forged_target_dir / "rtl_cfg_pkg.sv"
+    # A target is a directory of config/target: the package, and the files
+    # that must follow it, copied verbatim since the forge only rewrites
+    # parameters of the package.
+    companion_files = [
+        "link.ld",
+        "spike.yaml",
+        "isa.yml",
+        "Flist.cva6",
+        "Flist.cva6_gate",
+        "Flist.cva6_synth",
+    ]
+    if not config_pkg.exists():
+        report.error_exit(f"{config_pkg} does not exist", env=True)
+    report.info(f"{config_pkg} found")
 
-    print_step("Target config package forge", quiet=quiet)
+    # The parameters of the reference target, to check the names to replace
+    # against: a name absent from it matches no line of the package, and
+    # would forge a configuration identical to the reference.
+    reference = read_config_or_exit_rtl_cfg(target, report, repo_dir)
+    unknown = [p for p in arg_replace_dict if p not in reference]
+    if unknown:
+        report.error_exit(
+            f"Unknown parameter(s) for target '{target}': {', '.join(unknown)}\n"
+            f"  The configuration package declares "
+            f"{len(reference)} parameters, see {config_pkg}.",
+            env=True,
+        )
+    config_pkg = config_pkg.open()
+
+    report.step("Target config package forge")
 
     # ==========================================================
     # FORGE MODIFIED CONFIG PKG
@@ -170,48 +165,75 @@ def hwconfig_forge(
 
         forged_config_content.append(line)
 
-    print_table(
+    report.styled_table(
         params=param_table,
         title="Updated config values",
         column_name=titles_l,
         style=style_l,
-        quiet=quiet,
     )
 
-    print_step(f"New target '{new_target_name}' generation", quiet=quiet)
+    # Record updated values in the report (already printed by styled_table)
+    updated = report.metric("Updated config values")
+    for param, (old_value, new_value) in param_table.items():
+        updated.add_row(parameter=param, old=old_value, new=new_value)
 
+    report.step(f"New target '{new_target_name}' generation")
+
+    # The forged target gets its own directory of config/target/, so it can
+    # be passed to `-t` like any other one.
+    forged_target_dir.mkdir(parents=True, exist_ok=True)
     with forged_config_pkg.open("w") as f:
         for line in forged_config_content:
             f.write(f"{line}\n")
-        print_info(f"create {new_target_name}_config_pkg.sv", quiet=quiet)
+        report.info(f"create {forged_config_pkg}")
 
-    # Create parents dir and do not raise error if directories already exists
-    if not forged_config_linker.exists():
-        forged_config_linker.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(config_linker, forged_config_linker)
-        print_info(f"Copy {config_linker} -> {forged_config_linker}", quiet=quiet)
-    if not forged_config_spike_file.exists():
-        forged_config_spike_file.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(config_spike_file, forged_config_spike_file)
-        print_info(
-            f"Copy {config_spike_file} -> {forged_config_spike_file}", quiet=quiet
+    # Re-read what was written: the package is rewritten line by line, so a
+    # replacement may produce a value the parser cannot resolve, which the
+    # first recipe using the forged target would be the one to hit.
+    try:
+        forged = parse_rtl_cfg(forged_config_pkg)
+    except OSError as e:
+        report.error_exit(f"Could not read back {forged_config_pkg}: {e}")
+    for param in arg_replace_dict:
+        if param not in forged:
+            report.error(f"{param} disappeared from the forged configuration")
+    report.success(f"{len(forged)} parameter(s) in the forged configuration")
+
+    # testbench_cfg.yml is written from the forged MemSubsystem, which may
+    # differ from the reference target.
+    forged_tb_cfg = forged_target_dir / "testbench_cfg.yml"
+    hier = HIER_OF_MEM_SUBSYSTEM.get(forged.get("MemSubsystem"))
+    if hier is None:
+        report.error_exit(
+            f"Unknown MemSubsystem {forged.get('MemSubsystem')!r} in "
+            f"{forged_config_pkg}, expected one of {list(HIER_OF_MEM_SUBSYSTEM)}"
         )
+    forged_tb_cfg.write_text(f"hier: {hier.value}\n", encoding="utf-8")
+    report.info(f"create {forged_tb_cfg} (hier: {hier.value})")
+
+    gen_files = [forged_config_pkg, forged_tb_cfg]
+    for name in companion_files:
+        src = target_dir(target, repo_dir) / name
+        dst = forged_target_dir / name
+        if not src.exists():
+            continue
+        if not dst.exists():
+            shutil.copy(src, dst)
+            report.info(f"Copy {src} -> {dst}")
+        gen_files.append(dst)
 
     # ==========================================================
     # List
     # ==========================================================
 
-    gen_files = [
-        forged_config_pkg,
-        forged_config_linker,
-        forged_config_spike_file,
-    ]
-
-    print_step("Generated files", quiet=quiet)
+    report.step("Generated files")
     for genfile in gen_files:
         if genfile.exists():
-            print_info(f"> {genfile}", quiet=quiet)
+            report.info(f"> {genfile}")
         else:
-            print_error(f"> Missing: {genfile}", quiet=quiet)
+            report.error(f"> Missing: {genfile}")
 
-    print_recipe_end("Completed", quiet=quiet)
+    if not report.failed:
+        report.success(f"New target '{new_target_name}' forged")
+
+    report.end("Completed")
