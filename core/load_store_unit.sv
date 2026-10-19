@@ -239,6 +239,7 @@ module load_store_unit
   exception_t                              mmu_exception;
   exception_t                              pmp_exception;
   mmu_arsp_t                               pmp_fetch_arsp;
+  mmu_arsp_t                               pmp_lsu_arsp;
   logic                                    pmp_translation_valid;
   logic                                    dtlb_hit;
   logic        [         CVA6Cfg.PPNW-1:0] dtlb_ppn;
@@ -264,6 +265,15 @@ module load_store_unit
   logic [CVA6Cfg.PPNW-1:0] satp_ppn[2:0];
   logic [CVA6Cfg.ASID_WIDTH-1:0] asid[2:0], asid_to_be_flushed[1:0];
   logic [CVA6Cfg.VLEN-1:0] vaddr_to_be_flushed[1:0];
+
+  // LSU address translation request to MMU
+  mmu_areq_t               lsu_areq_i;
+  // LSU address translation response from MMU
+  mmu_arsp_t               lsu_arsp_o;
+
+  assign lsu_areq_i.req   = translation_req;
+  assign lsu_areq_i.vaddr = mmu_vaddr;
+
   // -------------------
   // MMU e.g.: TLBs/PTW
   // -------------------
@@ -291,17 +301,14 @@ module load_store_unit
         .fetch_arsp_o(pmp_fetch_arsp),
         // misaligned bypass
         .misaligned_ex_i(misaligned_exception),
-        .lsu_req_i(translation_req),
-        .lsu_vaddr_i(mmu_vaddr),
+        .lsu_areq_i(lsu_areq_i),
+        .lsu_arsp_o(pmp_lsu_arsp),
         .lsu_tinst_i(mmu_tinst),
         .lsu_is_store_i(st_translation_req),
         .csr_hs_ld_st_inst_o(csr_hs_ld_st_inst_o),
         .lsu_dtlb_hit_o(dtlb_hit),  // send in the same cycle as the request
         .lsu_dtlb_ppn_o(dtlb_ppn),  // send in the same cycle as the request
 
-        .lsu_valid_o    (pmp_translation_valid),
-        .lsu_paddr_o    (lsu_paddr),
-        .lsu_exception_o(pmp_exception),
         .lsu_vaddr_o    (pmp_vaddr_q),
         .lsu_is_store_o (pmp_is_store_q),
         .lsu_hlvx_inst_o(pmp_hlvx_inst_q),
@@ -344,31 +351,31 @@ module load_store_unit
     );
   end else begin : gen_no_mmu
     // fetch request without MMU, virtual and physical address are identical
-    assign pmp_fetch_arsp.fetch_valid = fetch_areq_i.fetch_req;
+    assign pmp_fetch_arsp.valid = fetch_areq_i.req;
     assign shared_tlb_flush_busy_o = 1'b0;  //default 0 for shared_tlb flush
     if (CVA6Cfg.VLEN >= CVA6Cfg.PLEN) begin : gen_virtual_physical_address_instruction_vlen_greater
       assign pmp_fetch_arsp.paddr = fetch_areq_i.vaddr[CVA6Cfg.PLEN-1:0];
     end else begin : gen_virtual_physical_address_instruction_plen_greater
       assign pmp_fetch_arsp.paddr = CVA6Cfg.PLEN'(fetch_areq_i.vaddr);
     end
-    assign pmp_fetch_arsp.fetch_exception = 'h0;
+    assign pmp_fetch_arsp.exception = 'h0;
 
     assign itlb_miss_o = 1'b0;
     assign dtlb_miss_o = 1'b0;
     assign dtlb_hit = 1'b1;
 
     //  The PMP checks the request in the cycle it is presented.
-    assign pmp_translation_valid = translation_req;
-    assign pmp_exception = misaligned_exception;
-    assign pmp_vaddr_q = mmu_vaddr;
+    assign pmp_lsu_arsp.valid = lsu_areq_i.req;
+    assign pmp_lsu_arsp.exception = misaligned_exception;
+    assign pmp_vaddr_q = lsu_areq_i.vaddr;
     assign pmp_is_store_q = st_translation_req;
     assign pmp_hlvx_inst_q = mmu_hlvx_inst;
     if (CVA6Cfg.VLEN > CVA6Cfg.PLEN) begin : gen_paddr_vlen_greater
-      assign lsu_paddr = mmu_vaddr[CVA6Cfg.PLEN-1:0];
+      assign pmp_lsu_arsp.paddr = lsu_areq_i.vaddr[CVA6Cfg.PLEN-1:0];
     end else begin : gen_paddr_plen_greater
-      assign lsu_paddr = CVA6Cfg.PLEN'(mmu_vaddr);
+      assign pmp_lsu_arsp.paddr = CVA6Cfg.PLEN'(lsu_areq_i.vaddr);
     end
-    assign dtlb_ppn = lsu_paddr[CVA6Cfg.PLEN-1:12];
+    assign dtlb_ppn = pmp_lsu_arsp.paddr[CVA6Cfg.PLEN-1:12];
 
   end
 
@@ -378,7 +385,7 @@ module load_store_unit
 
   pmp_data_if #(
       .CVA6Cfg      (CVA6Cfg),
-      .icache_areq_t(mmu_arsp_t),
+      .mmu_arsp_t   (mmu_arsp_t),
       .exception_t  (exception_t)
   ) i_pmp_data_if (
       .clk_i               (clk_i),
@@ -386,15 +393,11 @@ module load_store_unit
       .icache_areq_i       (pmp_fetch_arsp),
       .icache_areq_o       (fetch_arsp_o),
       .icache_fetch_vaddr_i(fetch_areq_i.vaddr),
-      .lsu_valid_i         (pmp_translation_valid),
-      .lsu_paddr_i         (lsu_paddr),
+      .lsu_arsp_i          (pmp_lsu_arsp),
+      .lsu_arsp_o          (lsu_arsp_o),
       .lsu_vaddr_i         (pmp_vaddr_q),
-      .lsu_exception_i     (pmp_exception),
       .lsu_is_store_i      (pmp_is_store_q),
       .lsu_hlvx_inst_i     (pmp_hlvx_inst_q),
-      .lsu_valid_o         (translation_valid),
-      .lsu_paddr_o         (mmu_paddr),
-      .lsu_exception_o     (mmu_exception),
       .priv_lvl_i          (priv_lvl_i),
       .v_i                 (v_i),
       .ld_st_priv_lvl_i    (ld_st_priv_lvl_i),
@@ -418,16 +421,16 @@ module load_store_unit
         ld_paddr_q <= '0;
         ld_ex_q    <= '0;
       end else begin
-        ld_paddr_q <= mmu_paddr;
-        ld_ex_q    <= mmu_exception;
-        ld_ex_q.valid <= mmu_exception.valid && ld_translation_req && ld_valid_i;
+        ld_paddr_q <= lsu_arsp_o.paddr;
+        ld_ex_q    <= lsu_arsp_o.exception;
+        ld_ex_q.valid <= lsu_arsp_o.exception.valid && ld_translation_req && ld_valid_i;
       end
     end
     assign ld_paddr = ld_paddr_q;
     assign ld_ex_s1 = ld_ex_q;
   end else begin : gen_ld_direct
-    assign ld_paddr = mmu_paddr;
-    assign ld_ex_s1 = mmu_exception;
+    assign ld_paddr = lsu_arsp_o.paddr;
+    assign ld_ex_s1 = lsu_arsp_o.exception;
   end
 
   logic store_buffer_empty;
@@ -468,8 +471,8 @@ module load_store_unit
       .tinst_o              (st_tinst),
       .hs_ld_st_inst_o      (st_hs_ld_st_inst),
       .hlvx_inst_o          (st_hlvx_inst),
-      .paddr_i              (mmu_paddr),
-      .ex_i                 (mmu_exception),
+      .paddr_i              (lsu_arsp_o.paddr),
+      .ex_i                 (lsu_arsp_o.exception),
       .dtlb_hit_i           (dtlb_hit),
       // Load Unit
       .page_offset_i        (page_offset),
@@ -834,7 +837,7 @@ module load_store_unit
   // Probe only: the translated address of the access currently presented to
   // the store buffer / AMO buffer. Pairing it with the access it belongs to is
   // done in cva6_rvfi.sv, no RVFI logic lives in the CPU RTL.
-  assign rvfi_mem_paddr_o = mmu_paddr;
+  assign rvfi_mem_paddr_o = lsu_arsp_o.paddr;
 
   //pragma translate_off
   // A load data trigger break goes with the load it matched, which leaves the

@@ -10,27 +10,29 @@ module pmp_data_if
   import ariane_pkg::*;
 #(
     parameter config_pkg::cva6_cfg_t CVA6Cfg       = config_pkg::cva6_cfg_empty,
-    parameter type                   icache_areq_t = logic,
+    parameter type                   mmu_arsp_t    = logic,
     parameter type                   exception_t   = logic
 ) (
     input logic clk_i,
     input logic rst_ni,
     // IF interface
-    input icache_areq_t icache_areq_i,
-    output icache_areq_t icache_areq_o,
+    input mmu_arsp_t icache_areq_i,
+    output mmu_arsp_t icache_areq_o,
     input [CVA6Cfg.VLEN-1:0] icache_fetch_vaddr_i,  // virtual address for tval only
     // LSU interface
     // this is a more minimalistic interface because the actual addressing logic is handled
     // in the LSU as we distinguish load and stores, what we do here is simple address translation
-    input logic lsu_valid_i,  // request lsu access
-    input logic [CVA6Cfg.PLEN-1:0] lsu_paddr_i,  // physical address in
+    // input logic lsu_valid_i,  // request lsu access
+    // input logic [CVA6Cfg.PLEN-1:0] lsu_paddr_i,  // physical address in
+    input mmu_arsp_t lsu_arsp_i,    // from the MMU
+    output mmu_arsp_t lsu_arsp_o,   // to the LSU
     input logic [CVA6Cfg.VLEN-1:0] lsu_vaddr_i,  // virtual address in, for tval only
-    input exception_t lsu_exception_i,  // lsu exception coming from MMU, or misaligned exception
+    // input exception_t lsu_exception_i,  // lsu exception coming from MMU, or misaligned exception
     input logic lsu_is_store_i,  // the translation is requested by a store
     input logic lsu_hlvx_inst_i,  // the access is an HLVX, which reads instruction memory
-    output logic lsu_valid_o,  // translation is valid
-    output logic [CVA6Cfg.PLEN-1:0] lsu_paddr_o,  // translated address
-    output exception_t lsu_exception_o,  // address translation threw an exception
+    // output logic lsu_valid_o,  // translation is valid
+    // output logic [CVA6Cfg.PLEN-1:0] lsu_paddr_o,  // translated address
+    // output exception_t lsu_exception_o,  // address translation threw an exception
     // General control signals
     input riscv::priv_lvl_t priv_lvl_i,
     input logic v_i,
@@ -82,20 +84,20 @@ module pmp_data_if
     // Per RISCV privilege spec, a page fault has higher priority than access
     // fault, therefore do not change the exception type in case of double
     // exception
-    if (icache_areq_i.fetch_valid) begin
-      if (icache_areq_o.fetch_exception.cause != riscv::INSTR_PAGE_FAULT) begin
+    if (icache_areq_i.valid) begin
+      if (icache_areq_o.exception.cause != riscv::INSTR_PAGE_FAULT) begin
         if (!match_any_execute_region || !pmp_if_allow) begin
-          icache_areq_o.fetch_exception.cause = riscv::INSTR_ACCESS_FAULT;
-          icache_areq_o.fetch_exception.valid = 1'b1;
+          icache_areq_o.exception.cause = riscv::INSTR_ACCESS_FAULT;
+          icache_areq_o.exception.valid = 1'b1;
           // For exception, the virtual address is required for tval, if no MMU is
           // instantiated then it will be equal to physical address
           if (CVA6Cfg.TvalEn) begin
-            icache_areq_o.fetch_exception.tval = fetch_vaddr_xlen;
+            icache_areq_o.exception.tval = fetch_vaddr_xlen;
           end
           if (CVA6Cfg.RVH) begin
-            icache_areq_o.fetch_exception.tval2 = '0;
-            icache_areq_o.fetch_exception.tinst = '0;
-            icache_areq_o.fetch_exception.gva   = v_i;
+            icache_areq_o.exception.tval2 = '0;
+            icache_areq_o.exception.tinst = '0;
+            icache_areq_o.exception.gva   = v_i;
           end
         end
       end
@@ -121,9 +123,12 @@ module pmp_data_if
   //-----------------------
   always_comb begin : data_interface
     // save request and DTLB response
-    lsu_valid_o     = lsu_valid_i;
-    lsu_paddr_o     = lsu_paddr_i;
-    lsu_exception_o = lsu_exception_i;
+    // lsu_valid_o     = lsu_valid_i;
+    // lsu_paddr_o     = lsu_paddr_i;
+    // lsu_exception_o = lsu_exception_i;
+    lsu_arsp_o.valid     = lsu_arsp_i.valid;
+    lsu_arsp_o.paddr     = lsu_arsp_i.paddr;
+    lsu_arsp_o.exception = lsu_arsp_i.exception;
     //  HLVX reads instruction memory, so the region must be executable as well
     //  as readable; checking it as a plain load lets an execute-only region be
     //  read, and a no-execute one be fetched from.
@@ -138,24 +143,24 @@ module pmp_data_if
     // If translation is not enabled, check the paddr immediately against PMPs
     // A misaligned exception has higher priority than an access fault, so don't
     // overwrite it (RISC-V privilege spec, simultaneous trap cause priority).
-    if (lsu_valid_i && !data_allow_o &&
-        !(lsu_exception_i.valid &&
-          (lsu_exception_i.cause inside {riscv::LD_ADDR_MISALIGNED, riscv::ST_ADDR_MISALIGNED}))) begin
-      lsu_exception_o.valid = 1'b1;
+    if (lsu_arsp_i.valid && !data_allow_o &&
+        !(lsu_arsp_i.exception.valid &&
+          (lsu_arsp_i.exception.cause inside {riscv::LD_ADDR_MISALIGNED, riscv::ST_ADDR_MISALIGNED}))) begin
+      lsu_arsp_o.exception.valid = 1'b1;
 
       if (CVA6Cfg.TvalEn) begin
-        lsu_exception_o.tval = lsu_vaddr_xlen;
+        lsu_arsp_o.exception.tval = lsu_vaddr_xlen;
       end
 
       if (lsu_is_store_i) begin
-        lsu_exception_o.cause = riscv::ST_ACCESS_FAULT;
+        lsu_arsp_o.exception.cause = riscv::ST_ACCESS_FAULT;
       end else begin
-        lsu_exception_o.cause = riscv::LD_ACCESS_FAULT;
+        lsu_arsp_o.exception.cause = riscv::LD_ACCESS_FAULT;
       end
       if (CVA6Cfg.RVH) begin
-        lsu_exception_o.tval2 = '0;
-        lsu_exception_o.tinst = '0;
-        lsu_exception_o.gva   = ld_st_v_i;
+        lsu_arsp_o.exception.tval2 = '0;
+        lsu_arsp_o.exception.tinst = '0;
+        lsu_arsp_o.exception.gva   = ld_st_v_i;
       end
     end
   end
@@ -164,7 +169,7 @@ module pmp_data_if
   pmp #(
       .CVA6Cfg(CVA6Cfg)
   ) i_pmp_data (
-      .addr_i       (lsu_paddr_i),
+      .addr_i       (lsu_arsp_i.paddr),
       .priv_lvl_i   (ld_st_priv_lvl_i),
       .access_type_i(pmp_access_type),
       // Configuration

@@ -47,9 +47,8 @@ module cva6_mmu
     // LSU interface
     // this is a more minimalistic interface because the actual addressing logic is handled
     // in the LSU as we distinguish load and stores, what we do here is simple address translation
+    input mmu_areq_t lsu_areq_i,      // request address translation: req + vaddr
     input exception_t misaligned_ex_i,
-    input logic lsu_req_i,  // request address translation
-    input logic [CVA6Cfg.VLEN-1:0] lsu_vaddr_i,  // virtual address in
     input logic [31:0] lsu_tinst_i,  // transformed instruction in
     input logic lsu_is_store_i,  // the translation is requested by a store
     output logic csr_hs_ld_st_inst_o,  // hyp load store instruction
@@ -58,9 +57,7 @@ module cva6_mmu
     output logic lsu_dtlb_hit_o,  // sent in same cycle as the request if translation hits in DTLB
     output logic [CVA6Cfg.PPNW-1:0] lsu_dtlb_ppn_o,  // ppn (send same cycle as hit)
     // Cycle 1 response
-    output logic lsu_valid_o,  // translation is valid
-    output logic [CVA6Cfg.PLEN-1:0] lsu_paddr_o,  // translated address
-    output exception_t lsu_exception_o,  // address translation threw an exception
+    output mmu_arsp_t lsu_arsp_o,     // translation valid + paddr + exception
     // Metadata for the same response transaction as lsu_valid_o, lsu_paddr_o
     // and lsu_exception_o, so a checker downstream does not mix a response with
     // the request that happens to be presented in the same cycle.
@@ -188,7 +185,7 @@ module cva6_mmu
   // Assignments
 
   assign itlb_lu_access = fetch_areq_i.req;
-  assign dtlb_lu_access = lsu_req_i & !misaligned_ex_i.valid;
+  assign dtlb_lu_access = lsu_areq_i.req & !misaligned_ex_i.valid;
   assign itlb_lu_asid = v_i ? vs_asid_i : asid_i;
   assign dtlb_lu_asid = (ld_st_v_i || flush_tlb_vvma_i) ? vs_asid_i : asid_i;
 
@@ -245,7 +242,7 @@ module cva6_mmu
       .lu_access_i   (dtlb_lu_access),
       .lu_asid_i     (dtlb_lu_asid),
       .lu_vmid_i     (vmid_i),
-      .lu_vaddr_i    (lsu_vaddr_i),
+      .lu_vaddr_i    (lsu_areq_i.vaddr),
       .lu_gpaddr_o   (dtlb_gpaddr),
       .lu_content_o  (dtlb_content),
       .lu_g_content_o(dtlb_g_content),
@@ -294,7 +291,7 @@ module cva6_mmu
 
       .dtlb_access_i(dtlb_lu_access),
       .dtlb_hit_i   (dtlb_lu_hit),
-      .dtlb_vaddr_i (lsu_vaddr_i),
+      .dtlb_vaddr_i (lsu_areq_i.vaddr),
 
       // to TLBs, update logic
       .itlb_update_o(update_itlb),
@@ -414,11 +411,11 @@ module cva6_mmu
       // - in VS stage, check that all bits [CVA6Cfg.VLEN-1:CVA6Cfg.SV-1] are equal
       // - in pure G stage (SV39x4 mode), [CVA6Cfg.VLEN-1:CVA6Cfg.GPLEN] must be zero.
       // - in pure G stage (SV32x4 mode), no check is needed.
-      if ((enable_translation_i && (fetch_areq_i.fetch_req && !((&fetch_areq_i.fetch_vaddr[CVA6Cfg.VLEN-1:CVA6Cfg.SV-1]) == 1'b1 || (|fetch_areq_i.fetch_vaddr[CVA6Cfg.VLEN-1:CVA6Cfg.SV-1]) == 1'b0)))
-          || (enable_g_translation_i && !enable_translation_i && CVA6Cfg.IS_XLEN64 && ((fetch_areq_i.fetch_vaddr >> CVA6Cfg.GPLEN) != '0))) begin
+      if ((enable_translation_i && (fetch_areq_i.req && !((&fetch_areq_i.vaddr[CVA6Cfg.VLEN-1:CVA6Cfg.SV-1]) == 1'b1 || (|fetch_areq_i.vaddr[CVA6Cfg.VLEN-1:CVA6Cfg.SV-1]) == 1'b0)))
+          || (enable_g_translation_i && !enable_translation_i && CVA6Cfg.IS_XLEN64 && ((fetch_areq_i.vaddr >> CVA6Cfg.GPLEN) != '0))) begin
 
-        fetch_arsp_o.fetch_exception.cause = riscv::INSTR_PAGE_FAULT;
-        fetch_arsp_o.fetch_exception.valid = 1'b1;
+        fetch_arsp_o.exception.cause = riscv::INSTR_PAGE_FAULT;
+        fetch_arsp_o.exception.valid = 1'b1;
         if (CVA6Cfg.TvalEn)
           fetch_arsp_o.exception.tval = CVA6Cfg.XLEN'(fetch_areq_i.vaddr);
         if (CVA6Cfg.RVH) begin
@@ -431,7 +428,7 @@ module cva6_mmu
       fetch_arsp_o.valid = 1'b0;
 
       final_fetch_ppn = (enable_g_translation_i && CVA6Cfg.RVH) ? itlb_g_content.ppn : itlb_content.ppn;
-      fetch_arsp_o.fetch_paddr = {final_fetch_ppn, fetch_areq_i.fetch_vaddr[11:0]};
+      fetch_arsp_o.paddr = {final_fetch_ppn, fetch_areq_i.vaddr[11:0]};
 
       if (CVA6Cfg.PtLevels == 3 && itlb_is_page[CVA6Cfg.PtLevels-2]) begin
 
@@ -542,8 +539,8 @@ module cva6_mmu
   // The data interface is simpler and only consists of a request/response interface
   always_comb begin : data_interface
     // save request and DTLB response
-    lsu_vaddr_n = lsu_vaddr_i;
-    lsu_req_n = lsu_req_i;
+    lsu_vaddr_n = lsu_areq_i.vaddr;
+    lsu_req_n   = lsu_areq_i.req;
     dtlb_pte_n = dtlb_content;
     dtlb_hit_n = dtlb_lu_hit;
     lsu_is_store_n = lsu_is_store_i;
@@ -551,11 +548,11 @@ module cva6_mmu
 
     misaligned_ex_n = misaligned_ex_i;
 
-    lsu_valid_o = lsu_req_q;
-    lsu_exception_o = misaligned_ex_q;
+    lsu_arsp_o.valid      = lsu_req_q;
+    lsu_arsp_o.exception  = misaligned_ex_q;
 
     // mute misaligned exceptions if there is no request otherwise they will throw accidental exceptions
-    misaligned_ex_n.valid = misaligned_ex_i.valid & lsu_req_i;
+    misaligned_ex_n.valid = misaligned_ex_i.valid & lsu_areq_i.req;
 
     // we work with SV39 or SV32, so if VM is enabled, check that all bits [CVA6Cfg.VLEN-1:CVA6Cfg.SV-1] are equal to bit [CVA6Cfg.SV]
     canonical_addr_check = (lsu_req_q && en_ld_st_translation_i &&
@@ -588,25 +585,25 @@ module cva6_mmu
       dtlb_gpte_n = dtlb_g_content;
     end
 
-    lsu_paddr_o = (CVA6Cfg.PLEN)'(lsu_vaddr_q[((CVA6Cfg.PLEN > CVA6Cfg.VLEN) ? CVA6Cfg.VLEN -1: CVA6Cfg.PLEN -1 ):0]);
+    lsu_arsp_o.paddr = (CVA6Cfg.PLEN)'(lsu_vaddr_q[((CVA6Cfg.PLEN > CVA6Cfg.VLEN) ? CVA6Cfg.VLEN -1: CVA6Cfg.PLEN -1 ):0]);
     lsu_dtlb_ppn_o        = (CVA6Cfg.PPNW)'(lsu_vaddr_n[((CVA6Cfg.PLEN > CVA6Cfg.VLEN) ? CVA6Cfg.VLEN -1: CVA6Cfg.PLEN -1 ):12]);
 
     // translation is enabled and no misaligned exception occurred
     if ((en_ld_st_translation_i || en_ld_st_g_translation_i) && !misaligned_ex_q.valid) begin
-      lsu_valid_o = 1'b0;
+      lsu_arsp_o.valid = 1'b0;
 
       lsu_dtlb_ppn_o = (en_ld_st_g_translation_i && CVA6Cfg.RVH)? dtlb_g_content.ppn :dtlb_content.ppn;
-      lsu_paddr_o = {
+      lsu_arsp_o.paddr = {
         (en_ld_st_g_translation_i && CVA6Cfg.RVH) ? dtlb_gpte_q.ppn : dtlb_pte_q.ppn,
         lsu_vaddr_q[11:0]
       };
 
       if (CVA6Cfg.PtLevels == 3 && dtlb_is_page_q[CVA6Cfg.PtLevels-2]) begin
-        lsu_paddr_o[PPNWMin-(CVA6Cfg.VpnLen/CVA6Cfg.PtLevels):9+CVA6Cfg.PtLevels] = lsu_vaddr_q[PPNWMin-(CVA6Cfg.VpnLen/CVA6Cfg.PtLevels):9+CVA6Cfg.PtLevels];
+        lsu_arsp_o.paddr[PPNWMin-(CVA6Cfg.VpnLen/CVA6Cfg.PtLevels):9+CVA6Cfg.PtLevels] = lsu_vaddr_q[PPNWMin-(CVA6Cfg.VpnLen/CVA6Cfg.PtLevels):9+CVA6Cfg.PtLevels];
       end
 
       if (dtlb_is_page_q[0]) begin
-        lsu_paddr_o[PPNWMin:12] = lsu_vaddr_q[PPNWMin:12];
+        lsu_arsp_o.paddr[PPNWMin:12] = lsu_vaddr_q[PPNWMin:12];
       end
 
       // lsu_dtlb_ppn_o is a same-cycle output, so it follows the incoming
@@ -625,7 +622,7 @@ module cva6_mmu
       // DTLB Hit
       // --------
       if (dtlb_hit_q && lsu_req_q) begin
-        lsu_valid_o = 1'b1;
+        lsu_arsp_o.valid = 1'b1;
         // exception priority:
         // PAGE_FAULTS have higher priority than ACCESS_FAULTS
         // virtual memory based exceptions are PAGE_FAULTS
@@ -636,56 +633,56 @@ module cva6_mmu
           // check if the page is write-able and we are not violating privileges
           // also check if the dirty flag is set
           if(CVA6Cfg.RVH && en_ld_st_g_translation_i && (!dtlb_gpte_q.w || d_g_st_access_err || !dtlb_gpte_q.d)) begin
-            lsu_exception_o.cause = riscv::STORE_GUEST_PAGE_FAULT;
-            lsu_exception_o.valid = 1'b1;
+            lsu_arsp_o.exception.cause = riscv::STORE_GUEST_PAGE_FAULT;
+            lsu_arsp_o.exception.valid = 1'b1;
             if (CVA6Cfg.TvalEn)
-              lsu_exception_o.tval = {
+              lsu_arsp_o.exception.tval = {
                 {CVA6Cfg.XLEN - CVA6Cfg.VLEN{lsu_vaddr_q[CVA6Cfg.VLEN-1]}}, lsu_vaddr_q
               };
             if (CVA6Cfg.RVH) begin
-              lsu_exception_o.tval2= CVA6Cfg.GPLEN'(lsu_gpaddr_q[(CVA6Cfg.IS_XLEN32?CVA6Cfg.VLEN : CVA6Cfg.GPLEN)-1:0]);
-              lsu_exception_o.tinst = '0;
-              lsu_exception_o.gva = ld_st_v_i;
+              lsu_arsp_o.exception.tval2= CVA6Cfg.GPLEN'(lsu_gpaddr_q[(CVA6Cfg.IS_XLEN32?CVA6Cfg.VLEN : CVA6Cfg.GPLEN)-1:0]);
+              lsu_arsp_o.exception.tinst = '0;
+              lsu_arsp_o.exception.gva = ld_st_v_i;
             end
           end else if ((en_ld_st_translation_i || !CVA6Cfg.RVH) && (!dtlb_pte_q.w || daccess_err || canonical_addr_check || !dtlb_pte_q.d)) begin
-            lsu_exception_o.cause = riscv::STORE_PAGE_FAULT;
-            lsu_exception_o.valid = 1'b1;
+            lsu_arsp_o.exception.cause = riscv::STORE_PAGE_FAULT;
+            lsu_arsp_o.exception.valid = 1'b1;
             if (CVA6Cfg.TvalEn)
-              lsu_exception_o.tval = {
+              lsu_arsp_o.exception.tval = {
                 {CVA6Cfg.XLEN - CVA6Cfg.VLEN{lsu_vaddr_q[CVA6Cfg.VLEN-1]}}, lsu_vaddr_q
               };
             if (CVA6Cfg.RVH) begin
-              lsu_exception_o.tval2 = '0;
-              lsu_exception_o.tinst = lsu_tinst_q;
-              lsu_exception_o.gva   = ld_st_v_i;
+              lsu_arsp_o.exception.tval2 = '0;
+              lsu_arsp_o.exception.tinst = lsu_tinst_q;
+              lsu_arsp_o.exception.gva   = ld_st_v_i;
             end
           end
           // this is a load
         end else begin
           if (CVA6Cfg.RVH && d_g_st_access_err) begin
-            lsu_exception_o.cause = riscv::LOAD_GUEST_PAGE_FAULT;
-            lsu_exception_o.valid = 1'b1;
+            lsu_arsp_o.exception.cause = riscv::LOAD_GUEST_PAGE_FAULT;
+            lsu_arsp_o.exception.valid = 1'b1;
             if (CVA6Cfg.TvalEn)
-              lsu_exception_o.tval = {
+              lsu_arsp_o.exception.tval = {
                 {CVA6Cfg.XLEN - CVA6Cfg.VLEN{lsu_vaddr_q[CVA6Cfg.VLEN-1]}}, lsu_vaddr_q
               };
             if (CVA6Cfg.RVH) begin
-              lsu_exception_o.tval2= CVA6Cfg.GPLEN'(lsu_gpaddr_q[(CVA6Cfg.IS_XLEN32?CVA6Cfg.VLEN : CVA6Cfg.GPLEN)-1:0]);
-              lsu_exception_o.tinst = '0;
-              lsu_exception_o.gva = ld_st_v_i;
+              lsu_arsp_o.exception.tval2= CVA6Cfg.GPLEN'(lsu_gpaddr_q[(CVA6Cfg.IS_XLEN32?CVA6Cfg.VLEN : CVA6Cfg.GPLEN)-1:0]);
+              lsu_arsp_o.exception.tinst = '0;
+              lsu_arsp_o.exception.gva = ld_st_v_i;
             end
             // check for sufficient access privileges - throw a page fault if necessary
           end else if (daccess_err || canonical_addr_check) begin
-            lsu_exception_o.cause = riscv::LOAD_PAGE_FAULT;
-            lsu_exception_o.valid = 1'b1;
+            lsu_arsp_o.exception.cause = riscv::LOAD_PAGE_FAULT;
+            lsu_arsp_o.exception.valid = 1'b1;
             if (CVA6Cfg.TvalEn)
-              lsu_exception_o.tval = {
+              lsu_arsp_o.exception.tval = {
                 {CVA6Cfg.XLEN - CVA6Cfg.VLEN{lsu_vaddr_q[CVA6Cfg.VLEN-1]}}, lsu_vaddr_q
               };
             if (CVA6Cfg.RVH) begin
-              lsu_exception_o.tval2 = '0;
-              lsu_exception_o.tinst = lsu_tinst_q;
-              lsu_exception_o.gva   = ld_st_v_i;
+              lsu_arsp_o.exception.tval2 = '0;
+              lsu_arsp_o.exception.tinst = lsu_tinst_q;
+              lsu_arsp_o.exception.gva   = ld_st_v_i;
             end
           end
         end
@@ -699,85 +696,85 @@ module cva6_mmu
         // page table walker threw an exception
         if (ptw_error) begin
           // an error makes the translation valid
-          lsu_valid_o = 1'b1;
+          lsu_arsp_o.valid = 1'b1;
           // the page table walker can only throw page faults
           if (lsu_is_store_q) begin
             if (CVA6Cfg.RVH && ptw_error_at_g_st) begin
-              lsu_exception_o.cause = riscv::STORE_GUEST_PAGE_FAULT;
-              lsu_exception_o.valid = 1'b1;
+              lsu_arsp_o.exception.cause = riscv::STORE_GUEST_PAGE_FAULT;
+              lsu_arsp_o.exception.valid = 1'b1;
               if (CVA6Cfg.TvalEn)
-                lsu_exception_o.tval = {
+                lsu_arsp_o.exception.tval = {
                   {CVA6Cfg.XLEN - CVA6Cfg.VLEN{lsu_vaddr_q[CVA6Cfg.VLEN-1]}}, update_vaddr
                 };
               if (CVA6Cfg.RVH) begin
-                lsu_exception_o.tval2 = ptw_bad_gpaddr[CVA6Cfg.GPLEN-1:0];
-                lsu_exception_o.tinst= (ptw_err_at_g_int_st ? (CVA6Cfg.IS_XLEN64 ? riscv::READ_64_PSEUDOINSTRUCTION : riscv::READ_32_PSEUDOINSTRUCTION) : '0);
-                lsu_exception_o.gva = ld_st_v_i;
+                lsu_arsp_o.exception.tval2 = ptw_bad_gpaddr[CVA6Cfg.GPLEN-1:0];
+                lsu_arsp_o.exception.tinst= (ptw_err_at_g_int_st ? (CVA6Cfg.IS_XLEN64 ? riscv::READ_64_PSEUDOINSTRUCTION : riscv::READ_32_PSEUDOINSTRUCTION) : '0);
+                lsu_arsp_o.exception.gva = ld_st_v_i;
               end
             end else begin
-              lsu_exception_o.cause = riscv::STORE_PAGE_FAULT;
-              lsu_exception_o.valid = 1'b1;
+              lsu_arsp_o.exception.cause = riscv::STORE_PAGE_FAULT;
+              lsu_arsp_o.exception.valid = 1'b1;
               if (CVA6Cfg.TvalEn)
-                lsu_exception_o.tval = {
+                lsu_arsp_o.exception.tval = {
                   {CVA6Cfg.XLEN - CVA6Cfg.VLEN{lsu_vaddr_q[CVA6Cfg.VLEN-1]}}, update_vaddr
                 };
               if (CVA6Cfg.RVH) begin
-                lsu_exception_o.tval2 = '0;
-                lsu_exception_o.tinst = lsu_tinst_q;
-                lsu_exception_o.gva   = ld_st_v_i;
+                lsu_arsp_o.exception.tval2 = '0;
+                lsu_arsp_o.exception.tinst = lsu_tinst_q;
+                lsu_arsp_o.exception.gva   = ld_st_v_i;
               end
             end
           end else begin
             if (CVA6Cfg.RVH && ptw_error_at_g_st) begin
-              lsu_exception_o.cause = riscv::LOAD_GUEST_PAGE_FAULT;
-              lsu_exception_o.valid = 1'b1;
+              lsu_arsp_o.exception.cause = riscv::LOAD_GUEST_PAGE_FAULT;
+              lsu_arsp_o.exception.valid = 1'b1;
               if (CVA6Cfg.TvalEn)
-                lsu_exception_o.tval = {
+                lsu_arsp_o.exception.tval = {
                   {CVA6Cfg.XLEN - CVA6Cfg.VLEN{lsu_vaddr_q[CVA6Cfg.VLEN-1]}}, update_vaddr
                 };
               if (CVA6Cfg.RVH) begin
-                lsu_exception_o.tval2 = ptw_bad_gpaddr[CVA6Cfg.GPLEN-1:0];
-                lsu_exception_o.tinst= (ptw_err_at_g_int_st ? (CVA6Cfg.IS_XLEN64 ? riscv::READ_64_PSEUDOINSTRUCTION : riscv::READ_32_PSEUDOINSTRUCTION) : '0);
-                lsu_exception_o.gva = ld_st_v_i;
+                lsu_arsp_o.exception.tval2 = ptw_bad_gpaddr[CVA6Cfg.GPLEN-1:0];
+                lsu_arsp_o.exception.tinst= (ptw_err_at_g_int_st ? (CVA6Cfg.IS_XLEN64 ? riscv::READ_64_PSEUDOINSTRUCTION : riscv::READ_32_PSEUDOINSTRUCTION) : '0);
+                lsu_arsp_o.exception.gva = ld_st_v_i;
               end
             end else begin
-              lsu_exception_o.cause = riscv::LOAD_PAGE_FAULT;
-              lsu_exception_o.valid = 1'b1;
+              lsu_arsp_o.exception.cause = riscv::LOAD_PAGE_FAULT;
+              lsu_arsp_o.exception.valid = 1'b1;
               if (CVA6Cfg.TvalEn)
-                lsu_exception_o.tval = {
+                lsu_arsp_o.exception.tval = {
                   {CVA6Cfg.XLEN - CVA6Cfg.VLEN{lsu_vaddr_q[CVA6Cfg.VLEN-1]}}, update_vaddr
                 };
               if (CVA6Cfg.RVH) begin
-                lsu_exception_o.tval2 = '0;
-                lsu_exception_o.tinst = lsu_tinst_q;
-                lsu_exception_o.gva   = ld_st_v_i;
+                lsu_arsp_o.exception.tval2 = '0;
+                lsu_arsp_o.exception.tinst = lsu_tinst_q;
+                lsu_arsp_o.exception.gva   = ld_st_v_i;
               end
             end
           end
         end
         if (ptw_access_exception) begin
           // an error makes the translation valid
-          lsu_valid_o = 1'b1;
+          lsu_arsp_o.valid = 1'b1;
           // Any fault of the page table walk should be based of the original access type
           if (lsu_is_store_q && !CVA6Cfg.RVH && CVA6Cfg.PtLevels == 3) begin
-            lsu_exception_o.cause = riscv::ST_ACCESS_FAULT;
-            lsu_exception_o.valid = 1'b1;
+            lsu_arsp_o.exception.cause = riscv::ST_ACCESS_FAULT;
+            lsu_arsp_o.exception.valid = 1'b1;
             if (CVA6Cfg.TvalEn)
-              lsu_exception_o.tval = {
+              lsu_arsp_o.exception.tval = {
                 {CVA6Cfg.XLEN - CVA6Cfg.VLEN{lsu_vaddr_q[CVA6Cfg.VLEN-1]}}, update_vaddr
               };
           end else begin
             // the page table walker can only throw page faults
-            lsu_exception_o.cause = riscv::LD_ACCESS_FAULT;
-            lsu_exception_o.valid = 1'b1;
+            lsu_arsp_o.exception.cause = riscv::LD_ACCESS_FAULT;
+            lsu_arsp_o.exception.valid = 1'b1;
             if (CVA6Cfg.TvalEn)
-              lsu_exception_o.tval = {
+              lsu_arsp_o.exception.tval = {
                 {CVA6Cfg.XLEN - CVA6Cfg.VLEN{lsu_vaddr_q[CVA6Cfg.VLEN-1]}}, update_vaddr
               };
             if (CVA6Cfg.RVH) begin
-              lsu_exception_o.tval2 = '0;
-              lsu_exception_o.tinst = lsu_tinst_q;
-              lsu_exception_o.gva   = ld_st_v_i;
+              lsu_arsp_o.exception.tval2 = '0;
+              lsu_arsp_o.exception.tinst = lsu_tinst_q;
+              lsu_arsp_o.exception.gva   = ld_st_v_i;
             end
           end
         end
@@ -810,7 +807,7 @@ module cva6_mmu
       lsu_is_store_q        <= lsu_is_store_n;
       dtlb_is_page_q        <= dtlb_is_page_n;
       shared_tlb_vaddr_prev <= shared_tlb_vaddr;
-      fetch_vaddr_prev      <= fetch_areq_i.fetch_vaddr;
+      fetch_vaddr_prev      <= fetch_areq_i.vaddr;
       misaligned_ex_q       <= misaligned_ex_n;
 
       if (CVA6Cfg.RVH) begin
