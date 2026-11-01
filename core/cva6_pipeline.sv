@@ -1420,7 +1420,7 @@ CVA6Cfg.NrCommitPorts
       .st_paddr(ex_stage_i.lsu_i.i_store_unit.store_buffer_i.paddr_i),
       .ld_valid(ex_stage_i.lsu_i.i_load_unit.ypb_load_req_o.preq),
       .ld_kill(ex_stage_i.lsu_i.i_load_unit.ypb_load_req_o.kill_req),
-      .ld_paddr(ex_stage_i.lsu_i.i_load_unit.paddr_i),
+      .ld_paddr(ex_stage_i.lsu_i.i_load_unit.ypb_load_req_o.paddr),
       .resolve_branch(resolved_branch),
       .commit_exception(commit_stage_i.exception_o),
       .priv_lvl(priv_lvl),

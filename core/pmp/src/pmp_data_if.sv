@@ -22,17 +22,11 @@ module pmp_data_if
     // LSU interface
     // this is a more minimalistic interface because the actual addressing logic is handled
     // in the LSU as we distinguish load and stores, what we do here is simple address translation
-    // input logic lsu_valid_i,  // request lsu access
-    // input logic [CVA6Cfg.PLEN-1:0] lsu_paddr_i,  // physical address in
-    input mmu_arsp_t lsu_arsp_i,    // from the MMU
-    output mmu_arsp_t lsu_arsp_o,   // to the LSU
+    input mmu_arsp_t lsu_arsp_i,    // translation response from the MMU (combinational)
+    output mmu_arsp_t lsu_arsp_o,   // same response with the PMP check, to the LSU
     input logic [CVA6Cfg.VLEN-1:0] lsu_vaddr_i,  // virtual address in, for tval only
-    // input exception_t lsu_exception_i,  // lsu exception coming from MMU, or misaligned exception
     input logic lsu_is_store_i,  // the translation is requested by a store
     input logic lsu_hlvx_inst_i,  // the access is an HLVX, which reads instruction memory
-    // output logic lsu_valid_o,  // translation is valid
-    // output logic [CVA6Cfg.PLEN-1:0] lsu_paddr_o,  // translated address
-    // output exception_t lsu_exception_o,  // address translation threw an exception
     // General control signals
     input riscv::priv_lvl_t priv_lvl_i,
     input logic v_i,
@@ -122,13 +116,9 @@ module pmp_data_if
   // Data Interface
   //-----------------------
   always_comb begin : data_interface
-    // save request and DTLB response
-    // lsu_valid_o     = lsu_valid_i;
-    // lsu_paddr_o     = lsu_paddr_i;
-    // lsu_exception_o = lsu_exception_i;
-    lsu_arsp_o.valid     = lsu_arsp_i.valid;
-    lsu_arsp_o.paddr     = lsu_arsp_i.paddr;
-    lsu_arsp_o.exception = lsu_arsp_i.exception;
+    // As the PMP check is combinatorial, pass the response directly if no
+    // exception
+    lsu_arsp_o = lsu_arsp_i;
     //  HLVX reads instruction memory, so the region must be executable as well
     //  as readable; checking it as a plain load lets an execute-only region be
     //  read, and a no-execute one be fetched from.

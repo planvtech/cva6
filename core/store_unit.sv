@@ -22,7 +22,8 @@ module store_unit
     parameter type ypb_amo_req_t = logic,
     parameter type ypb_amo_rsp_t = logic,
     parameter type exception_t = logic,
-    parameter type lsu_ctrl_t = logic
+    parameter type lsu_ctrl_t = logic,
+    parameter type mmu_arsp_t = logic
 ) (
     // Subsystem Clock - SUBSYSTEM
     input logic clk_i,
@@ -68,12 +69,9 @@ module store_unit
     output logic hs_ld_st_inst_o,
     // TO_BE_COMPLETED - TO_BE_COMPLETED
     output logic hlvx_inst_o,
-    // Physical address - MMU/PMP
-    input logic [CVA6Cfg.PLEN-1:0] paddr_i,
-    // Exception raised before store - MMU/PMP
-    input exception_t ex_i,
-    // Data TLB hit - lsu
-    input logic dtlb_hit_i,
+    // Translation response of the request presented this cycle
+    // (valid + paddr + exception), combinational - MMU/PMP
+    input mmu_arsp_t arsp_i,
     // Address to be checked - load_unit
     input logic [11:0] page_offset_i,
     // Address check result - load_unit
@@ -124,11 +122,23 @@ module store_unit
   // directly forward exception fields (valid bit is set below)
   // A store trigger reports its own cause and the faulting address; otherwise
   // the exception carried in from the MMU passes through unchanged.
-  assign ex_o.cause = (CVA6Cfg.SdtrigMcontrol6Store && sdtrig_store_stall_i && valid_i) ? sdtrig_store_action_i : ex_i.cause;
-  assign ex_o.tval  = (CVA6Cfg.SdtrigMcontrol6Store && sdtrig_store_stall_i && valid_i) ? {{CVA6Cfg.XLEN - CVA6Cfg.VLEN{1'b0}}, lsu_ctrl_i.vaddr} : ex_i.tval;
-  assign ex_o.tval2 = CVA6Cfg.RVH ? ex_i.tval2 : '0;
-  assign ex_o.tinst = CVA6Cfg.RVH ? ex_i.tinst : '0;
-  assign ex_o.gva = CVA6Cfg.RVH ? ex_i.gva : 1'b0;
+  // A held translation exception (see store_control) is retired before
+  // anything presented in this cycle.
+  logic ex_held_d, ex_held_q;
+  logic [CVA6Cfg.TRANS_ID_BITS-1:0] ex_held_trans_id_d, ex_held_trans_id_q;
+  exception_t ex_held_ex_d, ex_held_ex_q;
+  logic ex_held_retire;
+  exception_t ex_src;
+  assign ex_held_retire = CVA6Cfg.MmuPresent && ex_held_q;
+  assign ex_src = ex_held_retire ? ex_held_ex_q : arsp_i.exception;
+
+  assign ex_o.cause = ex_held_retire ? ex_src.cause :
+                      (CVA6Cfg.SdtrigMcontrol6Store && sdtrig_store_stall_i && valid_i) ? sdtrig_store_action_i : ex_src.cause;
+  assign ex_o.tval  = ex_held_retire ? ex_src.tval :
+                      (CVA6Cfg.SdtrigMcontrol6Store && sdtrig_store_stall_i && valid_i) ? {{CVA6Cfg.XLEN - CVA6Cfg.VLEN{1'b0}}, lsu_ctrl_i.vaddr} : ex_src.tval;
+  assign ex_o.tval2 = CVA6Cfg.RVH ? ex_src.tval2 : '0;
+  assign ex_o.tinst = CVA6Cfg.RVH ? ex_src.tinst : '0;
+  assign ex_o.gva = CVA6Cfg.RVH ? ex_src.gva : 1'b0;
   // Store triggers are precise: they break on the instruction itself, never
   // after it, so the deferred-exception bit stays clear here.
   assign ex_o.timing = 1'b0;
@@ -164,6 +174,10 @@ module store_unit
   logic [CVA6Cfg.XLEN-1:0] st_data, st_data_n, st_data_q;
   logic [(CVA6Cfg.XLEN/8)-1:0] st_be, st_be_n, st_be_q;
   logic [1:0] st_data_size, st_data_size_n, st_data_size_q;
+  // With an MMU the store enters the buffers one cycle after it is accepted:
+  // its physical address is registered here with its data, as the
+  // translation response is combinational.
+  logic [CVA6Cfg.PLEN-1:0] st_paddr, st_paddr_q;
   amo_t amo_op, amo_op_d, amo_op_q;
   fu_op cbo_op, cbo_op_d, cbo_op_q;
 
@@ -176,7 +190,7 @@ module store_unit
 
   logic [CVA6Cfg.TRANS_ID_BITS-1:0] trans_id_n, trans_id_q;
 
-  logic ex_s0, ex_s1;
+  logic ex_s0;
   logic stall_translation;
 
   // output assignments
@@ -185,10 +199,15 @@ module store_unit
   assign hlvx_inst_o = CVA6Cfg.RVH ? lsu_ctrl_i.hlvx_inst : 1'b0;
   assign tinst_o = CVA6Cfg.RVH ? lsu_ctrl_i.tinst : '0;  // transformed instruction
 
-  assign stall_translation = CVA6Cfg.MmuPresent ? translation_req_o && !dtlb_hit_i : 1'b0;
+  // The translation response is combinational, as for the Frontend: a store
+  // is accepted only once its translation is valid and clean. Without an MMU
+  // the response is valid with the request and only a misaligned or PMP
+  // exception stalls it.
+  assign stall_translation = translation_req_o && (!arsp_i.valid || arsp_i.exception.valid);
 
-  assign ex_s0 = CVA6Cfg.MmuPresent && stall_translation && ex_i.valid;
-  assign ex_s1 = CVA6Cfg.MmuPresent ? (store_buffer_valid_q || (CVA6Cfg.RVA && amo_buffer_valid_q)) && ex_i.valid : valid_i && ex_i.valid;
+  // Translation exception: retired in the request cycle, the store is never
+  // accepted, so it never reaches the store or AMO buffer.
+  assign ex_s0 = translation_req_o && arsp_i.valid && arsp_i.exception.valid;
 
   always_comb begin : store_control
     // default assignment
@@ -213,7 +232,7 @@ module store_unit
     end  // REQUEST
     else if (valid_i) begin
       translation_req_o = 1'b1;
-      if (!CVA6Cfg.MmuPresent || !stall_translation) begin
+      if (!stall_translation) begin
         if (CVA6Cfg.RVA && instr_is_amo) begin
           if (amo_buffer_ready) begin
             pop_st_o = 1'b1;
@@ -222,7 +241,6 @@ module store_unit
             if (!CVA6Cfg.MmuPresent) begin
               trans_id_o = lsu_ctrl_i.trans_id;
               valid_o    = 1'b1;
-              ex_o.valid = ex_s1;
             end
           end
         end else begin
@@ -234,24 +252,41 @@ module store_unit
             if (!CVA6Cfg.MmuPresent) begin
               trans_id_o = lsu_ctrl_i.trans_id;
               valid_o    = 1'b1;
-              ex_o.valid = ex_s1;
             end
           end
         end
       end
     end
-    // RETIRE STORE WITH MMU
-    if (CVA6Cfg.MmuPresent) begin
-      if (store_buffer_valid_q || (CVA6Cfg.RVA && amo_buffer_valid_q)) begin
-        trans_id_o = trans_id_q;
-        valid_o    = 1'b1;
-        ex_o.valid = ex_s1;
-      end else if (ex_s0) begin
-        trans_id_o = lsu_ctrl_i.trans_id;
-        valid_o    = 1'b1;
-        ex_o.valid = 1'b1;
-        pop_st_o = dtlb_hit_i;
+
+    ex_held_d          = ex_held_q;
+    ex_held_trans_id_d = ex_held_trans_id_q;
+    ex_held_ex_d       = ex_held_ex_q;
+    // RETIRE STORE WITH MMU (accepted last cycle, translation was clean)
+    if (CVA6Cfg.MmuPresent && (store_buffer_valid_q || (CVA6Cfg.RVA && amo_buffer_valid_q))) begin
+      trans_id_o = trans_id_q;
+      valid_o    = 1'b1;
+      ex_o.valid = 1'b0;
+      // The output is taken: hold the translation exception of this cycle and
+      // release the faulting store. A page-table-walk fault is reported for
+      // one cycle only, so it must not be dropped.
+      if (ex_s0) begin
+        ex_held_d          = 1'b1;
+        ex_held_trans_id_d = lsu_ctrl_i.trans_id;
+        ex_held_ex_d       = arsp_i.exception;
+        pop_st_o           = 1'b1;
       end
+      // RETIRE A HELD EXCEPTION
+    end else if (CVA6Cfg.MmuPresent && ex_held_q) begin
+      trans_id_o = ex_held_trans_id_q;
+      valid_o    = 1'b1;
+      ex_o.valid = 1'b1;
+      ex_held_d  = 1'b0;
+      // RETIRE TRANSLATION EXCEPTION
+    end else if (ex_s0) begin
+      trans_id_o = lsu_ctrl_i.trans_id;
+      valid_o    = 1'b1;
+      ex_o.valid = 1'b1;
+      pop_st_o   = 1'b1;  // the response is persistent: retire once
     end
   end
 
@@ -302,9 +337,12 @@ module store_unit
   assign st_data_size = CVA6Cfg.MmuPresent ? st_data_size_q : st_data_size_n;
   assign amo_op = CVA6Cfg.MmuPresent ? amo_op_q : amo_op_d;
   assign cbo_op = CVA6Cfg.MmuPresent ? cbo_op_q : cbo_op_d;
-  assign store_buffer_valid = CVA6Cfg.MmuPresent ? store_buffer_valid_q && !ex_s1 : store_buffer_valid_d;
-  assign store_buffer_valid_no_flush = CVA6Cfg.MmuPresent ? store_buffer_valid_no_flush_q && !ex_s1 : store_buffer_valid_no_flush_d;
-  assign amo_buffer_valid = CVA6Cfg.MmuPresent ? amo_buffer_valid_q && !ex_s1 : amo_buffer_valid_d;
+  // A store with a translation exception is never accepted, so whatever is
+  // accepted goes to the buffers.
+  assign store_buffer_valid = CVA6Cfg.MmuPresent ? store_buffer_valid_q : store_buffer_valid_d;
+  assign store_buffer_valid_no_flush = CVA6Cfg.MmuPresent ? store_buffer_valid_no_flush_q : store_buffer_valid_no_flush_d;
+  assign amo_buffer_valid = CVA6Cfg.MmuPresent ? amo_buffer_valid_q : amo_buffer_valid_d;
+  assign st_paddr = CVA6Cfg.MmuPresent ? st_paddr_q : arsp_i.paddr;
 
   // ---------------
   // Store Queue
@@ -332,7 +370,7 @@ module store_unit
       // the correct valid signal or not as we are flushing
       // the whole pipeline anyway
       .valid_without_flush_i(store_buffer_valid_no_flush),
-      .paddr_i              (paddr_i),
+      .paddr_i              (st_paddr),
       .data_i               (st_data),
       .cbo_op_i             (cbo_op),
       .be_i                 (st_be),
@@ -352,7 +390,7 @@ module store_unit
         .flush_i,
         .valid_i           (amo_buffer_valid),
         .ready_o           (amo_buffer_ready),
-        .paddr_i           (paddr_i),
+        .paddr_i           (st_paddr),
         .amo_op_i          (amo_op),
         .data_i            (st_data),
         .data_size_i       (st_data_size),
@@ -380,6 +418,10 @@ module store_unit
       amo_buffer_valid_q            <= '0;
       store_buffer_valid_q          <= '0;
       store_buffer_valid_no_flush_q <= '0;
+      st_paddr_q                    <= '0;
+      ex_held_q                     <= 1'b0;
+      ex_held_trans_id_q            <= '0;
+      ex_held_ex_q                  <= '0;
     end else begin
       st_be_q                       <= st_be_n;
       st_data_q                     <= st_data_n;
@@ -390,6 +432,10 @@ module store_unit
       amo_buffer_valid_q            <= amo_buffer_valid_d;
       store_buffer_valid_q          <= store_buffer_valid_d;
       store_buffer_valid_no_flush_q <= store_buffer_valid_no_flush_d;
+      st_paddr_q                    <= arsp_i.paddr;
+      ex_held_q                     <= ex_held_d && !flush_i;
+      ex_held_trans_id_q            <= ex_held_trans_id_d;
+      ex_held_ex_q                  <= ex_held_ex_d;
     end
   end
 

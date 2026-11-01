@@ -31,7 +31,8 @@ module load_unit
     parameter type ypb_load_req_t = logic,
     parameter type ypb_load_rsp_t = logic,
     parameter type exception_t = logic,
-    parameter type lsu_ctrl_t = logic
+    parameter type lsu_ctrl_t = logic,
+    parameter type mmu_arsp_t = logic
 ) (
     // Subsystem Clock - SUBSYSTEM
     input  logic                                      clk_i,
@@ -65,14 +66,9 @@ module load_unit
     output logic                                      hs_ld_st_inst_o,
     // Hyp load store with execute permissions - MMU
     output logic                                      hlvx_inst_o,
-    // Physical address - MMU/PMP
-    input  logic          [         CVA6Cfg.PLEN-1:0] paddr_i,
-    // Excepted which appears before load - MMU/PMP
-    input  exception_t                                ex_i,
-    // Data TLB hit - MMU
-    input  logic                                      dtlb_hit_i,
-    // Physical page number from the DTLB - MMU
-    input  logic          [         CVA6Cfg.PPNW-1:0] dtlb_ppn_i,
+    // Translation response of the request presented this cycle
+    // (valid + paddr + exception), combinational - MMU/PMP
+    input  mmu_arsp_t                                 arsp_i,
     // Page offset for address checking - STORE_UNIT
     output logic          [                     11:0] page_offset_o,
     // Indicates if the page offset matches a store unit entry - STORE_UNIT
@@ -126,8 +122,9 @@ module load_unit
   // the trigger module reports its cancel one cycle later, when lsu_ctrl_i
   // already presents the next request.
   logic [CVA6Cfg.TRANS_ID_BITS-1:0] sdtrig_trans_id_d, sdtrig_trans_id_q;
-  // With TwoPhaseReq, an exception of a load in its second phase that meets
-  // the response of an earlier load waits here for the output to be free.
+  // A translation exception (ex_s0) that meets the response of an earlier
+  // load waits here for the output to be free. A page-table-walk fault is
+  // reported for one cycle only, so it must not be dropped.
   logic ex_s1_held_d, ex_s1_held_q;
   logic [CVA6Cfg.TRANS_ID_BITS-1:0] ex_s1_held_trans_id_d, ex_s1_held_trans_id_q;
   exception_t ex_s1_held_ex_d, ex_s1_held_ex_q;
@@ -145,6 +142,10 @@ module load_unit
   logic sdtrig_load_match, sdtrig_match_q, sdtrig_kill_s1;
 
   logic [CVA6Cfg.PLEN-1:0] paddr_q;
+  // With TwoPhaseReq: physical address of the load accepted last cycle, for
+  // its physical phase (s1). The translation response is combinational, so
+  // the load unit registers it itself.
+  logic [CVA6Cfg.PLEN-1:0] paddr_s1_q;
   ldbuf_id_t aid_q;
   logic [(CVA6Cfg.XLEN/8)-1:0] be_q;
 
@@ -182,8 +183,9 @@ module load_unit
     if (ldbuf_r && (!LDBUF_FALLTHROUGH || !ldbuf_w)) begin
       ldbuf_valid_d[ldbuf_rindex] = 1'b0;
     end
-    // Free on exception, or when a load trigger cancels the physical phase
-    if (CVA6Cfg.TwoPhaseReq && (ldbuf_w_q && (ex_i.valid || sdtrig_kill_s1))) begin
+    // Free when a load trigger cancels the physical phase. A translation
+    // exception is never accepted, so it never allocates an entry.
+    if (CVA6Cfg.TwoPhaseReq && ldbuf_w_q && sdtrig_kill_s1) begin
       ldbuf_valid_d[ldbuf_windex_q] = 1'b0;
     end
     //  Track a new outstanding operation in the load buffer
@@ -241,7 +243,7 @@ module load_unit
   // directly forward exception fields (valid bit is set below)
   // A load address trigger reports its own cause and the faulting address.
   //  An error on the response takes precedence over the MMU and trigger causes.
-  assign ex_s1_src = ex_s1_held_q ? ex_s1_held_ex_q : ex_i;
+  assign ex_s1_src = ex_s1_held_q ? ex_s1_held_ex_q : arsp_i.exception;
   assign ex_o.cause = ypb_load_rsp_i.err                ? riscv::HARDWARE_ERROR :
                       (sdtrig_load_action_i != '0)      ? sdtrig_load_action_i  :
                                                           ex_s1_src.cause;
@@ -262,9 +264,10 @@ module load_unit
 
   logic [CVA6Cfg.PLEN-1:0] paddr;
 
-  // With TwoPhaseReq paddr_i belongs to the request in s1, otherwise the request
-  // carries its own address.
-  assign paddr = CVA6Cfg.TwoPhaseReq ? paddr_i : lsu_ctrl_i.vaddr;
+  // With TwoPhaseReq the physical phase (s1) carries the address of the load
+  // accepted last cycle, registered here. Otherwise the physical address is
+  // sent with the request, straight from the translation response.
+  assign paddr = CVA6Cfg.TwoPhaseReq ? paddr_s1_q : arsp_i.paddr;
 
   // CHECK PMA regions
 
@@ -282,7 +285,7 @@ module load_unit
 
   logic paddr_nonidempotent;
   assign paddr_nonidempotent = config_pkg::is_inside_nonidempotent_regions(
-      CVA6Cfg, {{52 - CVA6Cfg.PPNW{1'b0}}, dtlb_ppn_i, 12'd0}
+      CVA6Cfg, {{64 - CVA6Cfg.PLEN{1'b0}}, arsp_i.paddr[CVA6Cfg.PLEN-1:12], 12'd0}
   );
 
   // Check that NI operations follow the necessary conditions
@@ -307,7 +310,7 @@ module load_unit
   // ---------------
   // Load Control
   // ---------------
-  logic ex_s0, ex_s1, kill_s1;
+  logic ex_s0, kill_s1;
 
   logic stall_ypb, stall_translation;
   logic data_req;
@@ -330,17 +333,22 @@ module load_unit
   // the new one is accepted (s0), so its grant is checked in that same cycle.
   assign stall_ypb = (ypb_a_state_q == REGISTRED) ||
                      (CVA6Cfg.TwoPhaseReq && data_req && !ypb_load_rsp_i.pgnt);
-  assign stall_translation = CVA6Cfg.MmuPresent ? translation_req_o && !dtlb_hit_i : 1'b0;
+  // The translation response is combinational, as for the Frontend: a load is
+  // accepted only once its translation is valid and clean. Without an MMU the
+  // response is valid with the request and only a misaligned or PMP exception
+  // stalls it.
+  assign stall_translation = translation_req_o && (!arsp_i.valid || arsp_i.exception.valid);
 
-  assign ex_s0 = CVA6Cfg.MmuPresent && stall_translation && ex_i.valid;
-  assign ex_s1 = ((CVA6Cfg.TwoPhaseReq ? ldbuf_w_q : valid_i) && ex_i.valid);
+  // Translation exception: retired in the request cycle, the load is never
+  // accepted (no virtual request is sent, so nothing is killed).
+  assign ex_s0 = translation_req_o && arsp_i.valid && arsp_i.exception.valid;
   // With TwoPhaseReq a matched load is already accepted in its first phase:
   // its physical phase is killed instead of sent.
   assign sdtrig_kill_s1 = CVA6Cfg.TwoPhaseReq && ldbuf_w_q && sdtrig_match_q;
-  assign kill_s1 = CVA6Cfg.TwoPhaseReq ? ex_s1 || sdtrig_kill_s1 : 1'b0;
+  assign kill_s1 = CVA6Cfg.TwoPhaseReq ? sdtrig_kill_s1 : 1'b0;
 
   assign data_rvalid = ypb_load_rsp_i.rvalid && !ldbuf_flushed_q[ldbuf_rindex];
-  assign data_req = (CVA6Cfg.TwoPhaseReq ? ldbuf_w_q && !ex_s1 && !sdtrig_kill_s1 : ldbuf_w);
+  assign data_req = (CVA6Cfg.TwoPhaseReq ? ldbuf_w_q && !sdtrig_kill_s1 : ldbuf_w);
 
   always_comb begin : p_fsm_common
     // default assignment
@@ -364,11 +372,11 @@ module load_unit
         ypb_load_req_o.vreq = !stall_translation && !stall_ni_mem;
         if (!CVA6Cfg.TwoPhaseReq || ypb_load_rsp_i.vgnt) begin
           if (stall_translation || stall_ni_mem || stall_ypb || ldbuf_full || flush_i || sdtrig_load_cancel_i ||
-              (CVA6Cfg.TwoPhaseReq && ex_s1_held_q)) begin
+              ex_s1_held_q) begin
             kill_req_d = 1'b1;  // TwoPhaseReq only: the first phase is accepted, the physical one will not follow
           end else begin
-            ldbuf_w  = CVA6Cfg.TwoPhaseReq ? 1'b1 : !ex_s1 && !sdtrig_load_match;  // record request into outstanding load fifo and trigger physical request
-            pop_ld_o = !ex_s1 && !sdtrig_load_match;  // release lsu_bypass fifo
+            ldbuf_w  = CVA6Cfg.TwoPhaseReq ? 1'b1 : !sdtrig_load_match;  // record request into outstanding load fifo and trigger physical request
+            pop_ld_o = !sdtrig_load_match;  // release lsu_bypass fifo
           end
         end
       end
@@ -383,35 +391,32 @@ module load_unit
       //  The response carries an error: retire the load as an exception rather
       //  than writing a corrupt value back.
       ex_o.valid = ypb_load_rsp_i.err;
-      //  The output is taken: hold the second phase exception of this cycle.
-      if (CVA6Cfg.TwoPhaseReq && ex_s1 && !ex_s1_held_q) begin
+      //  The output is taken: hold the translation exception of this cycle and
+      //  release the faulting load.
+      if (ex_s0 && !ex_s1_held_q) begin
         ex_s1_held_d = 1'b1;
-        ex_s1_held_trans_id_d = ldbuf_q[ldbuf_windex_q].trans_id;
-        ex_s1_held_ex_d = ex_i;
-        pop_ld_o = ldbuf_w && !sdtrig_load_match;
+        ex_s1_held_trans_id_d = lsu_ctrl_i.trans_id;
+        ex_s1_held_ex_d = arsp_i.exception;
+        pop_ld_o = 1'b1;
       end
       // RETIRE A HELD EXCEPTION
-    end else if (CVA6Cfg.TwoPhaseReq && ex_s1_held_q) begin
+    end else if (ex_s1_held_q) begin
       trans_id_o = ex_s1_held_trans_id_q;
       valid_o = 1'b1;
       ex_o.valid = 1'b1;
       ex_s1_held_d = 1'b0;
-      // RETIRE EXCEPTION (low priority)
-    end else if (ex_s1 || sdtrig_load_cancel_i) begin
-      trans_id_o = (CVA6Cfg.SdtrigMcontrol6LoadAddr && sdtrig_load_cancel_i) ? sdtrig_trans_id_q :
-                   (CVA6Cfg.TwoPhaseReq ? ldbuf_q[ldbuf_windex_q].trans_id : lsu_ctrl_i.trans_id);
+      // RETIRE TRIGGER CANCEL
+    end else if (sdtrig_load_cancel_i) begin
+      trans_id_o = CVA6Cfg.SdtrigMcontrol6LoadAddr ? sdtrig_trans_id_q : lsu_ctrl_i.trans_id;
       valid_o = 1'b1;
       ex_o.valid = 1'b1;
-      // With TwoPhaseReq the faulting load released its lsu_bypass entry in its
-      // first phase: only a load accepted in this cycle is released here.
-      pop_ld_o = (CVA6Cfg.TwoPhaseReq && !sdtrig_load_cancel_i) ? ldbuf_w && !sdtrig_load_match
-                                                                : !stall_translation;
-      // RETIRE EXCEPTION (low priority)
-    end else if (CVA6Cfg.MmuPresent && ex_s0) begin
+      pop_ld_o = !stall_translation;
+      // RETIRE TRANSLATION EXCEPTION (low priority)
+    end else if (ex_s0) begin
       trans_id_o = lsu_ctrl_i.trans_id;
       valid_o    = 1'b1;
       ex_o.valid = 1'b1;
-      pop_ld_o = !stall_translation;//1'b1; // release lsu_bypass fifo
+      pop_ld_o   = 1'b1;  // release lsu_bypass fifo: the response is persistent, retire once
     end else if (ni_load_dropped) begin
       trans_id_o = lsu_ctrl_i.trans_id;
       valid_o    = 1'b1;
@@ -487,7 +492,12 @@ module load_unit
       ldbuf_windex_q <= '0;
       ldbuf_w_q <= '0;
       sdtrig_match_q <= 1'b0;
+      paddr_s1_q <= '0;
     end else begin
+      // Register the physical address of the accepted load for its s1 phase
+      if (CVA6Cfg.TwoPhaseReq && ldbuf_w) begin
+        paddr_s1_q <= arsp_i.paddr;
+      end
       if (ypb_a_state_q == TRANSPARENT) begin
         paddr_q <= paddr;
         aid_q   <= ldbuf_id_t'(ypb_load_req_o.aid);
