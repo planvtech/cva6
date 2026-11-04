@@ -786,20 +786,11 @@ module load_store_unit
   );
 
   assign rvfi_lsu_ctrl_o  = lsu_ctrl;
-  // Probe only: the translated address of the access. cva6_rvfi.sv pairs it
-  // with the access one cycle after lsu_ctrl presents it when an MMU is
-  // present (the store reaches its buffer one cycle after acceptance), and in
-  // the same cycle without one. No RVFI logic lives in the CPU RTL.
-  if (CVA6Cfg.MmuPresent) begin : gen_rvfi_paddr_q
-    logic [CVA6Cfg.PLEN-1:0] rvfi_mem_paddr_q;
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-      if (~rst_ni) rvfi_mem_paddr_q <= '0;
-      else rvfi_mem_paddr_q <= lsu_arsp.paddr;
-    end
-    assign rvfi_mem_paddr_o = rvfi_mem_paddr_q;
-  end else begin : gen_rvfi_paddr
-    assign rvfi_mem_paddr_o = lsu_arsp.paddr;
-  end
+  // Probe only: the translated address of the access presented this cycle.
+  // Loads and stores are translated and the store reaches its buffer in that
+  // same cycle, so cva6_rvfi.sv pairs it with lsu_ctrl directly. No RVFI logic
+  // lives in the CPU RTL.
+  assign rvfi_mem_paddr_o = lsu_arsp.paddr;
 
   //pragma translate_off
   // A load data trigger break goes with the load it matched, which leaves the

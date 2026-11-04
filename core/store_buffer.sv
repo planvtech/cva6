@@ -160,8 +160,10 @@ module store_buffer
       speculative_status_cnt_n = 'b0;
     end
 
-    // we are ready if the speculative and the commit queue have a space left
-    ready_o = CVA6Cfg.MmuPresent ? (speculative_status_cnt_n < (DEPTH_SPEC)) || commit_i : speculative_status_cnt_q < (DEPTH_SPEC);
+    // we are ready if the speculative queue has a space left. The store unit
+    // writes in the cycle it checks ready_o, so only the current count is used
+    // (looking at the next count would loop back through valid_i).
+    ready_o = speculative_status_cnt_q < (DEPTH_SPEC);
   end
 
   // ----------------------------------------

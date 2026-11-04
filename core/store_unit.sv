@@ -121,24 +121,12 @@ module store_unit
 
   // directly forward exception fields (valid bit is set below)
   // A store trigger reports its own cause and the faulting address; otherwise
-  // the exception carried in from the MMU passes through unchanged.
-  // A held translation exception (see store_control) is retired before
-  // anything presented in this cycle.
-  logic ex_held_d, ex_held_q;
-  logic [CVA6Cfg.TRANS_ID_BITS-1:0] ex_held_trans_id_d, ex_held_trans_id_q;
-  exception_t ex_held_ex_d, ex_held_ex_q;
-  logic ex_held_retire;
-  exception_t ex_src;
-  assign ex_held_retire = CVA6Cfg.MmuPresent && ex_held_q;
-  assign ex_src = ex_held_retire ? ex_held_ex_q : arsp_i.exception;
-
-  assign ex_o.cause = ex_held_retire ? ex_src.cause :
-                      (CVA6Cfg.SdtrigMcontrol6Store && sdtrig_store_stall_i && valid_i) ? sdtrig_store_action_i : ex_src.cause;
-  assign ex_o.tval  = ex_held_retire ? ex_src.tval :
-                      (CVA6Cfg.SdtrigMcontrol6Store && sdtrig_store_stall_i && valid_i) ? {{CVA6Cfg.XLEN - CVA6Cfg.VLEN{1'b0}}, lsu_ctrl_i.vaddr} : ex_src.tval;
-  assign ex_o.tval2 = CVA6Cfg.RVH ? ex_src.tval2 : '0;
-  assign ex_o.tinst = CVA6Cfg.RVH ? ex_src.tinst : '0;
-  assign ex_o.gva = CVA6Cfg.RVH ? ex_src.gva : 1'b0;
+  // the exception of the translation response passes through unchanged.
+  assign ex_o.cause = (CVA6Cfg.SdtrigMcontrol6Store && sdtrig_store_stall_i && valid_i) ? sdtrig_store_action_i : arsp_i.exception.cause;
+  assign ex_o.tval  = (CVA6Cfg.SdtrigMcontrol6Store && sdtrig_store_stall_i && valid_i) ? {{CVA6Cfg.XLEN - CVA6Cfg.VLEN{1'b0}}, lsu_ctrl_i.vaddr} : arsp_i.exception.tval;
+  assign ex_o.tval2 = CVA6Cfg.RVH ? arsp_i.exception.tval2 : '0;
+  assign ex_o.tinst = CVA6Cfg.RVH ? arsp_i.exception.tinst : '0;
+  assign ex_o.gva = CVA6Cfg.RVH ? arsp_i.exception.gva : 1'b0;
   // Store triggers are precise: they break on the instruction itself, never
   // after it, so the deferred-exception bit stays clear here.
   assign ex_o.timing = 1'b0;
@@ -170,25 +158,19 @@ module store_unit
     end
   end
   assign instr_is_amo = is_amo(lsu_ctrl_i.operation);
-  // keep the data and the byte enable for the second cycle (after address translation)
-  logic [CVA6Cfg.XLEN-1:0] st_data, st_data_n, st_data_q;
-  logic [(CVA6Cfg.XLEN/8)-1:0] st_be, st_be_n, st_be_q;
-  logic [1:0] st_data_size, st_data_size_n, st_data_size_q;
-  // With an MMU the store enters the buffers one cycle after it is accepted:
-  // its physical address is registered here with its data, as the
-  // translation response is combinational.
-  logic [CVA6Cfg.PLEN-1:0] st_paddr, st_paddr_q;
-  amo_t amo_op, amo_op_d, amo_op_q;
-  fu_op cbo_op, cbo_op_d, cbo_op_q;
 
-  logic store_buffer_valid, store_buffer_valid_d, store_buffer_valid_q;
-  logic store_buffer_valid_no_flush, store_buffer_valid_no_flush_d, store_buffer_valid_no_flush_q;
+  // The translation response is combinational, so with or without an MMU a
+  // store is translated, written to the store/AMO buffer and retired in the
+  // cycle it is accepted: no data, address or valid is registered here.
+  logic [CVA6Cfg.XLEN-1:0] st_data;
+  logic [(CVA6Cfg.XLEN/8)-1:0] st_be;
+  logic [1:0] st_data_size;
+  amo_t amo_op;
+  fu_op cbo_op;
 
-  logic amo_buffer_valid, amo_buffer_valid_d, amo_buffer_valid_q;
-
+  logic store_buffer_valid, store_buffer_valid_no_flush;
+  logic amo_buffer_valid;
   logic store_buffer_ready, amo_buffer_ready;
-
-  logic [CVA6Cfg.TRANS_ID_BITS-1:0] trans_id_n, trans_id_q;
 
   logic ex_s0;
   logic stall_translation;
@@ -199,10 +181,9 @@ module store_unit
   assign hlvx_inst_o = CVA6Cfg.RVH ? lsu_ctrl_i.hlvx_inst : 1'b0;
   assign tinst_o = CVA6Cfg.RVH ? lsu_ctrl_i.tinst : '0;  // transformed instruction
 
-  // The translation response is combinational, as for the Frontend: a store
-  // is accepted only once its translation is valid and clean. Without an MMU
-  // the response is valid with the request and only a misaligned or PMP
-  // exception stalls it.
+  // As for the Frontend, a store is accepted only once its translation is
+  // valid and clean. Without an MMU the response is valid with the request and
+  // only a misaligned or PMP exception stalls it.
   assign stall_translation = translation_req_o && (!arsp_i.valid || arsp_i.exception.valid);
 
   // Translation exception: retired in the request cycle, the store is never
@@ -211,82 +192,46 @@ module store_unit
 
   always_comb begin : store_control
     // default assignment
-    translation_req_o             = 1'b0;
-    valid_o                       = 1'b0;
-    amo_buffer_valid_d            = 1'b0;
-    store_buffer_valid_d          = 1'b0;
-    store_buffer_valid_no_flush_d = 1'b0;
-    pop_st_o                      = 1'b0;
-    ex_o.valid                    = 1'b0;
-    trans_id_n                    = lsu_ctrl_i.trans_id;
-    trans_id_o                    = lsu_ctrl_i.trans_id;
+    translation_req_o           = 1'b0;
+    valid_o                     = 1'b0;
+    amo_buffer_valid            = 1'b0;
+    store_buffer_valid          = 1'b0;
+    store_buffer_valid_no_flush = 1'b0;
+    pop_st_o                    = 1'b0;
+    ex_o.valid                  = 1'b0;
+    trans_id_o                  = lsu_ctrl_i.trans_id;
 
     // A store trigger matched: retire the instruction as an exception without
     // letting it reach the store buffer, so the write never happens.
     if (CVA6Cfg.SdtrigMcontrol6Store && sdtrig_store_stall_i && valid_i) begin
-      pop_st_o          = 1'b0;
-      valid_o           = 1'b1;
-      translation_req_o = 1'b0;
-      ex_o.valid        = 1'b1;
-      trans_id_o        = lsu_ctrl_i.trans_id;
-    end  // REQUEST
-    else if (valid_i) begin
+      valid_o    = 1'b1;
+      ex_o.valid = 1'b1;
+      // REQUEST
+    end else if (valid_i) begin
       translation_req_o = 1'b1;
-      if (!stall_translation) begin
+      // RETIRE TRANSLATION EXCEPTION: the response holds while the store is
+      // presented, so it is released once retired.
+      if (ex_s0) begin
+        valid_o    = 1'b1;
+        ex_o.valid = 1'b1;
+        pop_st_o   = 1'b1;
+        // ACCEPT AND RETIRE STORE: written to the buffer in the same cycle
+      end else if (!stall_translation) begin
         if (CVA6Cfg.RVA && instr_is_amo) begin
           if (amo_buffer_ready) begin
-            pop_st_o = 1'b1;
-            amo_buffer_valid_d = !flush_i;
-            // RETIRE STORE NO MMU
-            if (!CVA6Cfg.MmuPresent) begin
-              trans_id_o = lsu_ctrl_i.trans_id;
-              valid_o    = 1'b1;
-            end
+            pop_st_o         = 1'b1;
+            amo_buffer_valid = !flush_i;
+            valid_o          = 1'b1;
           end
         end else begin
           if (store_buffer_ready) begin
-            pop_st_o = 1'b1;
-            store_buffer_valid_d = !flush_i;
-            store_buffer_valid_no_flush_d = 1'b1;
-            // RETIRE STORE NO MMU
-            if (!CVA6Cfg.MmuPresent) begin
-              trans_id_o = lsu_ctrl_i.trans_id;
-              valid_o    = 1'b1;
-            end
+            pop_st_o                    = 1'b1;
+            store_buffer_valid          = !flush_i;
+            store_buffer_valid_no_flush = 1'b1;
+            valid_o                     = 1'b1;
           end
         end
       end
-    end
-
-    ex_held_d          = ex_held_q;
-    ex_held_trans_id_d = ex_held_trans_id_q;
-    ex_held_ex_d       = ex_held_ex_q;
-    // RETIRE STORE WITH MMU (accepted last cycle, translation was clean)
-    if (CVA6Cfg.MmuPresent && (store_buffer_valid_q || (CVA6Cfg.RVA && amo_buffer_valid_q))) begin
-      trans_id_o = trans_id_q;
-      valid_o    = 1'b1;
-      ex_o.valid = 1'b0;
-      // The output is taken: hold the translation exception of this cycle and
-      // release the faulting store. A page-table-walk fault is reported for
-      // one cycle only, so it must not be dropped.
-      if (ex_s0) begin
-        ex_held_d          = 1'b1;
-        ex_held_trans_id_d = lsu_ctrl_i.trans_id;
-        ex_held_ex_d       = arsp_i.exception;
-        pop_st_o           = 1'b1;
-      end
-      // RETIRE A HELD EXCEPTION
-    end else if (CVA6Cfg.MmuPresent && ex_held_q) begin
-      trans_id_o = ex_held_trans_id_q;
-      valid_o    = 1'b1;
-      ex_o.valid = 1'b1;
-      ex_held_d  = 1'b0;
-      // RETIRE TRANSLATION EXCEPTION
-    end else if (ex_s0) begin
-      trans_id_o = lsu_ctrl_i.trans_id;
-      valid_o    = 1'b1;
-      ex_o.valid = 1'b1;
-      pop_st_o   = 1'b1;  // the response is persistent: retire once
     end
   end
 
@@ -295,54 +240,41 @@ module store_unit
   // -----------
   // re-align the write data to comply with the address offset
   always_comb begin
-    st_be_n = lsu_ctrl_i.be;
+    st_be = lsu_ctrl_i.be;
     // don't shift the data if we are going to perform an AMO as we still need to operate on this data
-    st_data_n = ((CVA6Cfg.RVA && instr_is_amo) ? endian_data[CVA6Cfg.XLEN-1:0] :
-                 data_align(lsu_ctrl_i.vaddr[2:0], {{64 - CVA6Cfg.XLEN{1'b0}}, endian_data}));
-    st_data_size_n = extract_transfer_size(lsu_ctrl_i.operation);
-    // save AMO op for next cycle
+    st_data = ((CVA6Cfg.RVA && instr_is_amo) ? endian_data[CVA6Cfg.XLEN-1:0] :
+               data_align(lsu_ctrl_i.vaddr[2:0], {{64 - CVA6Cfg.XLEN{1'b0}}, endian_data}));
+    st_data_size = extract_transfer_size(lsu_ctrl_i.operation);
     if (CVA6Cfg.RVA) begin
       case (lsu_ctrl_i.operation)
-        AMO_LRW, AMO_LRD:     amo_op_d = AMO_LR;
-        AMO_SCW, AMO_SCD:     amo_op_d = AMO_SC;
-        AMO_SWAPW, AMO_SWAPD: amo_op_d = AMO_SWAP;
-        AMO_ADDW, AMO_ADDD:   amo_op_d = AMO_ADD;
-        AMO_ANDW, AMO_ANDD:   amo_op_d = AMO_AND;
-        AMO_ORW, AMO_ORD:     amo_op_d = AMO_OR;
-        AMO_XORW, AMO_XORD:   amo_op_d = AMO_XOR;
-        AMO_MAXW, AMO_MAXD:   amo_op_d = AMO_MAX;
-        AMO_MAXWU, AMO_MAXDU: amo_op_d = AMO_MAXU;
-        AMO_MINW, AMO_MIND:   amo_op_d = AMO_MIN;
-        AMO_MINWU, AMO_MINDU: amo_op_d = AMO_MINU;
-        default:              amo_op_d = AMO_NONE;
+        AMO_LRW, AMO_LRD:     amo_op = AMO_LR;
+        AMO_SCW, AMO_SCD:     amo_op = AMO_SC;
+        AMO_SWAPW, AMO_SWAPD: amo_op = AMO_SWAP;
+        AMO_ADDW, AMO_ADDD:   amo_op = AMO_ADD;
+        AMO_ANDW, AMO_ANDD:   amo_op = AMO_AND;
+        AMO_ORW, AMO_ORD:     amo_op = AMO_OR;
+        AMO_XORW, AMO_XORD:   amo_op = AMO_XOR;
+        AMO_MAXW, AMO_MAXD:   amo_op = AMO_MAX;
+        AMO_MAXWU, AMO_MAXDU: amo_op = AMO_MAXU;
+        AMO_MINW, AMO_MIND:   amo_op = AMO_MIN;
+        AMO_MINWU, AMO_MINDU: amo_op = AMO_MINU;
+        default:              amo_op = AMO_NONE;
       endcase
     end else begin
-      amo_op_d = AMO_NONE;
+      amo_op = AMO_NONE;
     end
 
     if (CVA6Cfg.RVZiCbom) begin
       case (lsu_ctrl_i.operation)
-        ariane_pkg::CBO_INVAL: cbo_op_d = ariane_pkg::CBO_INVAL;
-        ariane_pkg::CBO_CLEAN: cbo_op_d = ariane_pkg::CBO_CLEAN;
-        ariane_pkg::CBO_FLUSH: cbo_op_d = ariane_pkg::CBO_FLUSH;
-        default:               cbo_op_d = ariane_pkg::CBO_NONE;
+        ariane_pkg::CBO_INVAL: cbo_op = ariane_pkg::CBO_INVAL;
+        ariane_pkg::CBO_CLEAN: cbo_op = ariane_pkg::CBO_CLEAN;
+        ariane_pkg::CBO_FLUSH: cbo_op = ariane_pkg::CBO_FLUSH;
+        default:               cbo_op = ariane_pkg::CBO_NONE;
       endcase
     end else begin
-      cbo_op_d = ariane_pkg::CBO_NONE;
+      cbo_op = ariane_pkg::CBO_NONE;
     end
   end
-
-  assign st_be = CVA6Cfg.MmuPresent ? st_be_q : st_be_n;
-  assign st_data = CVA6Cfg.MmuPresent ? st_data_q : st_data_n;
-  assign st_data_size = CVA6Cfg.MmuPresent ? st_data_size_q : st_data_size_n;
-  assign amo_op = CVA6Cfg.MmuPresent ? amo_op_q : amo_op_d;
-  assign cbo_op = CVA6Cfg.MmuPresent ? cbo_op_q : cbo_op_d;
-  // A store with a translation exception is never accepted, so whatever is
-  // accepted goes to the buffers.
-  assign store_buffer_valid = CVA6Cfg.MmuPresent ? store_buffer_valid_q : store_buffer_valid_d;
-  assign store_buffer_valid_no_flush = CVA6Cfg.MmuPresent ? store_buffer_valid_no_flush_q : store_buffer_valid_no_flush_d;
-  assign amo_buffer_valid = CVA6Cfg.MmuPresent ? amo_buffer_valid_q : amo_buffer_valid_d;
-  assign st_paddr = CVA6Cfg.MmuPresent ? st_paddr_q : arsp_i.paddr;
 
   // ---------------
   // Store Queue
@@ -370,7 +302,7 @@ module store_unit
       // the correct valid signal or not as we are flushing
       // the whole pipeline anyway
       .valid_without_flush_i(store_buffer_valid_no_flush),
-      .paddr_i              (st_paddr),
+      .paddr_i              (arsp_i.paddr),
       .data_i               (st_data),
       .cbo_op_i             (cbo_op),
       .be_i                 (st_be),
@@ -390,7 +322,7 @@ module store_unit
         .flush_i,
         .valid_i           (amo_buffer_valid),
         .ready_o           (amo_buffer_ready),
-        .paddr_i           (st_paddr),
+        .paddr_i           (arsp_i.paddr),
         .amo_op_i          (amo_op),
         .data_i            (st_data),
         .data_size_i       (st_data_size),
@@ -402,41 +334,6 @@ module store_unit
   end else begin
     assign amo_buffer_ready = '1;
     assign ypb_amo_req_o    = '0;
-  end
-
-  // ---------------
-  // Registers
-  // ---------------
-  always_ff @(posedge clk_i or negedge rst_ni) begin
-    if (~rst_ni) begin
-      st_be_q                       <= '0;
-      st_data_q                     <= '0;
-      st_data_size_q                <= '0;
-      trans_id_q                    <= '0;
-      amo_op_q                      <= AMO_NONE;
-      cbo_op_q                      <= ariane_pkg::CBO_NONE;
-      amo_buffer_valid_q            <= '0;
-      store_buffer_valid_q          <= '0;
-      store_buffer_valid_no_flush_q <= '0;
-      st_paddr_q                    <= '0;
-      ex_held_q                     <= 1'b0;
-      ex_held_trans_id_q            <= '0;
-      ex_held_ex_q                  <= '0;
-    end else begin
-      st_be_q                       <= st_be_n;
-      st_data_q                     <= st_data_n;
-      trans_id_q                    <= trans_id_n;
-      st_data_size_q                <= st_data_size_n;
-      amo_op_q                      <= amo_op_d;
-      cbo_op_q                      <= cbo_op_d;
-      amo_buffer_valid_q            <= amo_buffer_valid_d;
-      store_buffer_valid_q          <= store_buffer_valid_d;
-      store_buffer_valid_no_flush_q <= store_buffer_valid_no_flush_d;
-      st_paddr_q                    <= arsp_i.paddr;
-      ex_held_q                     <= ex_held_d && !flush_i;
-      ex_held_trans_id_q            <= ex_held_trans_id_d;
-      ex_held_ex_q                  <= ex_held_ex_d;
-    end
   end
 
 endmodule
