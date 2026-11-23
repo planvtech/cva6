@@ -174,16 +174,16 @@ module cva6_pipeline
     logic timing;
   };
 
-  // Fetch  address translation requests
-  localparam type fetch_areq_t = struct packed {
-    logic                    fetch_req;    // address translation request
-    logic [CVA6Cfg.VLEN-1:0] fetch_vaddr;  // virtual address out
+  // Address translation request/response of the Frontend and the LSU
+  localparam type mmu_areq_t = struct packed {
+    logic                    req;    // address translation request
+    logic [CVA6Cfg.VLEN-1:0] vaddr;  // virtual address to translate
   };
 
-  localparam type fetch_arsp_t = struct packed {
-    exception_t              fetch_exception;  // exception occurred during fetch
-    logic                    fetch_valid;      // address translation valid
-    logic [CVA6Cfg.PLEN-1:0] fetch_paddr;      // physical address in
+  localparam type mmu_arsp_t = struct packed {
+    exception_t              exception;  // exception raised by the translation
+    logic                    valid;      // address translation valid
+    logic [CVA6Cfg.PLEN-1:0] paddr;      // translated physical address
   };
 
   // branchpredict scoreboard entry
@@ -557,8 +557,8 @@ CVA6Cfg.NrCommitPorts
   logic set_debug_pc;
   logic flush_commit;
 
-  fetch_arsp_t fetch_arsp_ex_frontend;
-  fetch_areq_t fetch_areq_frontend_ex;
+  mmu_arsp_t fetch_arsp_ex_frontend;
+  mmu_areq_t fetch_areq_frontend_ex;
 
   logic sb_full;
 
@@ -578,8 +578,8 @@ CVA6Cfg.NrCommitPorts
       .CVA6Cfg(CVA6Cfg),
       .bp_resolve_t(bp_resolve_t),
       .fetch_entry_t(fetch_entry_t),
-      .fetch_areq_t(fetch_areq_t),
-      .fetch_arsp_t(fetch_arsp_t),
+      .mmu_areq_t(mmu_areq_t),
+      .mmu_arsp_t(mmu_arsp_t),
       .ypb_fetch_req_t(ypb_fetch_req_t),
       .ypb_fetch_rsp_t(ypb_fetch_rsp_t),
       .bht_inputs_t(bht_inputs_t)
@@ -600,8 +600,8 @@ CVA6Cfg.NrCommitPorts
       .trap_vector_base_i    (trap_vector_base_commit_pcgen),
       .set_debug_pc_i        (set_debug_pc),
       .debug_mode_i          (debug_mode),
-      .areq_o                (fetch_areq_frontend_ex),
-      .arsp_i                (fetch_arsp_ex_frontend),
+      .fetch_areq_o          (fetch_areq_frontend_ex),
+      .fetch_arsp_i          (fetch_arsp_ex_frontend),
       .ypb_fetch_req_o       (ypb_fetch_req_o),
       .ypb_fetch_rsp_i       (ypb_fetch_rsp_i),
       .fetch_entry_o         (fetch_entry_if_id),
@@ -871,8 +871,8 @@ CVA6Cfg.NrCommitPorts
       .ypb_mmu_ptw_rsp_t  (ypb_mmu_ptw_rsp_t),
       .exception_t        (exception_t),
       .fu_data_t          (fu_data_t),
-      .fetch_areq_t       (fetch_areq_t),
-      .fetch_arsp_t       (fetch_arsp_t),
+      .mmu_areq_t         (mmu_areq_t),
+      .mmu_arsp_t         (mmu_arsp_t),
       .lsu_ctrl_t         (lsu_ctrl_t),
       .x_result_t         (x_result_t)
   ) ex_stage_i (

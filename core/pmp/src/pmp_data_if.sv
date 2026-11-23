@@ -10,14 +10,14 @@ module pmp_data_if
   import ariane_pkg::*;
 #(
     parameter config_pkg::cva6_cfg_t CVA6Cfg       = config_pkg::cva6_cfg_empty,
-    parameter type                   icache_areq_t = logic,
+    parameter type                   mmu_arsp_t    = logic,
     parameter type                   exception_t   = logic
 ) (
     input logic clk_i,
     input logic rst_ni,
     // IF interface
-    input icache_areq_t icache_areq_i,
-    output icache_areq_t icache_areq_o,
+    input mmu_arsp_t icache_areq_i,
+    output mmu_arsp_t icache_areq_o,
     input [CVA6Cfg.VLEN-1:0] icache_fetch_vaddr_i,  // virtual address for tval only
     // LSU interface
     // this is a more minimalistic interface because the actual addressing logic is handled
@@ -67,15 +67,15 @@ module pmp_data_if
 
   // check for execute flag on memory
   assign match_any_execute_region = config_pkg::is_inside_execute_regions(
-      CVA6Cfg, {{64 - CVA6Cfg.PLEN{1'b0}}, icache_areq_i.fetch_paddr}
+      CVA6Cfg, {{64 - CVA6Cfg.PLEN{1'b0}}, icache_areq_i.paddr}
   );
 
   // As the PMP check is combinatorial, pass the icache_areq directly if no
   // exception
   always_comb begin : instr_interface
-    icache_areq_o.fetch_valid     = icache_areq_i.fetch_valid;
-    icache_areq_o.fetch_paddr     = icache_areq_i.fetch_paddr;
-    icache_areq_o.fetch_exception = icache_areq_i.fetch_exception;
+    icache_areq_o.valid     = icache_areq_i.valid;
+    icache_areq_o.paddr     = icache_areq_i.paddr;
+    icache_areq_o.exception = icache_areq_i.exception;
 
     // if it didn't match any execute region throw an `Instruction Access Fault` (PMA)
     // or if PMP reject the access
@@ -83,21 +83,21 @@ module pmp_data_if
     // access, and a failed G-stage walk has no final physical address at all,
     // so keep INSTR_GUEST_PAGE_FAULT here just like INSTR_PAGE_FAULT. An access
     // fault raised during the translation itself is unrelated and unaffected.
-    if (icache_areq_i.fetch_valid) begin
-      if (!(icache_areq_o.fetch_exception.cause inside
+    if (icache_areq_i.valid) begin
+      if (!(icache_areq_o.exception.cause inside
             {riscv::INSTR_PAGE_FAULT, riscv::INSTR_GUEST_PAGE_FAULT})) begin
         if (!match_any_execute_region || !pmp_if_allow) begin
-          icache_areq_o.fetch_exception.cause = riscv::INSTR_ACCESS_FAULT;
-          icache_areq_o.fetch_exception.valid = 1'b1;
+          icache_areq_o.exception.cause = riscv::INSTR_ACCESS_FAULT;
+          icache_areq_o.exception.valid = 1'b1;
           // For exception, the virtual address is required for tval, if no MMU is
           // instantiated then it will be equal to physical address
           if (CVA6Cfg.TvalEn) begin
-            icache_areq_o.fetch_exception.tval = fetch_vaddr_xlen;
+            icache_areq_o.exception.tval = fetch_vaddr_xlen;
           end
           if (CVA6Cfg.RVH) begin
-            icache_areq_o.fetch_exception.tval2 = '0;
-            icache_areq_o.fetch_exception.tinst = '0;
-            icache_areq_o.fetch_exception.gva   = v_i;
+            icache_areq_o.exception.tval2 = '0;
+            icache_areq_o.exception.tinst = '0;
+            icache_areq_o.exception.gva   = v_i;
           end
         end
       end
@@ -108,7 +108,7 @@ module pmp_data_if
   pmp #(
       .CVA6Cfg(CVA6Cfg)
   ) i_pmp_if (
-      .addr_i       (icache_areq_i.fetch_paddr),
+      .addr_i       (icache_areq_i.paddr),
       .priv_lvl_i   (priv_lvl_i),
       // we will always execute on the instruction fetch port
       .access_type_i(riscv::ACCESS_EXEC),
