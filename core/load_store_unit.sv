@@ -225,21 +225,30 @@ module load_store_unit
   logic                    st_hs_ld_st_inst;
   logic                    st_hlvx_inst;
   logic                    translation_req;
-  logic                    translation_valid;
   logic [CVA6Cfg.VLEN-1:0] mmu_vaddr;
-  logic [CVA6Cfg.PLEN-1:0] mmu_paddr, fetch_vaddr_plen, lsu_paddr;
+  logic [CVA6Cfg.PLEN-1:0] fetch_vaddr_plen;
   logic        [         CVA6Cfg.VLEN-1:0] pmp_vaddr_q;
   logic                                    pmp_is_store_q;
   logic                                    pmp_hlvx_inst_q;
+  logic                                    pmp_hs_ld_st_inst_q;
   logic        [                     31:0] mmu_tinst;
   logic                                    mmu_hs_ld_st_inst;
   logic                                    mmu_hlvx_inst;
-  exception_t                              mmu_exception;
-  exception_t                              pmp_exception;
   mmu_arsp_t                               pmp_fetch_arsp;
-  logic                                    pmp_translation_valid;
-  logic                                    dtlb_hit;
-  logic        [         CVA6Cfg.PPNW-1:0] dtlb_ppn;
+  logic                                    mmu_csr_hs_ld_st_inst;
+  // Address translation of the load store unit, same interface as the
+  // Frontend: the MMU response (lsu_arsp) is combinational, in the cycle of
+  // the request. The load and store units stall on it.
+  mmu_areq_t                               lsu_areq;
+  mmu_arsp_t                               lsu_arsp;
+  // Translation response checked by the PMP (s1 with TwoPhaseReq, s0 without)
+  // and the same response after the PMP check, to the load and store units.
+  mmu_arsp_t                               pmp_lsu_arsp;
+  mmu_arsp_t                               lsu_arsp_pmp;
+  // Translation of the request presented this cycle, for the load and store
+  // units to stall on (and for the load non-idempotent check).
+  logic                                    translation_valid;
+  logic        [         CVA6Cfg.PLEN-1:0] translation_paddr;
 
   logic                                    ld_valid;
   logic        [CVA6Cfg.TRANS_ID_BITS-1:0] ld_trans_id;
@@ -289,20 +298,11 @@ module load_store_unit
         .fetch_arsp_o(pmp_fetch_arsp),
         // misaligned bypass
         .misaligned_ex_i(misaligned_exception),
-        .lsu_req_i(translation_req),
-        .lsu_vaddr_i(mmu_vaddr),
+        .lsu_areq_i(lsu_areq),
+        .lsu_arsp_o(lsu_arsp),
         .lsu_tinst_i(mmu_tinst),
         .lsu_is_store_i(st_translation_req),
-        .csr_hs_ld_st_inst_o(csr_hs_ld_st_inst_o),
-        .lsu_dtlb_hit_o(dtlb_hit),  // send in the same cycle as the request
-        .lsu_dtlb_ppn_o(dtlb_ppn),  // send in the same cycle as the request
-
-        .lsu_valid_o    (pmp_translation_valid),
-        .lsu_paddr_o    (lsu_paddr),
-        .lsu_exception_o(pmp_exception),
-        .lsu_vaddr_o    (pmp_vaddr_q),
-        .lsu_is_store_o (pmp_is_store_q),
-        .lsu_hlvx_inst_o(pmp_hlvx_inst_q),
+        .csr_hs_ld_st_inst_o(mmu_csr_hs_ld_st_inst),
 
         .priv_lvl_i      (priv_lvl_i),
         .v_i,
@@ -353,22 +353,69 @@ module load_store_unit
 
     assign itlb_miss_o = 1'b0;
     assign dtlb_miss_o = 1'b0;
-    assign dtlb_hit = 1'b1;
+    assign mmu_csr_hs_ld_st_inst = 1'b0;
 
-    //  The PMP checks the request in the cycle it is presented.
-    assign pmp_translation_valid = translation_req;
-    assign pmp_exception = misaligned_exception;
-    assign pmp_vaddr_q = mmu_vaddr;
-    assign pmp_is_store_q = st_translation_req;
-    assign pmp_hlvx_inst_q = mmu_hlvx_inst;
+    // Without an MMU the response is valid with the request, the physical
+    // address is the virtual one and only a misaligned exception can fault it.
+    assign lsu_arsp.valid = lsu_areq.req;
+    assign lsu_arsp.exception = misaligned_exception;
     if (CVA6Cfg.VLEN > CVA6Cfg.PLEN) begin : gen_paddr_vlen_greater
-      assign lsu_paddr = mmu_vaddr[CVA6Cfg.PLEN-1:0];
+      assign lsu_arsp.paddr = lsu_areq.vaddr[CVA6Cfg.PLEN-1:0];
     end else begin : gen_paddr_plen_greater
-      assign lsu_paddr = CVA6Cfg.PLEN'(mmu_vaddr);
+      assign lsu_arsp.paddr = CVA6Cfg.PLEN'(lsu_areq.vaddr);
     end
-    assign dtlb_ppn = lsu_paddr[CVA6Cfg.PLEN-1:12];
 
   end
+
+  assign lsu_areq.req   = translation_req;
+  assign lsu_areq.vaddr = mmu_vaddr;
+
+  // Translation valid (to stall on) and translation_paddr for non-idempotent check
+  assign translation_valid = lsu_arsp.valid;
+  assign translation_paddr = lsu_arsp.paddr;
+
+  // ------------------
+  // Translation response to PMP
+  // ------------------
+  // With TwoPhaseReq the PMP checks the request in s1, the cycle after the
+  // request: the LSU registers the translation response itself, and the load
+  // and store units read the PMP result in s1. Without TwoPhaseReq the PMP
+  // checks the request in the cycle it is presented (s0).
+  if (CVA6Cfg.TwoPhaseReq) begin : gen_pmp_s1
+    mmu_arsp_t lsu_arsp_q;
+    logic [CVA6Cfg.VLEN-1:0] lsu_vaddr_q;
+    logic lsu_is_store_q, lsu_hlvx_inst_q, lsu_hs_ld_st_inst_q;
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (~rst_ni) begin
+        lsu_arsp_q          <= '0;
+        lsu_vaddr_q         <= '0;
+        lsu_is_store_q      <= 1'b0;
+        lsu_hlvx_inst_q     <= 1'b0;
+        lsu_hs_ld_st_inst_q <= 1'b0;
+      end else begin
+        lsu_arsp_q          <= lsu_arsp;
+        lsu_vaddr_q         <= mmu_vaddr;
+        lsu_is_store_q      <= st_translation_req;
+        lsu_hlvx_inst_q     <= mmu_hlvx_inst;
+        lsu_hs_ld_st_inst_q <= mmu_hs_ld_st_inst;
+      end
+    end
+    assign pmp_lsu_arsp          = lsu_arsp_q;
+    assign pmp_vaddr_q           = lsu_vaddr_q;
+    assign pmp_is_store_q        = lsu_is_store_q;
+    assign pmp_hlvx_inst_q       = lsu_hlvx_inst_q;
+    assign pmp_hs_ld_st_inst_q   = lsu_hs_ld_st_inst_q;
+  end else begin : gen_pmp_s0
+    assign pmp_lsu_arsp          = lsu_arsp;
+    assign pmp_vaddr_q           = mmu_vaddr;
+    assign pmp_is_store_q        = st_translation_req;
+    assign pmp_hlvx_inst_q       = mmu_hlvx_inst;
+    assign pmp_hs_ld_st_inst_q   = 1'b0;
+  end
+
+  // The hypervisor load/store flag selects the privilege of the translation
+  // (request presented, s0) and of the PMP check (s1 with TwoPhaseReq).
+  assign csr_hs_ld_st_inst_o = mmu_csr_hs_ld_st_inst || (CVA6Cfg.RVH && pmp_hs_ld_st_inst_q);
 
   // ------------------
   // PMP
@@ -384,15 +431,11 @@ module load_store_unit
       .icache_areq_i       (pmp_fetch_arsp),
       .icache_areq_o       (fetch_arsp_o),
       .icache_fetch_vaddr_i(fetch_areq_i.vaddr),
-      .lsu_valid_i         (pmp_translation_valid),
-      .lsu_paddr_i         (lsu_paddr),
+      .lsu_arsp_i          (pmp_lsu_arsp),
+      .lsu_arsp_o          (lsu_arsp_pmp),
       .lsu_vaddr_i         (pmp_vaddr_q),
-      .lsu_exception_i     (pmp_exception),
       .lsu_is_store_i      (pmp_is_store_q),
       .lsu_hlvx_inst_i     (pmp_hlvx_inst_q),
-      .lsu_valid_o         (translation_valid),
-      .lsu_paddr_o         (mmu_paddr),
-      .lsu_exception_o     (mmu_exception),
       .priv_lvl_i          (priv_lvl_i),
       .v_i                 (v_i),
       .ld_st_priv_lvl_i    (ld_st_priv_lvl_i),
@@ -401,32 +444,6 @@ module load_store_unit
       .pmpaddr_i           (pmpaddr_i)
   );
 
-
-  // The load unit reads the translated address and its exception in s1 with
-  // TwoPhaseReq. With an MMU the MMU provides them there. Without one the
-  // translation and the PMP check happen in the request cycle, as for a store,
-  // and their result is registered for the load.
-  logic [CVA6Cfg.PLEN-1:0] ld_paddr;
-  exception_t ld_ex_s1;
-  if (CVA6Cfg.TwoPhaseReq && !CVA6Cfg.MmuPresent) begin : gen_ld_s1
-    logic [CVA6Cfg.PLEN-1:0] ld_paddr_q;
-    exception_t ld_ex_q;
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-      if (~rst_ni) begin
-        ld_paddr_q <= '0;
-        ld_ex_q    <= '0;
-      end else begin
-        ld_paddr_q <= mmu_paddr;
-        ld_ex_q    <= mmu_exception;
-        ld_ex_q.valid <= mmu_exception.valid && ld_translation_req && ld_valid_i;
-      end
-    end
-    assign ld_paddr = ld_paddr_q;
-    assign ld_ex_s1 = ld_ex_q;
-  end else begin : gen_ld_direct
-    assign ld_paddr = mmu_paddr;
-    assign ld_ex_s1 = mmu_exception;
-  end
 
   logic store_buffer_empty;
   // ------------------
@@ -439,7 +456,8 @@ module load_store_unit
       .ypb_amo_req_t(ypb_amo_req_t),
       .ypb_amo_rsp_t(ypb_amo_rsp_t),
       .exception_t(exception_t),
-      .lsu_ctrl_t(lsu_ctrl_t)
+      .lsu_ctrl_t(lsu_ctrl_t),
+      .mmu_arsp_t(mmu_arsp_t)
   ) i_store_unit (
       .clk_i,
       .rst_ni,
@@ -465,9 +483,8 @@ module load_store_unit
       .tinst_o              (st_tinst),
       .hs_ld_st_inst_o      (st_hs_ld_st_inst),
       .hlvx_inst_o          (st_hlvx_inst),
-      .paddr_i              (mmu_paddr),
-      .ex_i                 (mmu_exception),
-      .dtlb_hit_i           (dtlb_hit),
+      .translation_valid_i  (translation_valid),
+      .arsp_i               (lsu_arsp_pmp),
       // Load Unit
       .page_offset_i        (page_offset),
       .page_offset_matches_o(page_offset_matches),
@@ -489,7 +506,8 @@ module load_store_unit
       .ypb_load_req_t(ypb_load_req_t),
       .ypb_load_rsp_t(ypb_load_rsp_t),
       .exception_t   (exception_t),
-      .lsu_ctrl_t    (lsu_ctrl_t)
+      .lsu_ctrl_t    (lsu_ctrl_t),
+      .mmu_arsp_t    (mmu_arsp_t)
   ) i_load_unit (
       .clk_i,
       .rst_ni,
@@ -509,10 +527,9 @@ module load_store_unit
       .tinst_o              (ld_tinst),
       .hs_ld_st_inst_o      (ld_hs_ld_st_inst),
       .hlvx_inst_o          (ld_hlvx_inst),
-      .paddr_i              (ld_paddr),
-      .ex_i                 (ld_ex_s1),
-      .dtlb_hit_i           (dtlb_hit),
-      .dtlb_ppn_i           (dtlb_ppn),
+      .translation_valid_i  (translation_valid),
+      .translation_paddr_i  (translation_paddr),
+      .arsp_i               (lsu_arsp_pmp),
       // to store unit
       .page_offset_o        (page_offset),
       .page_offset_matches_i(page_offset_matches),
@@ -831,7 +848,7 @@ module load_store_unit
   // Probe only: the translated address of the access currently presented to
   // the store buffer / AMO buffer. Pairing it with the access it belongs to is
   // done in cva6_rvfi.sv, no RVFI logic lives in the CPU RTL.
-  assign rvfi_mem_paddr_o = mmu_paddr;
+  assign rvfi_mem_paddr_o = lsu_arsp_pmp.paddr;
 
   //pragma translate_off
   // A load data trigger break goes with the load it matched, which leaves the

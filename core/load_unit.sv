@@ -31,7 +31,8 @@ module load_unit
     parameter type ypb_load_req_t = logic,
     parameter type ypb_load_rsp_t = logic,
     parameter type exception_t = logic,
-    parameter type lsu_ctrl_t = logic
+    parameter type lsu_ctrl_t = logic,
+    parameter type mmu_arsp_t = logic
 ) (
     // Subsystem Clock - SUBSYSTEM
     input  logic                                      clk_i,
@@ -65,14 +66,13 @@ module load_unit
     output logic                                      hs_ld_st_inst_o,
     // Hyp load store with execute permissions - MMU
     output logic                                      hlvx_inst_o,
-    // Physical address - MMU/PMP
-    input  logic          [         CVA6Cfg.PLEN-1:0] paddr_i,
-    // Excepted which appears before load - MMU/PMP
-    input  exception_t                                ex_i,
-    // Data TLB hit - MMU
-    input  logic                                      dtlb_hit_i,
-    // Physical page number from the DTLB - MMU
-    input  logic          [         CVA6Cfg.PPNW-1:0] dtlb_ppn_i,
+    // Translation of the request presented this cycle is valid - MMU
+    input  logic                                      translation_valid_i,
+    // Physical address of the request presented this cycle - MMU
+    input  logic          [         CVA6Cfg.PLEN-1:0] translation_paddr_i,
+    // Translation response after the PMP check: paddr and exception
+    // (s1 with TwoPhaseReq, otherwise presented in same cycle s0)
+    input  mmu_arsp_t                                 arsp_i,
     // Page offset for address checking - STORE_UNIT
     output logic          [                     11:0] page_offset_o,
     // Indicates if the page offset matches a store unit entry - STORE_UNIT
@@ -183,7 +183,7 @@ module load_unit
       ldbuf_valid_d[ldbuf_rindex] = 1'b0;
     end
     // Free on exception, or when a load trigger cancels the physical phase
-    if (CVA6Cfg.TwoPhaseReq && (ldbuf_w_q && (ex_i.valid || sdtrig_kill_s1))) begin
+    if (CVA6Cfg.TwoPhaseReq && (ldbuf_w_q && (arsp_i.exception.valid || sdtrig_kill_s1))) begin
       ldbuf_valid_d[ldbuf_windex_q] = 1'b0;
     end
     //  Track a new outstanding operation in the load buffer
@@ -241,7 +241,7 @@ module load_unit
   // directly forward exception fields (valid bit is set below)
   // A load address trigger reports its own cause and the faulting address.
   //  An error on the response takes precedence over the MMU and trigger causes.
-  assign ex_s1_src = ex_s1_held_q ? ex_s1_held_ex_q : ex_i;
+  assign ex_s1_src = ex_s1_held_q ? ex_s1_held_ex_q : arsp_i.exception;
   assign ex_o.cause = ypb_load_rsp_i.err                ? riscv::HARDWARE_ERROR :
                       (sdtrig_load_action_i != '0)      ? sdtrig_load_action_i  :
                                                           ex_s1_src.cause;
@@ -262,9 +262,9 @@ module load_unit
 
   logic [CVA6Cfg.PLEN-1:0] paddr;
 
-  // With TwoPhaseReq paddr_i belongs to the request in s1, otherwise the request
-  // carries its own address.
-  assign paddr = CVA6Cfg.TwoPhaseReq ? paddr_i : lsu_ctrl_i.vaddr;
+  // With TwoPhaseReq the PMP-checked address belongs to the request in s1,
+  // otherwise to the request presented (translated in the same cycle).
+  assign paddr = arsp_i.paddr;
 
   // CHECK PMA regions
 
@@ -282,7 +282,7 @@ module load_unit
 
   logic paddr_nonidempotent;
   assign paddr_nonidempotent = config_pkg::is_inside_nonidempotent_regions(
-      CVA6Cfg, {{52 - CVA6Cfg.PPNW{1'b0}}, dtlb_ppn_i, 12'd0}
+      CVA6Cfg, {{64 - CVA6Cfg.PLEN{1'b0}}, translation_paddr_i[CVA6Cfg.PLEN-1:12], 12'd0}
   );
 
   // Check that NI operations follow the necessary conditions
@@ -330,10 +330,16 @@ module load_unit
   // the new one is accepted (s0), so its grant is checked in that same cycle.
   assign stall_ypb = (ypb_a_state_q == REGISTRED) ||
                      (CVA6Cfg.TwoPhaseReq && data_req && !ypb_load_rsp_i.pgnt);
-  assign stall_translation = CVA6Cfg.MmuPresent ? translation_req_o && !dtlb_hit_i : 1'b0;
+  // As the Frontend, stall on the translation response itself: it is valid
+  // with the request without an MMU, and on a DTLB hit, a misaligned access or
+  // a page table walk error with one.
+  assign stall_translation = translation_req_o && !translation_valid_i;
 
-  assign ex_s0 = CVA6Cfg.MmuPresent && stall_translation && ex_i.valid;
-  assign ex_s1 = ((CVA6Cfg.TwoPhaseReq ? ldbuf_w_q : valid_i) && ex_i.valid);
+  // With an MMU arsp_i is the response of the previous cycle: a load that
+  // got a valid response with an exception but could not be accepted then, and
+  // stalls now, retires that exception here.
+  assign ex_s0 = CVA6Cfg.MmuPresent && stall_translation && arsp_i.exception.valid;
+  assign ex_s1 = ((CVA6Cfg.TwoPhaseReq ? ldbuf_w_q : valid_i) && arsp_i.exception.valid);
   // With TwoPhaseReq a matched load is already accepted in its first phase:
   // its physical phase is killed instead of sent.
   assign sdtrig_kill_s1 = CVA6Cfg.TwoPhaseReq && ldbuf_w_q && sdtrig_match_q;
@@ -387,7 +393,7 @@ module load_unit
       if (CVA6Cfg.TwoPhaseReq && ex_s1 && !ex_s1_held_q) begin
         ex_s1_held_d = 1'b1;
         ex_s1_held_trans_id_d = ldbuf_q[ldbuf_windex_q].trans_id;
-        ex_s1_held_ex_d = ex_i;
+        ex_s1_held_ex_d = arsp_i.exception;
         pop_ld_o = ldbuf_w && !sdtrig_load_match;
       end
       // RETIRE A HELD EXCEPTION

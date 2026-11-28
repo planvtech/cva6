@@ -22,15 +22,11 @@ module pmp_data_if
     // LSU interface
     // this is a more minimalistic interface because the actual addressing logic is handled
     // in the LSU as we distinguish load and stores, what we do here is simple address translation
-    input logic lsu_valid_i,  // request lsu access
-    input logic [CVA6Cfg.PLEN-1:0] lsu_paddr_i,  // physical address in
+    input mmu_arsp_t lsu_arsp_i,  // translation response (valid, paddr, exception) to check
+    output mmu_arsp_t lsu_arsp_o,  // same response with the PMP check
     input logic [CVA6Cfg.VLEN-1:0] lsu_vaddr_i,  // virtual address in, for tval only
-    input exception_t lsu_exception_i,  // lsu exception coming from MMU, or misaligned exception
     input logic lsu_is_store_i,  // the translation is requested by a store
     input logic lsu_hlvx_inst_i,  // the access is an HLVX, which reads instruction memory
-    output logic lsu_valid_o,  // translation is valid
-    output logic [CVA6Cfg.PLEN-1:0] lsu_paddr_o,  // translated address
-    output exception_t lsu_exception_o,  // address translation threw an exception
     // General control signals
     input riscv::priv_lvl_t priv_lvl_i,
     input logic v_i,
@@ -122,10 +118,8 @@ module pmp_data_if
   // Data Interface
   //-----------------------
   always_comb begin : data_interface
-    // save request and DTLB response
-    lsu_valid_o     = lsu_valid_i;
-    lsu_paddr_o     = lsu_paddr_i;
-    lsu_exception_o = lsu_exception_i;
+    // pass the translation response, the PMP check only adds an access fault
+    lsu_arsp_o = lsu_arsp_i;
     //  HLVX reads instruction memory, so the region must be executable as well
     //  as readable; checking it as a plain load lets an execute-only region be
     //  read, and a no-execute one be fetched from.
@@ -140,24 +134,24 @@ module pmp_data_if
     // If translation is not enabled, check the paddr immediately against PMPs
     // A misaligned exception has higher priority than an access fault, so don't
     // overwrite it (RISC-V privilege spec, simultaneous trap cause priority).
-    if (lsu_valid_i && !data_allow_o &&
-        !(lsu_exception_i.valid &&
-          (lsu_exception_i.cause inside {riscv::LD_ADDR_MISALIGNED, riscv::ST_ADDR_MISALIGNED}))) begin
-      lsu_exception_o.valid = 1'b1;
+    if (lsu_arsp_i.valid && !data_allow_o &&
+        !(lsu_arsp_i.exception.valid &&
+          (lsu_arsp_i.exception.cause inside {riscv::LD_ADDR_MISALIGNED, riscv::ST_ADDR_MISALIGNED}))) begin
+      lsu_arsp_o.exception.valid = 1'b1;
 
       if (CVA6Cfg.TvalEn) begin
-        lsu_exception_o.tval = lsu_vaddr_xlen;
+        lsu_arsp_o.exception.tval = lsu_vaddr_xlen;
       end
 
       if (lsu_is_store_i) begin
-        lsu_exception_o.cause = riscv::ST_ACCESS_FAULT;
+        lsu_arsp_o.exception.cause = riscv::ST_ACCESS_FAULT;
       end else begin
-        lsu_exception_o.cause = riscv::LD_ACCESS_FAULT;
+        lsu_arsp_o.exception.cause = riscv::LD_ACCESS_FAULT;
       end
       if (CVA6Cfg.RVH) begin
-        lsu_exception_o.tval2 = '0;
-        lsu_exception_o.tinst = '0;
-        lsu_exception_o.gva   = ld_st_v_i;
+        lsu_arsp_o.exception.tval2 = '0;
+        lsu_arsp_o.exception.tinst = '0;
+        lsu_arsp_o.exception.gva   = ld_st_v_i;
       end
     end
   end
@@ -166,7 +160,7 @@ module pmp_data_if
   pmp #(
       .CVA6Cfg(CVA6Cfg)
   ) i_pmp_data (
-      .addr_i       (lsu_paddr_i),
+      .addr_i       (lsu_arsp_i.paddr),
       .priv_lvl_i   (ld_st_priv_lvl_i),
       .access_type_i(pmp_access_type),
       // Configuration
